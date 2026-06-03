@@ -469,12 +469,13 @@ window.MathJax = {
   <p>Agent 训练方法论：RL 优化、rollout 策略、探索与信用分配</p>
 </header>
 
-<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+<a class="back-link" href="../agent_工作整理_github.html">&larr; 返回 Agent 工作整理总索引</a>
 
 <section class="subpage-nav">
   <h2>本页目录</h2>
   <p>先看目录再往下读，会比直接滚到底更顺一点。</p>
   <ol>
+  <li><a href="#arxiv-2603.08561">RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</a></li>
   <li><a href="#arxiv-2509.21240">Tree Search for LLM Agent Reinforcement Learning</a></li>
   <li><a href="#arxiv-2510.08558">Agent Learning via Early Experience</a></li>
   <li><a href="#arxiv-2603.17621">Complementary Reinforcement Learning</a></li>
@@ -483,9 +484,121 @@ window.MathJax = {
   <li><a href="#arxiv-2605.10663">Evolving-RL: End-to-End Optimization of Experience-Driven Self-Evolving Capability within Agents</a></li>
   <li><a href="#arxiv_2605_learning_agentic_policy_from_action_guidance">Learning Agentic Policy from Action Guidance</a></li>
   <li><a href="#arxiv-2605.08083">LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling</a></li>
-  <li><a href="#arxiv-2603.08561">RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</a></li>
   </ol>
 </section>
+
+<!-- PAPER_CARD_START source="agent/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback.md" arxiv="2603.08561" -->
+<article class="paper-card" id="arxiv-2603.08561">
+  <h2>RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</h2>
+
+  <div class="meta-row">
+    <span class="tag">agent</span>
+    <a href="https://arxiv.org/abs/2603.08561" target="_blank">arXiv abs</a>
+    <a href="https://arxiv.org/pdf/2603.08561.pdf" target="_blank">PDF</a>
+    <a href="https://github.com/zhangxy-2019/RetroAgent" target="_blank">Code</a>
+    <span style="color:var(--text-secondary)">arXiv 2603.08561</span>
+  </div>
+
+  <div class="summary-box">
+    <strong>核心思想：</strong>RetroAgent 把 agent RL 的目标从“单轮解题”推进到“持续进化”。它在 extrinsic reward 之外，通过 hindsight self-reflection 生成 <strong>intrinsic numerical feedback</strong> 和 <strong>intrinsic language feedback</strong>，分别奖励有潜力的探索轨迹，并把可复用经验沉淀成 lesson memory。
+  </div>
+
+  <div class="section-panel">
+    <h3 class="section-title">问题与动机</h3>
+    <p>作者针对的是标准 RL for LLM agents 的两个老问题：一是只盯最终任务奖励，容易导致探索不足、过早收敛到次优策略；二是过往经验虽然写进了模型参数，却难以被显式检索和复用，导致 agent 很难像人一样“做完一轮后总结经验，下次直接带着经验上场”。</p>
+    <p>因此这篇论文的切口不是再换一个 RL objective，而是把 episode 结束后的 retrospective reflection 正式纳入训练闭环，让 agent 同时学会：这次探索是否比过去更接近目标，以及哪些经验值得被保存并在后续相似任务中调用。</p>
+  </div>
+
+  <div class="section-panel">
+    <h3 class="section-title">方法核心</h3>
+    <p>RetroAgent 在每轮轨迹结束后，生成一个 reflection tuple $z = (\phi_{(x,\tau)}, c, l)$：</p>
+    <ul>
+      <li>$\phi_{(x,\tau)}$ 是 potential score，用于衡量当前轨迹相对历史尝试的增量 subtask progress。</li>
+      <li>$c$ 是对本轮是否成功的自我判断，供 reflection 自身训练使用。</li>
+      <li>$l$ 是 retrospective lesson，会被写进 memory buffer，在后续相似任务中检索使用。</li>
+    </ul>
+    <p>其中最关键的两条反馈链分别是：</p>
+    <ul>
+      <li><strong>Intrinsic numerical feedback</strong>：把“比历史最佳更接近成功”的增量进步转成 capability-evolution reward，避免只有最终 success 才有学习信号。</li>
+      <li><strong>Intrinsic language feedback</strong>：通过 <strong>SimUtil-UCB</strong> 从 lesson memory 中联合考虑 relevance、historical utility 和 exploration coverage 做检索，避免记忆系统只重复使用少数高频经验。</li>
+    </ul>
+    <p>训练时，一半 rollout 使用 base policy，一半 rollout 使用 memory-augmented policy，因此 agent 既保留独立探索，又逐步把 lesson 内化进参数。论文还给了两个 reflection 版本：一个是 pairwise in-context reflection，另一个是把 reflection 能力也一并放进 RL 联合优化的 RL-trained variant。</p>
+  </div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+      <div class="fig-item">
+        <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" alt="RetroAgent framework"></a>
+      </div>
+      <div class="fig-item">
+        <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/webshop_kde_utility_ucb.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/webshop_kde_utility_ucb.png" alt="SimUtil-UCB retrieval"></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+    <h3 class="section-title">实验与结论</h3>
+    <table class="result-table">
+      <tr>
+        <th>Method</th>
+        <th>ALFWorld</th>
+        <th>WebShop Score</th>
+        <th>WebShop Success</th>
+        <th>Sokoban</th>
+        <th>MineSweeper</th>
+      </tr>
+      <tr>
+        <td>GRPO</td>
+        <td>77.3</td>
+        <td>75.5</td>
+        <td>66.9</td>
+        <td>11.2</td>
+        <td>39.3</td>
+      </tr>
+      <tr>
+        <td>GiGPO</td>
+        <td>90.8</td>
+        <td>84.4</td>
+        <td>72.8</td>
+        <td>21.9</td>
+        <td>41.1</td>
+      </tr>
+      <tr>
+        <td>RetroAgent (In-Context)</td>
+        <td>91.7</td>
+        <td>87.6</td>
+        <td>78.9</td>
+        <td>32.6</td>
+        <td>47.9</td>
+      </tr>
+      <tr>
+        <td>RetroAgent (RL-Trained)</td>
+        <td class="best">95.6</td>
+        <td class="best">88.9</td>
+        <td class="best">82.3</td>
+        <td class="best">38.3</td>
+        <td class="best">48.2</td>
+      </tr>
+    </table>
+    <ul>
+      <li>相对 GRPO，RetroAgent 在四个环境上分别提升约 <code>+18.3%</code>、<code>+15.4%</code>、<code>+27.1%</code>、<code>+8.9%</code>，说明 hindsight dual feedback 比只看环境奖励更适合长程 agent 训练。</li>
+      <li>在 WebShop 消融里，单独加 capability-evolution reward 就能把 success 从 <code>66.9</code> 提到 <code>79.7</code>；单独加 memory retrieval 也能到 <code>78.6</code>，说明数值反馈和语言反馈各自都有效，而且确实互补。</li>
+      <li>SimUtil-UCB 明显优于只按 similarity 或 similarity+utility 的记忆检索，表明 memory retrieval 里如果没有 exploration bonus，agent 很容易被少数高频 memory 绑住，越检索越局部。</li>
+      <li>测试时的 <code>Discovery@k</code> 也很强：WebShop 在三次尝试内可从 <code>82.3%</code> 提到 <code>99.0%</code>，ALFWorld 的 OOD setting 可到 <code>100.0%</code>，说明这种 retrospective feedback 同时提升了 repeated attempts 下的自我修正能力。</li>
+    </ul>
+  </div>
+
+  <div class="section-panel">
+    <h3 class="section-title">价值、局限与启发</h3>
+    <ul>
+      <li>这篇工作的真正价值不在“又做了一个 memory agent”，而在于它把 hindsight reflection 直接变成训练信号，让 agent 能同时学习“什么探索值得继续”和“什么经验值得保存”。</li>
+      <li>它非常适合作为 `agent / RL training` 这条线里的代表工作，因为 RL、memory、test-time adaptation 三条线在这里是同一个闭环，而不是分散的模块工程。</li>
+      <li>局限也很清楚：memory 仍是 lesson-level text buffer，reflection 质量高度关键；一旦自评不稳，potential score 与 lesson 质量都会波动，训练稳定性会受影响。</li>
+    </ul>
+  </div>
+</article>
+<!-- PAPER_CARD_END -->
 
 
 <!-- PAPER_CARD_START source="agent/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning.md" arxiv="2509.21240" -->
@@ -1272,97 +1385,9 @@ window.MathJax = {
 </article>
 <!-- PAPER_CARD_END -->
 
-<!-- PAPER_CARD_START source="agent/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback.md" arxiv="2603.08561" -->
-<article class="paper-card" id="arxiv-2603.08561">
-  <h2>RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</h2>
-
-<div class="meta-row">
-  <span class="tag">RetroAgent</span>
-  <a href="https://arxiv.org/abs/2603.08561" target="_blank">arXiv abs</a>
-  <a href="https://arxiv.org/pdf/2603.08561.pdf" target="_blank">PDF</a>
-  <a href="https://github.com/zhangxy-2019/RetroAgent" target="_blank">Code</a>
-  <span style="color:var(--text-secondary)">arXiv 2603.08561</span>
-</div>
-  <div class="summary-box">
-  <strong>核心思想：</strong>标准 agent RL 只优化环境外部奖励，agent 容易收敛到次优策略且无法复用过往经验。RetroAgent 在 episode 结束后做 <strong>hindsight self-reflection</strong>，同时产出 <strong>intrinsic numerical feedback</strong>（奖励"虽未成功但有进步"的探索）和 <strong>intrinsic language feedback</strong>（提炼可复用 lesson），通过 <strong>SimUtil-UCB</strong> 检索机制反哺后续训练，让 agent 从"学会做题"进化为"持续成长"。
-  </div>
-
-<div class="section-panel">
-  <h3 class="section-title">问题与动机</h3>
-  <ul>
-    <li><strong>Exploitation 过度：</strong>标准 RL 只看 extrinsic reward，agent 探索不足，容易收敛到次优策略。</li>
-    <li><strong>经验浪费：</strong>失败轨迹中的有价值探索没有被显式提炼和复用，下次遇到相似任务无法直接借鉴。</li>
-    <li><strong>核心判断：</strong>agent 不仅要"做成一件事"，更要像人一样回顾过去、提炼经验、识别有潜力但尚未成功的探索，并在后续任务中持续进化。</li>
-  </ul>
-</div>
-
-<div class="section-panel">
-  <h3 class="section-title">方法：Retrospective Dual Intrinsic Feedback</h3>
-  <p>每次 episode 结束后，reflection 模块回看整条轨迹，输出 reflection tuple $(\phi, c, l)$：</p>
-  <ul>
-    <li><strong>$\phi$（potential score）：</strong>估计 subtask completion 程度，用于构造 <em>intrinsic numerical feedback</em>——只有比历史最好水平更"有潜力"的轨迹才获额外奖励。</li>
-    <li><strong>$c$（success prediction）：</strong>判断轨迹成功/失败，用于监督反思质量。</li>
-    <li><strong>$l$（retrospective lesson）：</strong>从轨迹中提炼可复用经验，写入 memory buffer，形成 <em>intrinsic language feedback</em>。</li>
-  </ul>
-  <p>Reflection 有两种实现：(1) <strong>In-context variant</strong>——用 pairwise induction，给当前轨迹配一个 outcome 相反的 reference trajectory 做对比反思；(2) <strong>RL-trained variant</strong>——反思能力与决策 policy 联合训练。</p>
-  <p>Memory 检索使用 <strong>SimUtil-UCB</strong>，同时平衡三个维度：semantic relevance（任务相似度）、reflection utility（历史有效性）、exploration coverage（UCB bonus 防止过拟合到少数经验）。</p>
-</div>
-
-  <div class="figure-block">
-    <div class="fig-block-title">方法框架</div>
-    <div class="fig-row">
-      <div class="fig-item">
-        <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" alt="RetroAgent 方法框架"></a>
-      </div>
-    </div>
-  </div>
-
-<div class="section-panel">
-  <h3 class="section-title">实验结果</h3>
-  <p><strong>Qwen-2.5-7B-Instruct 上的主结果：</strong></p>
-  <table class="result-table">
-    <tr><th>Method</th><th>ALFWorld</th><th>WebShop Score</th><th>WebShop SR</th><th>Sokoban</th><th>MineSweeper</th></tr>
-    <tr><td>GRPO</td><td>77.3</td><td>75.5</td><td>66.9</td><td>11.2</td><td>39.3</td></tr>
-    <tr><td>GiGPO</td><td>90.8</td><td>84.4</td><td>72.8</td><td>21.9</td><td>41.1</td></tr>
-    <tr><td>RetroAgent (In-Context)</td><td>91.7</td><td>87.6</td><td>78.9</td><td>32.6</td><td>47.9</td></tr>
-    <tr><td class="best">RetroAgent (RL-Trained)</td><td class="best">95.6</td><td class="best">88.9</td><td class="best">82.3</td><td class="best">38.3</td><td class="best">48.2</td></tr>
-  </table>
-  <p>相对 GRPO baseline：ALFWorld +18.3%，WebShop +15.4%，Sokoban +27.1%。RL-trained reflection 比 in-context reflection 还能进一步涨点。</p>
-  <p><strong>Test-time adaptation：</strong>WebShop Discovery@3 从 82.3% 升至 99.0%；ALFWorld OOD Discovery@3 达 100.0%。去掉 test-time memory augmentation 后仅小幅下降，说明 dual feedback 已"内化"进 policy 参数。</p>
-</div>
-
-<div class="section-panel">
-  <h3 class="section-title">优点与局限</h3>
-  <div class="pros-cons">
-    <div class="pros">
-      <h4>优点</h4>
-      <ul>
-        <li>问题定义清晰：从"学会做题"到"持续进化"的视角提升</li>
-        <li>双 intrinsic feedback 设计自然，数值信号与语言信号各司其职</li>
-        <li>SimUtil-UCB 显式处理 relevance/utility/exploration 三者平衡</li>
-        <li>实验覆盖 4 类任务（embodied/web/planning/logic），泛化性强</li>
-      </ul>
-    </div>
-    <div class="cons">
-      <h4>局限</h4>
-      <ul>
-        <li>Memory 仍是 lesson-level text buffer，尚未覆盖更复杂的结构化表示</li>
-        <li>Intrinsic reward 依赖 reflection 产出的 potential score，自评质量影响训练</li>
-        <li>主要在 7B/8B 模型上验证，更大模型或复杂真实 agent system 的扩展待确认</li>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
-  <strong>定位：</strong>agent RL + 经验回放的交叉点。与 Complementary RL（actor-extractor co-evolution）互补——RetroAgent 侧重 hindsight reflection 驱动的 dual intrinsic feedback，Complementary RL 侧重经验提取与策略的异步协同演化。与 Evolving-RL 的 self-evolving capability 也有对比价值。
-</p>
-
-</article>
-<!-- PAPER_CARD_END -->
-
-<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+<a class="back-link" href="../agent_工作整理_github.html">&larr; 返回 Agent 工作整理总索引</a>
 
 </div>
 </body>
 </html>
+
