@@ -1,0 +1,977 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+</head>
+<body>
+  <header class="hero">
+    <h1>推理加速、缓存与并行解码</h1>
+    <p>聚焦 block-wise decoding、stable prefix、动态 remasking、cache、sparse attention 与长上下文加速。</p>
+    <div class="stats">
+      <span class="stat">本页 8 篇</span>
+      <span class="stat">所属主题 diffusion_llm</span>
+      <span class="stat">更新日期 2026-06-02</span>
+    </div>
+  </header>
+  <main class="layout">
+    <a class="back-link" href="../diffusion_llm_工作整理.html">&larr; 返回 Diffusion LLM 工作整理</a>
+    <nav class="work-list" aria-label="本页目录">
+      <h2>本页目录</h2>
+      <p>这一页只收录同一主题下的论文，先看目录再下滑会更高效。</p>
+      <ol>
+        <li><a href="#arxiv-2604-stdec-spatio-temporal-stability-guided-decoding-for-dllms">STDec: Spatio-Temporal Stability Guided Decoding for dLLMs</a></li>
+<li><a href="#arxiv-2509-adablock-dllm-semantic-aware-diffusion-llm-inference-via-adaptive-block-size">AdaBlock-dLLM: Semantic-Aware Diffusion LLM Inference via Adaptive Block Size</a></li>
+<li><a href="#arxiv-2508-sparse-dllm-accelerating-diffusion-llms-with-dynamic-cache-eviction">Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</a></li>
+<li><a href="#arxiv-2604-15750">DepCap: Adaptive Block-Wise Parallel Decoding for Efficient Diffusion LM Inference</a><span class="work-meta">arXiv 2604.15750 | Xiang Xia, Wuyang Zhang, Jiazheng Liu, Cheng Yan, Yanyong Zhang</span></li>
+<li><a href="#arxiv-2604-08302">DMax: Aggressive Parallel Decoding for dLLMs</a><span class="work-meta">arXiv 2604.08302</span></li>
+<li><a href="#arxiv-2602-02544">SPA-Cache: Singular Proxies for Adaptive Caching in Diffusion Language Models</a><span class="work-meta">arXiv 2602.02544 | Wenhao Sun, Rong-Cheng Tu, Yifu Ding, Zhao Jin, Jingyi Liao, Yongcheng Jing, Dacheng Tao</span></li>
+<li><a href="#arxiv-2509-24014">SparseD: Sparse Attention for Diffusion Language Models</a><span class="work-meta">arXiv 2509.24014 | Zeqing Wang, Gongfan Fang, Xinyin Ma, Xingyi Yang, Xinchao Wang</span></li>
+<li><a href="#arxiv-2508-02558">Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</a><span class="work-meta">arXiv 2508.02558</span></li>
+      </ol>
+    </nav>
+    <nav class="work-list" aria-label="其他子页">
+      <h2>其他子页</h2>
+      <p>如果你想按主题继续读，可以从这里跳到其他 diffusion LLM 子页。</p>
+      <ol>
+        <li><a href="diffusion_llm_工作整理_overview_foundation.html">综述、基础建模与多模态扩展</a><span class="work-meta">8 篇</span></li> <li><a href="diffusion_llm_工作整理_training_alignment.html">训练、采样与强化学习</a><span class="work-meta">5 篇</span></li> <li><a href="diffusion_llm_工作整理_inference_acceleration.html">推理加速、缓存与并行解码</a><span class="work-meta">8 篇</span></li>
+      </ol>
+    </nav>
+    <article class="paper-card" id="arxiv-2604-stdec-spatio-temporal-stability-guided-decoding-for-dllms">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>STDec: Spatio-Temporal Stability Guided Decoding for dLLMs</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2604_stdec_spatio_temporal_stability_guided_decoding_for_dllms.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># STDec: Spatio-Temporal Stability Guided Decoding for dLLMs</p>
+<p>## 1. 基本信息</p>
+<ul><li><strong>arXiv ID</strong>: 2604.06330</li><li><strong>URL (abs/pdf)</strong>:</li><li><a href="https://arxiv.org/abs/2604.06330" target="_blank" rel="noopener">https://arxiv.org/abs/2604.06330</a></li><li><a href="https://arxiv.org/pdf/2604.06330.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2604.06330.pdf</a></li><li><strong>主题目录</strong>: diffusion_llm</li><li><strong>总结粒度</strong>: detailed</li><li><strong>作者</strong>: Yuzhe Chen (Tianjin University), Jiale Cao (Tianjin University), Xuyang Liu (Sichuan University), Jin Xie (Chongqing University), Aiping Yang (Tianjin University), Yanwei Pang (Tianjin Uni...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>现有 dLLM 解码策略几乎都采用<strong>全局置信度阈值</strong>（global confidence threshold）来决定每一步解码哪些 token，主要包括：</p>
+<ul><li><strong>Top-k 策略</strong>（LLaDA, Lumina-DiMOO）：每步选择置信度最高的固定数量 token 解码</li><li><strong>固定阈值策略</strong>（Fast-dLLM）：预定义统一的置信度阈值</li><li><strong>双阈值锚点策略</strong>（LocalLeap）：先用高阈值确定锚点 token，再用低阈值解码锚点周围的 token</li></ul>
+<p>上述策略存在两个关键缺陷：</p>
+<p><strong>(i) 对空间信息的利用不足（Limited usage of spatial information）。</strong> 全局阈值策略完全忽略 token 之间的空间位置关系。虽然 LocalLeap 利用高置信度 token 作为锚点来带动周围 token 的解码，但它并未充分利用已被解码 token 的局部密度信息为每个 masked token 单独调整阈值。</p>
+<p><strong>(ii) 缺乏时序建模（Lack of temporal modeling）。</strong> 现有方法几乎不考虑 token 在历史去噪步骤中被预测的 ID 是否保持一致，遗漏了重要的时序稳定性信号——很多 token 在尚未被正式解码之前，其预测 ID 已经连续多步保持不变。</p>
+<p>作者通过实证分析发现 dLLM 解码过程存在两个强稳定性特征：</p>
+<p><strong>空间稳定性（Spatial Stability）：</strong> 当前步骤被解码的 token 通常出现在已解码 token 的邻域附近。在 HumanEval 和 GSM8K 上，超过 90% 的被解码 token 在半径为 2 的邻域内至少有一个已被解码的邻居。被已解码 token 包围的位置本质上是更容易和更安全的解码候选。</p>
+<p><strong>时序稳定性（Temporal Stability）：</strong> 大量 token 在正式解码之前，其 Top-1 预测 ID 已经连续多步保持不变。接近 95% 的被解码 token 在解码前至少 1 步内 ID 已稳定；即使要求更多步仍有相当比例的 token 提前稳定。关键观察：token ID 首次稳定时的置信度往往低于其被正式解码时的置信度，说明现有高全局阈值策略过度保守，未能充分利用时序稳定性带来的提前解码机会。</p>
+<p>受此启发，STDec 提出将全局阈值替换为 token 自适应阈值（token-adaptive thresholds），利用空间和时间两个维度的稳定性信号，在不牺牲生成质量的前提下大幅提升吞吐量。STDec 是<strong>训练无关（training-free）</strong>的纯解码策略，且可与已有的缓存加速方法（如 dKV-Cache, Prefix-DLM）叠加使用。</p>
+<p>STDec 的核心思想是将传统的全局阈值 tau_t 替换为 token 自适应阈值 tau_t^st = {tau_t^st(i)}_{i=1}^L，每个 masked token 的阈值由其局部空间上下文和跨步时序一致性共同决定。STDec 包含两个核心模块：</p>
+<ul><li><strong>空间感知解码（Spatial-aware Decoding）</strong>：根据周围已解码 token 的密度动态调整阈值</li><li><strong>时序感知解码（Temporal-aware Decoding）</strong>：根据历史 ID 一致性对阈值进行松弛</li></ul>
+<p>最终 token 自适应阈值为两者乘积：tau_t^st(i) = tau_t^s(i) * r_t(i)</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>| 任务 | 方法 | TPS | 加速比 | Score |</p>
+<p>|------|------|-----|--------|-------|</p>
+<p>| <strong>MBPP</strong> | Vanilla Dream | 6.57 | 1.00x | 51.40 |</p>
+<p>| | + Half-Step | 13.11 | 2.00x | 35.80 |</p>
+<p>| | + dKV-Cache | 11.12 | 1.69x | 49.60 |</p>
+<p>| | + Fast-dLLM | 56.88 | 8.66x | 54.80 |</p>
+<p>| | + LocalLeap | 63.65 | 9.69x | 53.60 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>91.16</strong> | <strong>13.88x</strong> | <strong>55.60</strong> |</p>
+<p>| <strong>HumanEval</strong> | Vanilla Dream | 11.82 | 1.00x | 59.15 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>64.50</strong> | <strong>5.46x</strong> | 60.37 |</p>
+<p>| <strong>GPQA</strong> | Vanilla Dream | 6.95 | 1.00x | 32.83 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>193.62</strong> | <strong>27.86x</strong> | 32.83 |</p>
+<p>| <strong>GSM8K</strong> | Vanilla Dream | 4.71 | 1.00x | 83.47 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>23.70</strong> | <strong>5.03x</strong> | 82.34 |</p>
+<p>| <strong>MATH</strong> | Vanilla Dream | 12.67 | 1.00x | 44.64 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>55.15</strong> | <strong>4.35x</strong> | 44.64 |</p>
+<p>| <strong>5-bench 平均</strong> | Vanilla Dream | 8.54 | 1.00x | 54.30 |</p>
+<p>| | + Half-Step | 17.08 | 2.00x | 43.42 |</p>
+<p>| | + dKV-Cache | 12.99 | 1.52x | 52.43 |</p>
+<p>| | + Fast-dLLM | 50.03 | 5.86x | 55.79 |</p>
+<p>| | + LocalLeap | 67.93 | 7.95x | 54.44 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>85.63</strong> | <strong>10.03x</strong> | <strong>55.16</strong> |</p>
+<p><strong>关键发现：</strong> STDec 在所有 benchmark 上实现最高 TPS。平均加速 10.03 倍，平均分数（55.16）甚至略高于 Vanilla（54.30）。Half-Step 虽然速度翻倍但分数从 54.30 暴跌至 43.42。STDec 证明了不只是牺牲质量换速度，而是更好地利用了模型已有的预测能力。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>现有 dLLM 解码策略几乎都采用<strong>全局置信度阈值</strong>（global confidence threshold）来决定每一步解码哪些 token，主要包括：</p>
+<ul><li><strong>Top-k 策略</strong>（LLaDA, Lumina-DiMOO）：每步选择置信度最高的固定数量 token 解码</li><li><strong>固定阈值策略</strong>（Fast-dLLM）：预定义统一的置信度阈值</li><li><strong>双阈值锚点策略</strong>（LocalLeap）：先用高阈值确定锚点 token，再用低阈值解码锚点周围的 token</li></ul>
+<p>上述策略存在两个关键缺陷：</p>
+<p><strong>(i) 对空间信息的利用不足（Limited usage of spatial information）。</strong> 全局阈值策略完全忽略 token 之间的空间位置关系。虽然 LocalLeap 利用高置信度 token 作为锚点来带动周围 token 的解码，但它并未充分利用已被解码 token 的局部密度信息为每个 masked token 单独调整阈值。</p>
+<p><strong>(ii) 缺乏时序建模（Lack of temporal modeling）。</strong> 现有方法几乎不考虑 token 在历史去噪步骤中被预测的 ID 是否保持一致，遗漏了重要的时序稳定性信号——很多 token 在尚未被正式解码之前，其预测 ID 已经连续多步保持不变。</p>
+  </section>
+  
+</article>
+
+<article class="paper-card" id="arxiv-2509-adablock-dllm-semantic-aware-diffusion-llm-inference-via-adaptive-block-size">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>AdaBlock-dLLM: Semantic-Aware Diffusion LLM Inference via Adaptive Block Size</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>*Figure 1: 左侧展示固定 block 大小的两个问题，右侧展示 AdaBlock 如何解决。*</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>*Figure 1: 左侧展示固定 block 大小的两个问题，右侧展示 AdaBlock 如何解决。*</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>本文首次系统性地挑战 semi-AR 解码中的<strong>固定 block 大小</strong>设置，识别出两个根本性问题：</p>
+<p><strong>问题一：Late Decoding Overhead（延迟解码开销）</strong></p>
+<ul><li>当固定 block 较小时，当前 block 外存在高置信度 token 本可立即解码，但受限于 block 边界必须等待下一轮</li><li>被延迟的高置信度 token 需要额外的去噪计算，造成不必要的算力开销</li><li>一个完整语义单元（如一个简单句子）可能被分割到多个 block 中</li></ul>
+<p><strong>问题二：Premature Decoding Error（过早解码错误）</strong></p>
+<ul><li>Block 级自回归约束要求采样器在进入下一 block 前必须解码当前 block 内所有 MASK 位置</li><li>这迫使采样器在当前 block 内提交低置信度 token，而非推迟它们以等待更高置信度的位置</li><li>过早提交的错误 token 通过 block 级自回归依赖传播到后续步骤，导致系统性误差</li><li>在推理任务（如 GSM8K 数学推理）中尤为严重</li></ul>
+<p>VB 区域的置信度波动和宽度差异表明，固定 block 大小无法适应不同样本的解码需求。小 block 导致延迟解码，大 block 迫使过早提交低置信度 token。需要一种能够在运行时感知语义边界、动态调整 block 大小的调度策略。</p>
+<p>AdaBlock-dLLM 是一个<strong>训练无关（training-free）、即插即用（plug-and-play）</strong>的自适应 block 大小调度器，在进入每个 block 的第一个 token 采样之前，动态确定当前 block 大小，使得 block 边界与<strong>语义步骤（semantic steps）</strong>对齐。</p>
+<p>核心思想：利用语义分隔 token（如换行符 <code>\n</code>、句号、逗号）的置信度信号来判断语义步骤边界——当模型对某个分隔 token 有高置信度预测时，说明它&quot;确信&quot;此处应该是语义单元的终点。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>以 LLaDA-Instruct 在 GSM8K 上为例（B_0=32）：</p>
+<p>| 方法 | GSM8K Acc. (%) | HumanEval Acc. (%) | MATH Acc. (%) |</p>
+<p>|------|---------------|-------------------|---------------|</p>
+<p>| Vanilla | 76.7 | 43.9 | 36.9 |</p>
+<p>| Dynamic (Fast-dLLM) | 77.6 | 43.9 | 36.9 |</p>
+<p>| <strong>+Ada (AdaBlock)</strong> | <strong>80.6</strong> (+3.0) | 43.3 (-0.6) | 37.3 (+0.4) |</p>
+<p>| +Cache (Fast-dLLM) | 74.5 | 46.3 | 35.8 |</p>
+<p>| <strong>+Ada+Cache</strong> | <strong>78.5</strong> (+4.0) | 46.3 (0.0) | 35.3 (-0.5) |</p>
+<p>关键结果：</p>
+<ul><li>GSM8K 上 LLaDA-Instruct <strong>最高提升 5.3%</strong>（B_0=64 时 +Ada+Cache 从 75.4 提升到 80.7）</li><li><strong>KV Cache 场景下提升更显著</strong>：Cache 本身引入近似误差导致精度下降，AdaBlock 通过增强 block 内语义局部性、减少 block 间依赖性来弥补这一损失</li><li>跨 LLaDA-Instruct、LLaDA-1.5、Dream-Base 三个模型，多数配置获得正收益</li></ul>
+<p>以 LLaDA-Instruct GSM8K 为例（生成预算 L=512，无 Cache）：</p>
+<p>| B_0 | Vanilla Acc./TPS | Dynamic Acc./TPS | +Ada Acc./TPS |</p>
+<p>|-----|-----------------|-----------------|---------------|</p>
+<p>| 4 | 80.9 / 16.1 | 81.2 / 43.0 | <strong>81.6</strong> / <strong>51.3</strong> |</p>
+<p>| 8 | 80.5 / 16.1 | 80.6 / 60.0 | <strong>81.8</strong> / <strong>63.9</strong> |</p>
+<p>| 16 | 78.8 / 16.1 | 79.1 / 74.7 | <strong>80.6</strong> / 73.9 |</p>
+<p>| 32 | 76.8 / 16.1 | 77.6 / 85.0 | <strong>80.6</strong> / 83.5 |</p>
+<p>| 64 | 76.8 / 16.1 | 77.3 / 89.4 | <strong>79.5</strong> / 87.9 |</p>
+<p>| 128 | 71.0 / 16.0 | 70.7 / 81.2 | <strong>72.8</strong> / 80.6 |</p>
+<p>关键发现：</p>
+<ul><li>小 B_0（4, 8）时 AdaBlock 同时提升精度和吞吐（有效缓解延迟解码开销）</li><li>大 B_0（16, 32, 64, 128）时精度提升显著，吞吐仅有微小下降（~1-2 TPS）</li><li>TPS × NFE 乘积在所有方法/block 大小下几乎恒定（~8.2 × 10³），说明吞吐与 NFE 呈近似反比</li><li>增大 B_0 最初提升吞吐（缓解延迟解码），但过大时吞吐反而下降（block 内语义凝聚力减弱，动态采样每步解码 token 减少）</li></ul>
+<p>| 模型 | τ_D=0.3 | τ_D=0.5 | τ_D=0.7 |</p>
+<p>|------|---------|---------|---------|</p>
+<p>| LLaDA-Instruct | <strong>80.59</strong> | 79.08 | 77.94 |</p>
+<p>| Dream-Base | 75.66 | <strong>75.74</strong> | <strong>75.74</strong> |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>本文首次系统性地挑战 semi-AR 解码中的<strong>固定 block 大小</strong>设置，识别出两个根本性问题：</p>
+<p><strong>问题一：Late Decoding Overhead（延迟解码开销）</strong></p>
+<ul><li>当固定 block 较小时，当前 block 外存在高置信度 token 本可立即解码，但受限于 block 边界必须等待下一轮</li><li>被延迟的高置信度 token 需要额外的去噪计算，造成不必要的算力开销</li><li>一个完整语义单元（如一个简单句子）可能被分割到多个 block 中</li></ul>
+<p><strong>问题二：Premature Decoding Error（过早解码错误）</strong></p>
+<ul><li>Block 级自回归约束要求采样器在进入下一 block 前必须解码当前 block 内所有 MASK 位置</li><li>这迫使采样器在当前 block 内提交低置信度 token，而非推迟它们以等待更高置信度的位置</li><li>过早提交的错误 token 通过 block 级自回归依赖传播到后续步骤，导致系统性误差</li><li>在推理任务（如 GSM8K 数学推理）中尤为严重</li></ul>
+<ul><li><strong>首次系统性挑战固定 block 大小</strong>：在此之前，semi-AR 解码的 block 大小选择被默认为固定超参数，本文首次分析其根本缺陷并提出自适应方案。</li><li><strong>训练无关、即插即用</strong>：不需要任何额外训练或微调，可直接插入现有的 Fast-dLLM 等 semi-AR 解码管线。</li><li><strong>置信度动态分析深刻</strong>：波动带（VB）、置信度局部性、全局自回归倾向等概念为理解 dLLM 解码行为提供了有价值的分析框架。</li><li><strong>与 KV Cache 方法协同增效</strong>：在 Cache 场景下增益更大（最高 5.3%），因为 AdaBlock 降低了 Cache 近似误差的影响。</li><li><strong>跨模型/任务泛化好</strong>：LLaDA-8B-Instruct、LLaDA-1.5、Dream-7B 上均有正收益；覆盖数学推理、代码生成、指令遵循等多类任务。</li><li><strong>实现简单、计算开销极小</strong>：仅需在每 block 首步额外检查分隔 token 置信度，几乎不引入额外延迟。</li></ul>
+<ul><li><strong>小生成预算场景（如选择题）收益有限</strong>：semi-AR 解码本身在这种场景下优势不大，AdaBlock 的改进空间也受限。</li><li><strong>受限于去噪器质量</strong>：当去噪器预测分布不可靠时，自适应 block 大小无法恢复质量。</li><li><strong>Dream 系列改进幅度小于 LLaDA</strong>：对从 AR 适配而来的 dLLM，局部随机性弱，VB 方差大，语义步骤信号较弱。</li><li><strong>分隔符和阈值需手动设定</strong>：当前使用固定的 D 和 τ_D，未来需要自动化的分隔 token 选择和阈值调整机制。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/confidence_pattern_band_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/confidence_pattern_band_p0.png" alt="置信度模式的三个区域"></a><figcaption>置信度模式的三个区域</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/all_acc_tps_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/all_acc_tps_p0.png" alt="Accuracy vs Throughput 散点图"></a><figcaption>Accuracy vs Throughput 散点图</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/Intro_case_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/Intro_case_p0.png" alt="两种根本问题与 AdaBlock 解决方案"></a><figcaption>两种根本问题与 AdaBlock 解决方案</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2508-sparse-dllm-accelerating-diffusion-llms-with-dynamic-cache-eviction">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</p>
+<p>## 1. 基本信息</p>
+<ul><li><strong>arXiv ID</strong>: 2508.02558</li><li><strong>URL (abs)</strong>: https://arxiv.org/abs/2508.02558</li><li><strong>URL (pdf)</strong>: https://arxiv.org/pdf/2508.02558.pdf</li><li><strong>主题目录</strong>: diffusion_llm</li><li><strong>总结粒度</strong>: detailed</li><li><strong>作者</strong>: Yuerong Song, Xiaoran Liu, Ruixiao Li, Zhigeng Liu, Zengfeng Huang, Qipeng Guo, Ziwei He, Xipeng Qiu (复旦大学, 上海创新研究院, 上海AI Lab)</li><li><strong>代码仓库</strong>: https://github.com/OpenMOSS/Sparse-dLLM</li><li><strong>发表场所</strong>: AAAI 2026 投稿</li></ul>
+<p>## 2. 背景与动机（详细）</p>
+<p>### 2.1 任务定义与应用场景</p>
+<p>Diffusio...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>dLLM 面临严重的推理效率瓶颈：</p>
+<ul><li><strong>计算复杂度高</strong>：自回归 LLM 解码复杂度为 O(L)，而 dLLM 每个推理步骤都需要对整个序列（包括 prompt、已生成 token、掩码 token）重新计算 QKV 状态，复杂度高达 O(L²)。</li></ul>
+<ul><li><strong>现有 KV Cache 方案内存开销大</strong>：近期工作（dLLM-Cache、dKV-Cache、Fast-dLLM）将 AR LLM 的 KV Cache 机制适配到 dLLM，利用&quot;相邻解码步骤的 KV 状态几乎相同&quot;的观察，在多个步骤中复用同一份缓存 KV 状态。但这些方法都<strong>存储所有层的完整 KV 表示</strong>，导致显著的内存开销（比 vanilla dLLM 高 10%-30%），严重限制了长上下文场景的实用部署。</li></ul>
+<ul><li><strong>缺少对 dLLM 内部注意力稀疏性的利用</strong>：现有方法仅引入 KV Cache 机制，未对其内部属性进行分析或进一步稀疏化。</li></ul>
+<p>作者对 dLLM 的注意力模式进行了系统分析（Figure 2），发现两个关键特征：</p>
+<ul><li><strong>跨层稀疏性（Sparsity Across Layers）</strong>：dLLM 各层注意力呈现显著稀疏性，表现为局部注意力（邻近 token 关注强）和垂直注意力（所有 query 集中在少数 pivotal tokens 上）两种稳定模式。与自回归模型不同，dLLM 没有对初始 token 的异常关注。</li><li><strong>跨步一致性（Consistency Across Steps）</strong>：虽然 QKV 状态每步重新计算，但获得显著关注的具体 token 在解码步骤间保持显著稳定——低重要性 token 在早期步骤被识别后，整个解码过程中持续保持低相关性。</li></ul>
+<p>这两个观察直接催生了核心策略：<strong>在早期步骤选择性淘汰不重要的 KV cache 条目，仅保留关键子集</strong>。</p>
+<p>Sparse-dLLM 是首个训练无关（training-free）的 dLLM 动态 Cache 淘汰框架，核心包含两大策略：</p>
+<ul><li><strong>动态双向 Cache 淘汰（Dynamic Bidirectional Cache Eviction）</strong>：利用 token 重要性在步骤间的一致性，基于注意力引导的稀疏模式，动态淘汰前缀（prefix）和后缀（suffix）位置的低重要性 KV 条目。</li><li><strong>延迟 Cache 更新（Delayed Cache Updates）</strong>：缓存更新故意延迟一个步骤以提高稳定性。当进入新的解码 block 时，缓存完全清空并刷新。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>实验覆盖 4 个模型：LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-7B-Base、Dream-v0-7B-Instruct，在 7 个基准（MMLU、ARC-C、PIQA、GPQA、GSM8k、Math、HumanEval）上评估准确率、吞吐量和峰值内存。</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| LLaDA-8B-Instruct (vanilla) | 59.24 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 59.80 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 59.96 | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | 58.87 | 2.2× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>59.86</strong> | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| LLaDA-1.5 (vanilla) | 60.90 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 60.40 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 61.02 | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | 59.93 | 2.3× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>60.99</strong> | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| Dream-v0-7B-Base (vanilla) | 59.18 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 59.13 | 1.2× | 1.0× |</p>
+<p>| + dKV-Cache | 57.82 | 1.3× | 1.0× |</p>
+<p>| + Fast-dLLM | 58.30 | 2.5× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>59.21</strong> | <strong>3.6×</strong> | <strong>0.9×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| Dream-v0-7B-Instruct (vanilla) | 65.65 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 65.53 | 1.2× | 1.0× |</p>
+<p>| + dKV-Cache | 65.11 | 1.4× | 1.0× |</p>
+<p>| + Fast-dLLM | 64.08 | 2.6× | 1.2× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>64.36</strong> | <strong>3.6×</strong> | <strong>0.9×</strong> |</p>
+<p><strong>关键发现</strong>：</p>
+<ul><li>Sparse-dLLM 在所有模型和基准上均取得最高吞吐量，Dream 系列加速达 3.6×，LLaDA 系列达 3.4×</li><li>峰值内存与 vanilla dLLM 几乎相同（差异 &lt; 0.5GB），Dream 系列甚至低于 baseline</li><li>性能几乎无损：LLaDA-8B-Instruct 上平均准确率 59.86 vs baseline 59.24，略微提升...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>dLLM 面临严重的推理效率瓶颈：</p>
+<ul><li><strong>计算复杂度高</strong>：自回归 LLM 解码复杂度为 O(L)，而 dLLM 每个推理步骤都需要对整个序列（包括 prompt、已生成 token、掩码 token）重新计算 QKV 状态，复杂度高达 O(L²)。</li></ul>
+<ul><li><strong>现有 KV Cache 方案内存开销大</strong>：近期工作（dLLM-Cache、dKV-Cache、Fast-dLLM）将 AR LLM 的 KV Cache 机制适配到 dLLM，利用&quot;相邻解码步骤的 KV 状态几乎相同&quot;的观察，在多个步骤中复用同一份缓存 KV 状态。但这些方法都<strong>存储所有层的完整 KV 表示</strong>，导致显著的内存开销（比 vanilla dLLM 高 10%-30%），严重限制了长上下文场景的实用部署。</li></ul>
+<ul><li><strong>缺少对 dLLM 内部注意力稀疏性的利用</strong>：现有方法仅引入 KV Cache 机制，未对其内部属性进行分析或进一步稀疏化。</li></ul>
+<ul><li><strong>首个训练无关的动态 Cache 淘汰方案</strong>：不需要额外训练或微调，即插即用，可直接应用于现有 dLLM 推理框架。</li><li><strong>双向稀疏化的创新设计</strong>：充分利用 dLLM 的双向注意力特性，同时淘汰 prefix 和 suffix 中不重要的 KV 条目，区别于所有现有方法。</li><li><strong>极优的效率-内存-精度权衡</strong>：吞吐最高提升 10×（长上下文），内存几乎不增加，精度几乎不损失甚至略有提升。</li><li><strong>充分的理论分析和实验验证</strong>：从注意力稀疏性的系统观察到延迟缓存、pivotal token 语义分析，论证链路完整。覆盖 LLaDA 和 Dream 两大系列 4 个模型，7 个基准 + 长上下文测试。</li><li><strong>实现简洁</strong>：算法逻辑清晰，超参数少（仅 r 和 k），默认配置 (r=0.5, k=3) 在各模型/任务上泛化良好。</li></ul>
+<ul><li><strong>代码任务性能下降</strong>：HumanEval 上 Dream 系列有明显下降（Dream-v0-7B-Instruct 从 57.93 降至 50.00），说明代码生成等需要完整上下文的任务对稀疏化更敏感。</li><li><strong>仅测试到 8k 上下文</strong>：受限于 NVIDIA 4090（48GB），未在更长上下文（32k+）上验证。</li><li><strong>固定 block 长度和保留比率</strong>：所有序列长度采用统一的 r=0.5，未探索自适应保留比率。</li><li><strong>未与 speculative decoding 等方法对比</strong>：仅与 KV Cache 类方法比较，未涉及其他 dLLM 加速范式（如提前退出、推测解码等）。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" alt="Sparse-dLLM 框架图"></a><figcaption>Sparse-dLLM 框架图</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_llada_TPS_line.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_llada_TPS_line.png" alt="不同上下文长度的效率对比 - LLaDA"></a><figcaption>不同上下文长度的效率对比 - LLaDA</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_dream_TPS_line.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_dream_TPS_line.png" alt="不同上下文长度的效率对比 - Dream"></a><figcaption>不同上下文长度的效率对比 - Dream</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2604-15750">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2604.15750</span><span class="badge">detailed</span></div>
+    <h2>DepCap: Adaptive Block-Wise Parallel Decoding for Efficient Diffusion LM Inference</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2604.15750" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2604.15750.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/X-Xia0828/DepCap" target="_blank" rel="noopener">https://github.com/X-Xia0828/DepCap</a> | <a href="../diffusion_llm/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Xiang Xia, Wuyang Zhang, Jiazheng Liu, Cheng Yan, Yanyong Zhang</p><p><strong>机构</strong>：University of Science and Technology of China; Institute of Artificial Intelligence, Hefei Comprehensive National Science Center</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>DepCap 是一个 training-free 的 block-wise DLM 推理加速框架：它用上一个 decoded block 对未来位置预测分布的 KL 变化来动态决定下一个 block 的边界，并用 conflict score 过滤当前 block 内可安全并行提交的 token，从而在 LLaDA/Dream 等 DLM 和 GSM8K、Math-500、MBPP、HumanEval 等任务上获得更好的 speed-quality trade-off，最高报告 <code>5.63x</code> speedup，且可与现有 KV-cache 技术叠加。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>Diffusion Language Models (DLMs) 的潜力在于可以并行更新多个 token，并对整段序列进行 global refinement。为了把这种并行潜力转化为实际推理速度，近年的 DLM inference 通常采用 block-wise decoding：把待生成序列切成若干 block，按 block 顺序解码，每个 block 内再做扩散式并行更新。</p>
+<p>但 block-wise DLM inference 有两个关键决策：</p>
+<ul><li>下一个 block 应该扩多长，也就是 block boundary 如何决定。</li><li>当前 block 内哪些 masked positions 可以安全地并行解码。</li></ul>
+<p>已有方法在这两点上都偏保守或不够匹配 DLM 的动态特征：</p>
+<ul><li>Fast-dLLM 等方法多用固定 block size，忽略不同样本、不同生成阶段的依赖范围变化。</li><li>AdaBlock、Swordsman、GeoBlock 等动态 block 方法主要依赖当前 step 的语义符号、entropy 或 attention 几何信号，没有充分利用多步 denoising 中“上一个 decoded block 对未来位置的影响”。</li><li>confidence-based parallel decoding 只看单点 confidence，高 confidence 并不保证多个 token 可以同时提交，因为它们之间可能存在相互依赖或冲突。</li></ul>
+<p>DepCap 的核心观点是：block-wise DLM 的两个决策需要不同、更合适的信号。block boundary 应该用跨 step 的 last-block influence；block 内并行提交应该用 token-level conflict signal。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>DepCap 是一个 training-free、plug-and-play 的 DLM 推理框架，由两个模块组成：</p>
+<ul><li><code>DepGA-Block</code>: Dependency-Guided Adaptive Block Partitioning，用上一个 decoded block 对未来位置预测分布的影响，动态决定下一个 block 的边界。</li><li><code>CAP-Decoding</code>: Conflict-Aware Parallel Decoding，在当前 block 内筛选 conflict-free token subset，避免把互相依赖或冲突的 token 同时解码。</li></ul>
+<p>图中左侧是传统 block-wise DLM：固定 block size，并用 confidence-only parallel decoding。右侧是 DepCap：先用 last-block influence 和 predictive uncertainty 决定 block boundary，再用 conflict-aware 策略过滤当前 block 内可并行提交的 token。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>评测模型：</p>
+<ul><li><code>LLaDA-8B-Instruct</code></li><li><code>Dream-v0-base-7B</code></li><li><code>LLaDA-1.5</code></li></ul>
+<p>评测任务：</p>
+<ul><li><code>GSM8K</code>，5-shot</li><li><code>Math-500</code>，4-shot</li><li><code>MBPP</code>，3-shot</li><li><code>HumanEval</code>，0-shot</li></ul>
+<p>指标：</p>
+<ul><li><code>Acc</code>: 任务准确率</li><li><code>TPS</code>: tokens per second，越高越快</li><li><code>NFE</code>: number of function evaluations，越低表示 denoising 调用越少</li></ul>
+<p>默认超参：</p>
+<ul><li>generation length <code>L_gen = 256</code></li><li>DepGA-Block: <code>lambda=1.2</code>, <code>L_min=8</code>, <code>L_max=128</code></li><li>CAP-Decoding: <code>tau_low=0.8</code>, <code>tau_high=0.95</code>, <code>gamma=-16.0</code></li><li>confidence baseline threshold: <code>0.9</code></li><li>fixed block sizes: <code>{16, 32, 64}</code></li><li>硬件: single NVIDIA A100 40GB</li><li>benchmark framework: <code>lm-eval</code></li></ul>
+<p>论文的主结果表很大，覆盖三类 backbone 和四个任务。关键结论如下。</p>
+<p>论文把 DepCap 拆成两个模块来分析：</p>
+<ul><li><code>Confidence + DepGA-Block</code>: 只替换 block partitioning，不用 CAP-Decoding。</li><li><code>CAP-Decoding + fixed block</code>: 只替换 block 内 parallel decoding，不用 adaptive block。</li><li><code>DepGA-Block + CAP-Decoding</code>: full DepCap。</li></ul>
+<p>结论：</p>
+<ul><li>DepGA-Block 更偏向提升 accuracy/稳定性，因为它用 last-block influence 控制 block 边界，避免过早扩到高不确定区域。</li><li>CAP-Decoding 更偏向提升 speed，因为它比 confidence-only 更敢于并行提交 token，但通过 conflict filtering 控制风险。</li><li>两者结合时，通常得到最佳 overall speed-quality trade-off。</li></ul>
+<p>也就是说，DepCap 的两个模块不是重复贡献，而是分别解决外层 block boundary 和内层 token subset selection。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>问题拆解准确：block-wise DLM inference 的瓶颈被拆成 block boundary 和 within-block parallel subset 两个决策。</li><li>DepGA-Block 使用 cross-step signal，比只看当前 step 的 entropy/confidence 更贴合 diffusion iterative denoising 的动态。</li><li>CAP-Decoding 明确处理 token conflict，弥补 confidence-only 的不足。</li><li>Training-free，可插到多个 DLM backbone 上，也能与 prefix/dual cache 结合。</li><li>实验覆盖 reasoning 和 coding tasks，且包括 LLaDA、Dream、LLaDA-1.5 多个模型。</li><li>附录给出了信息论解释和较完整的超参数敏感性分析。</li></ul>
+<ul><li>理论部分只是信息论解释和近似，没有严格 bound。作者也在 discussion 中承认需要更强形式化保证。</li><li>DepGA-Block 的 implemented score 是理论 expected influence 的 sample/approximation，依赖 logits 前后变化是否能稳定反映真实 dependency。</li><li>在 Dream 系列上，full DepCap 不总是 accuracy 最优，部分任务存在 accuracy drop。</li><li>主表很大但缺少显著性分析、多 seed 方差和更细的失败案例。</li><li>方法主要针对 block-wise decoding；作者提到 sliding-window diffusion decoding 是未来方向，当前还没有覆盖。</li><li>CAP-Decoding 的 conflict score 是轻量 heuristic，是否能泛化到更长上下文、更复杂语义依赖仍需验证。</li></ul>
+<p>DepCap 和前面读过的 DIP 有很强的互补性：</p>
+<ul><li>DIP 关注动态 context/examples 什么时候插入；</li><li>DepCap 关注生成区域如何自适应分块，以及 block 内哪些 token 可以并行提交。</li></ul>
+<p>两者都在利用 DLM 不是严格 left-to-right 的特点，把“固定推理计划”改成“基于中间状态的动态调度”。后续可以考虑：</p>
+<ul><li>把 last-block influence 扩展到 dynamic context scheduling：判断新插入 example 是否真的改变未来 token distribution。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/depcap_framework_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/depcap_framework_v2.png" alt="DepCap framework"></a><figcaption>DepCap framework</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/cache_tradeoff_q2_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/cache_tradeoff_q2_v2.png" alt="Cache tradeoff"></a><figcaption>Cache tradeoff</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2604-08302">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2604.08302</span><span class="badge">detailed</span></div>
+    <h2>DMax: Aggressive Parallel Decoding for dLLMs</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2604.08302" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2604.08302.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/czg1225/DMax" target="_blank" rel="noopener">github.com/czg1225/DMax</a> | <a href="../diffusion_llm/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># DMax: Aggressive Parallel Decoding for dLLMs</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2604.08302</li><li>URL (abs/pdf): <a href="https://arxiv.org/abs/2604.08302" target="_blank" rel="noopener">abs</a> / <a href="https://arxiv.org/pdf/2604.08302.pdf" target="_blank" rel="noopener">pdf</a></li><li>主题目录: diffusion_llm</li><li>总结粒度: detailed</li><li>发表会议: NeurIPS 2025</li><li>作者团队: 新加坡国立大学 (National University of Singapore)</li><li>代码: <a href="https://github.com/czg1225/DMax" target="_blank" rel="noopener">github.com/czg1225/DMax</a></li></ul>
+<p>## 2. 背景与动机（详细）</p>
+<p>### 2.1 任务定义与应用场景</p>
+<p>Diffusion Language Models (dLLMs) 作为 AR-LLM 的替代方案，其核心吸引力在于<strong>并行解码</strong>能力——有望大幅提升推理效率。代表性工作包括 LLaDA、Dream 等，它们已在十亿参数规模上展现了实际潜力。...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>Uniform Diffusion Language Models (UDLM) 用均匀随机采样的 token 替代 <code>[MASK]</code> 符号，训练模型从任意噪声 token 中恢复干净 token。这天然支持 <strong>token-to-token 去噪</strong>（所有位置在每步都可重新评估），提供自纠错能力。</p>
+<p>但 UDLM 从完全随机序列开始解码，使得去噪困难、生成不稳定。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>当前 mask-based dLLMs（MDLM 范式）的解码是<strong>二值的、单向的 mask-to-token 过程</strong>：</p>
+<ul><li>位置要么是 <code>[MASK]</code>，要么是已提交的 token</li><li>一旦 masked 位置被解码为 token，该 token 就被固定，作为后续解码步骤的上下文</li><li><strong>无法修正</strong>：早期预测错误会作为不可更改的上下文传播到后续步骤，引发<strong>级联误差累积</strong></li><li>在激进并行解码下，误差不可避免，最终导致<strong>语义崩溃</strong></li></ul>
+<p>与 speculative decoding 不同，dLLMs 缺乏从错误预测中恢复的机制，这从根本上限制了高并行度下的性能。</p>
+<p>本文的动机是：<strong>保留 MDLM 稳定的全 mask 初始化 + 获得 UDLM 的自纠错能力</strong>。</p>
+<ul><li>用全 masked 序列作为 UDLM 解码的初始化（保持稳定性）</li><li>在后续步骤中，对所有已解码的 token 进行重新预测（获得自纠错能力）</li></ul>
+<p>关键洞察：传统 UDLM 训练使用均匀随机 token 构造噪声序列，但推理时遇到的噪声来自模型自身的预测分布，存在严重的 <strong>train-inference mismatch</strong>。</p>
+<p>*图：LLaDA-2.0-mini（原始二值 mask-to-token）vs DMax（自修正 mask-to-hybrid-embedding-to-token）*</p>
+<p>DMax 包含两个核心组件：</p>
+<ul><li><strong>On-Policy Uniform Training (OPUT)</strong>：训练策略，将预训练 MDLM 扩展为具有自纠错能力的 UDLM</li><li><strong>Soft Parallel Decoding (SPD)</strong>：推理策略，在 embedding 空间进行迭代自修正</li></ul>
+<p>*原始 LLaDA-2.0-mini vs DMax：二值 mask-to-token 解码 vs 自修正 mask-to-hybrid-embedding-to-token*</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>| Benchmark | Method | TPF ↑ | TPS ↑ | Acc. ↑ | AUP ↑ |</p>
+<p>|:-:|:-:|:-:|:-:|:-:|:-:|</p>
+<p>| <strong>GSM8K</strong> | LLaDA-2.0-mini | 2.04 | 512 | 92.6% | 340 |</p>
+<p>| | Hierarchical Decoding | 2.44 | 577 | 91.6% | 357 |</p>
+<p>| | dParallel SFT | 2.79 | 721 | 92.3% | 395 |</p>
+<p>| | Uniform Diffusion Training | 2.26 | 493 | 68.7% | 0 |</p>
+<p>| | <strong>DMax-Math</strong> | <strong>5.48</strong> | <strong>1258</strong> | 92.1% | <strong>557</strong> |</p>
+<p>| <strong>MATH500</strong> | LLaDA-2.0-mini | 2.58 | 626 | 75.8% | 257 |</p>
+<p>| | <strong>DMax-Math</strong> | <strong>5.94</strong> | <strong>1286</strong> | 75.4% | <strong>507</strong> |</p>
+<p>| <strong>Minerva-Algebra</strong> | LLaDA-2.0-mini | 3.01 | 755 | 91.4% | 363 |</p>
+<p>| | <strong>DMax-Math</strong> | <strong>7.03</strong> | <strong>1492</strong> | 91.5% | <strong>658</strong> |</p>
+<p>| <strong>HumanEval</strong> | LLaDA-2.0-mini | 4.38 | 1044 | 84.2% | 369 |</p>
+<p>| | <strong>DMax-Coder</strong> | <strong>7.36</strong> | <strong>1557</strong> | 83.5% | <strong>637</strong> |</p>
+<p>| <strong>MBPP</strong> | LLaDA-2.0-mini | 2.71 | 662 | 80.6% | 276 |</p>
+<p>| | <strong>DMax-Coder</strong> | <strong>5.86</strong> | <strong>1264</strong> | 79.2% | <strong>482</strong> |</p>
+<p><strong>关键发现</strong>：</p>
+<ul><li>平均 TPF 从 2.8 提升到 <strong>6.2</strong>（<strong>2.2× 加速</strong>），同时保持原始精度</li><li>AUP Score 全面大幅领先所有 baseline</li><li>Uniform Diffusion Training（传统 UDLM 训练）完全失败——68.7% accuracy on GSM8K，验证了 on-policy 训练的必要性</li><li>在 2×H200 GPU 上实际推理吞吐量超过 <strong>1338 TPS</strong> (batch size 1)</li></ul>
+<p><strong>训练 × 推理策略消融</strong>（GSM8K）：</p>
+<p>| On-Policy Rollout | Contiguous Prefix | Hybrid Emb | τ=0.95 Acc | τ=0.5 Acc | τ=0.0 Acc |</p>
+<p>|:-:|:-:|:-:|:-:|:-:|:-:|</p>
+<p>| × | × | × | 92.6% | 78.0% | 0.9% |</p>
+<p>| × | ✓ | ✓ | 0.0% | 0.0% | 0.0% |</p>
+<p>| ✓ | × | × | 92.6% | 90.1% | 68.2% |</p>
+<p>| ✓ | ✓ | × | 93.0% | 91.3% | 69.6% |</p>
+<p>| ✓ | × | ✓ | 92.8% | 91.4% | <strong>90.4%</strong> |</p>
+<p>| ✓ | ✓ | ✓ | 93.3% | 92.1% | <strong>90.4%</strong> |</p>
+<p><strong>关键发现</strong>：</p>
+<ul><li><strong>OPUT 是基础</strong>：无 OPUT 时直接使用 SPD 会导致<strong>生成完全崩溃</strong>（0% accuracy）——因为模型从未学过从自预测 token 中恢复...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>当前 mask-based dLLMs（MDLM 范式）的解码是<strong>二值的、单向的 mask-to-token 过程</strong>：</p>
+<ul><li>位置要么是 <code>[MASK]</code>，要么是已提交的 token</li><li>一旦 masked 位置被解码为 token，该 token 就被固定，作为后续解码步骤的上下文</li><li><strong>无法修正</strong>：早期预测错误会作为不可更改的上下文传播到后续步骤，引发<strong>级联误差累积</strong></li><li>在激进并行解码下，误差不可避免，最终导致<strong>语义崩溃</strong></li></ul>
+<p>与 speculative decoding 不同，dLLMs 缺乏从错误预测中恢复的机制，这从根本上限制了高并行度下的性能。</p>
+<ul><li><strong>首次从根本上解决了 dLLM 并行解码的误差累积问题</strong>：不是设计更好的解码调度，而是赋予模型自纠错能力</li><li><strong>On-Policy 训练设计精巧</strong>：弥合了 train-inference gap，使得从模型自身错误中学习成为可能，这是传统 UDLM 训练做不到的</li><li><strong>Soft Embedding 插值简单有效</strong>：将不确定性显式编码到中间状态，使模型能区分可靠和不可靠预测</li><li><strong>仅用自蒸馏数据</strong>：所有训练数据来自模型自身生成，不需要外部高质量回复，降低了数据依赖</li><li><strong>高并行 + 保持精度</strong>：TPF 从 ~2.8 提升到 ~6.2（2.2×），同时精度几乎不降</li><li><strong>在低并行度下也提升精度</strong>（+0.8%~3.0%），说明自修正能力有更广泛的价值</li></ul>
+<ul><li><strong>OPUT 是 SPD 的硬性前提</strong>：SPD 不能独立使用，必须配合 OPUT 训练的模型，增加了训练成本</li><li><strong>训练需要两次前向传播</strong>：虽然分到不同 iteration 避免了显存增长，但训练时间翻倍</li><li><strong>Block size 固定为 32</strong>：未探索不同 block size 的影响</li><li><strong>仅在 LLaDA-2.0-mini 上验证</strong>：未在更大规模模型（如 LLaDA-8B）或其他 dLLM 架构上测试泛化性</li><li><strong>自蒸馏的上限</strong>：训练数据来自模型自身生成，可能受到基础模型能力的天花板限制</li><li><strong>连续前缀设计的保守性</strong>：仅提升最长连续前缀可能过于保守，某些非连续的高置信位置也可以安全提升</li></ul>
+<ul><li><strong>On-Policy 训练弥合 train-inference gap 是通用原则</strong>：不仅适用于 dLLM，任何需要模型在推理时处理自身输出的场景（如 agent 自纠错、迭代精炼）都应考虑 on-policy 数据构造</li><li><strong>Soft Embedding 编码不确定性</strong>：将预测置信度显式编码到中间表示中，使后续步骤能利用不确定性先验——这一思路可推广到 VLM、多模态生成等需要传递置信信息的场景...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/intro.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/intro.png" alt="Motivation"></a><figcaption>Motivation</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/train2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/train2.png" alt="Training"></a><figcaption>Training</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/decode.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_dmax_aggressive_parallel_decoding_for_dllms/decode.png" alt="Decoding"></a><figcaption>Decoding</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2602-02544">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2602.02544</span><span class="badge">detailed</span></div>
+    <h2>SPA-Cache: Singular Proxies for Adaptive Caching in Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2602.02544" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2602.02544.pdf" target="_blank" rel="noopener">pdf</a> | <a href="&lt;https://github.com/wenhao728/spa-cache&gt;" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models_v2.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Wenhao Sun, Rong-Cheng Tu, Yifu Ding, Zhao Jin, Jingyi Liao, Yongcheng Jing, Dacheng Tao</p><p><strong>机构</strong>：College of Computing and Data Science, Nanyang Technological University, Singapore</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># SPA-Cache: Singular Proxies for Adaptive Caching in Diffusion Language Models</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2602.02544</li><li>arXiv: &lt;https://arxiv.org/abs/2602.02544&gt;</li><li>PDF: &lt;https://arxiv.org/pdf/2602.02544.pdf&gt;</li><li>DOI: &lt;https://doi.org/10.48550/arXiv.2602.02544&gt;</li><li>提交时间: 2026-01-30</li><li>作者: Wenhao Sun, Rong-Cheng Tu, Yifu Ding, Zhao Jin, Jingyi Liao, Yongcheng Jing, Dacheng Tao</li><li>机构: College of Computing and Data Science, Nanyang Technological University, Singapore</li><li>代码: &lt;https://github.com/wenhao728/spa-cache&gt;</li><li>领域: Diffusi...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>这篇论文关注 Diffusion Language Models (DLMs) 的推理瓶颈。DLM 与 autoregressive LM 的关键差异是: DLM 通常用 iterative denoising / iterative unmasking，在每个 decoding step 中用双向上下文更新序列状态，因此生成顺序不是固定的 left-to-right。这个性质带来了并行生成、任意顺序生成、多模态和 reasoning 方面的潜力，但也直接破坏了标准 AR 模型中 KV cache 的使用条件。</p>
+<p>在 AR 模型里，第 t 步生成只依赖过去 token，历史 token 的 K/V 可以稳定复用；但 DLM 的任意位置 token 都可能在后续 step 被更新，全局 bidirectional attention 会让之前位置的 hidden states 随着上下文变化继续漂移。因此如果每一步都完整重算长度为 N 的序列，复杂度会接近 <code>O(T x N^2)</code>，推理延迟很高。</p>
+<p>已有 DLM cache 方案试图只更新部分 token，但存在两个主要问题:</p>
+<ul><li>update identification 开销大。比如 dLLM-Cache 用 Value states 的漂移来判断哪些 token 需要更新，但需要对整段序列做高维 Value projection 和 cosine similarity，序列变长后这个识别本身会成为瓶颈。</li><li>update budget 分配僵硬。已有方法常用固定更新比例，例如每一层都更新 25% token。但论文发现不同 layer 的 hidden state drift 频率差异很大: 早层较稳定，中层漂移更强，后层又趋于稳定。统一预算会在稳定层浪费计算，降低预算又会伤害中间不稳定层的质量。</li></ul>
+<p>SPA-Cache 的目标就是把这两个问题一起处理: 用低维 singular proxy 降低 update identification 成本，用 layer-wise adaptive budget allocation 把更新预算集中到更需要更新的层。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文主表很大，下面保留每个任务中 SPA-Cache 与 baseline 的关键数值。总体结论是: SPA-Cache 在大多数任务上保持接近原始 accuracy，同时显著提高 TPS；LLaDA-8B 上最高 8.0x，Dream-7B 上 MMLU-pro 达 6.2x。</p>
+<p>| Task | Model | Baseline TPS / Acc. | SPA-Cache TPS / Acc. | Speedup |</p>
+<p>|---|---|---:|---:|---:|</p>
+<p>| GSM8K | LLaDA-8B | 29.67 / 78.62 | 190.73 / 78.24 | 6.4x |</p>
+<p>| GSM8K | Dream-7B | 17.86 / 75.21 | 45.97 / 77.56 | 2.6x |</p>
+<p>| GPQA | LLaDA-8B | 20.55 / 29.91 | 39.19 / 30.58 | 1.9x |</p>
+<p>| GPQA | Dream-7B | 12.89 / 34.15 | 45.97 / 34.60 | 3.6x |</p>
+<p>| MATH500 | LLaDA-8B | 33.35 / 33.18 | 172.19 / 33.44 | 5.2x |</p>
+<p>| MATH500 | Dream-7B | 23.08 / 36.16 | 104.23 / 34.84 | 4.5x |</p>
+<p>| BBH | LLaDA-8B | 24.85 / 53.49 | 108.31 / 53.72 | 4.4x |</p>
+<p>| BBH | Dream-7B | 49.30 / 58.42 | 153.61 / 58.52 | 3.1x |</p>
+<p>| MMLU-pro | LLaDA-8B | 20.68 / 37.08 | 124.06 / 36.30 | 6.0x |</p>
+<p>| MMLU-pro | Dream-7B | 10.06 / 45.01 | 62.13 / 45.16 | 6.2x |</p>
+<p>| MBPP | LLaDA-8B | 5.75 / 39.20 | 46.12 / 39.00 | 8.0x |</p>
+<p>| MBPP | Dream-7B | 36.51 / 57.40 | 114.85 / 57.60 | 3.1x |</p>
+<p>| HumanEval | LLaDA-8B | 37.48 / 42.07 | 132.91 / 42.07 | 3.5x |</p>
+<p>| HumanEval | Dream-7B | 28.00 / 58.54 | 42.49 / 58.54 | 1.5x |</p>
+<p>几个细节值得注意:</p>
+<ul><li>TTFT 基本不变，因为 SPA-Cache 优化的是 decoding phase，不主要优化 prefill。</li><li>在 LLaDA-8B 的 MBPP 上，baseline 只有 5.75 TPS，SPA-Cache 到 46.12 TPS，速度收益最大。</li><li>Dream-7B 上也有明显收益，但不同任务波动更大。HumanEval 只有 1.5x，说明模型结构、任务长度、GQA Value 维度等都会影响 cache 方案收益。</li><li>个别任务 accuracy 有小幅波动，例如 Dream-7B 的 MATH500 从 36.16 到 34.84，但大多数结果接近 baseline。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>Training-free: 不需要重新训练 DLM，只在推理路径中加入缓存和更新选择。</li><li>理论动机比启发式 window update 更强: 通过 Value state stability、FFN Lipschitz bound、SVD similarity preservation 来支撑 update identifier。</li><li>同时优化两个瓶颈: singular proxy 降低 token-wise identification 开销，adaptive budget 减少稳定层冗余计算。</li><li>与 parallel decoding 正交，可以叠加到 Fast-dLLM 类方法上，最高报告约 28x speedup。</li><li>TTFT 基本不变但 decoding TPS 大幅提升，适合长生成阶段。</li></ul>
+<ul><li>依赖 hidden state transitions 的 temporal smoothness。高温采样如 <code>tau in [1.0, 1.5]</code> 会增加随机性，可能降低 cache 复用准确性。</li><li>主要优化 decoding phase，对 prefill / TTFT 帮助有限。</li><li>分布式或 tensor-parallel 部署更复杂。partial KV/output cache、scatter/gather、跨设备同步都需要额外工程设计。</li><li>当前评估主要基于开放 DLM 的上下文长度限制，尚未验证超长上下文例如 <code>&gt;32k</code> 的效果。</li><li>adaptive budget 的形状和超参数来自经验拟合。虽然论文称跨 benchmark 固定有效，但换模型、换架构时仍可能需要重新 profile layer-wise drift。</li></ul>
+<ul><li>可以把 SPA-Cache 视为 DLM 推理系统中的 layer-local sparse execution primitive，而不是单独的缓存 trick。后续如果实现 diffusion_llm serving，可以先抽象出 <code>select_update_indices -&gt; sparse block forward -&gt; scatter cache</code> 这条接口。</li><li>对任何 DLM cache 方法，都应单独 profile update identification overhead。只看 skipped FLOPs 很容易高估收益，尤其当 identifier 本身需要高维 projection/similarity 时。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/method_v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/method_v4.png" alt="SPA-Cache layer overview"></a><figcaption>SPA-Cache layer overview</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/v_vs_attn_LLaDA-8B-Instruct.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/v_vs_attn_LLaDA-8B-Instruct.png" alt="Value vs attention anisotropy"></a><figcaption>Value vs attention anisotropy</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/sim_heatmap.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_spa_cache_singular_proxies_for_adaptive_caching_in_diffusion_language_models/sim_heatmap.png" alt="Adjacent-step similarity heatmap"></a><figcaption>Adjacent-step similarity heatmap</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2509-24014">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2509.24014</span><span class="badge">detailed</span></div>
+    <h2>SparseD: Sparse Attention for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2509.24014" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2509.24014.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Zeqing Wang, Gongfan Fang, Xinyin Ma, Xingyi Yang, Xinchao Wang</p><p><strong>机构</strong>：National University of Singapore, The Hong Kong Polytechnic University</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>SparseD 是一篇很干净的 DLM sparse attention 论文：它不做 KV cache，而是基于 <strong>head-specific、跨 step 稳定、early-step 敏感</strong> 这三条观察，提出了 <strong>先 full、后 sparse、一次建图、多步复用</strong> 的 attention 稀疏化方案。它最大的价值在于证明了 <strong>DLM 的 attention 确实可以被结构化稀疏化，而且比 AR 的固定稀疏模板更需要“按 head 定制 + 按 step 分阶段使用”</strong>；同时它也恰好反衬出你的研究空间：<strong>如果想更贴近 FlashAttention 原生路径，就需要进一步摆脱对 attention score 本身的依赖。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>这篇工作关注的是 <strong>DLM inference 中 attention 本身的二次复杂度</strong>，而不是 KV cache 的复用问题。</p>
+<p>作者的基本判断是：</p>
+<ul><li>DLM 虽然是并行去噪，但每一步都要对整段上下文做双向 attention。</li><li>随着上下文长度增长，attention 的代价随序列长度二次增长，成为长上下文推理的核心瓶颈。</li><li>AR-LLM 中已经有很多 sparse attention 方法，但这些方法不能直接照搬到 DLM。</li></ul>
+<p>作者认为 AR sparse attention 不适合 DLM，主要因为 DLM 有三个特殊现象：</p>
+<ul><li><strong>Head-specific attention patterns</strong></li><li>不同 attention head 的稀疏结构差异很大。</li><li>有些 head 像 sliding window，有些更像 column / sink / 混合结构。</li><li>所以 AR 里那种固定模板式稀疏模式很难覆盖 DLM。</li></ul>
+<ul><li><strong>Attention similarity across denoising steps</strong></li><li>同一个 head 在不同 denoising step 的 attention pattern 很相似。</li><li>这说明没必要每一步都重新算 sparse pattern。</li></ul>
+<ul><li><strong>Early denoising steps are critical</strong></li><li>在 DLM 里，早期 denoising step 对最终生成质量影响特别大。</li><li>如果过早把 full attention 替换成 sparse attention，会明显掉质量。</li></ul>
+<p>这三个观察直接决定了 SparseD 的设计：</p>
+<ul><li>稀疏模式要 <strong>按 head 定制</strong>。</li><li>稀疏模式要 <strong>一次计算，多步复用</strong>。</li><li>前期要 <strong>先 full attention，再切 sparse attention</strong>。</li></ul>
+<p>这篇论文对你前面关心的“attention-free KV 采样”有几个很直接的启发。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>这篇工作关注的是 <strong>DLM inference 中 attention 本身的二次复杂度</strong>，而不是 KV cache 的复用问题。</p>
+<p>作者的基本判断是：</p>
+<ul><li>DLM 虽然是并行去噪，但每一步都要对整段上下文做双向 attention。</li><li>随着上下文长度增长，attention 的代价随序列长度二次增长，成为长上下文推理的核心瓶颈。</li><li>AR-LLM 中已经有很多 sparse attention 方法，但这些方法不能直接照搬到 DLM。</li></ul>
+<p>作者认为 AR sparse attention 不适合 DLM，主要因为 DLM 有三个特殊现象：</p>
+<ul><li><strong>Head-specific attention patterns</strong></li><li>不同 attention head 的稀疏结构差异很大。</li><li>有些 head 像 sliding window，有些更像 column / sink / 混合结构。</li><li>所以 AR 里那种固定模板式稀疏模式很难覆盖 DLM。</li></ul>
+<ul><li><strong>Attention similarity across denoising steps</strong></li><li>同一个 head 在不同 denoising step 的 attention pattern 很相似。</li><li>这说明没必要每一步都重新算 sparse pattern。</li></ul>
+<ul><li><strong>Early denoising steps are critical</strong></li><li>在 DLM 里，早期 denoising step 对最终生成质量影响特别大。</li><li>如果过早把 full attention 替换成 sparse attention，会明显掉质量。</li></ul>
+<p>这三个观察直接决定了 SparseD 的设计：</p>
+<ul><li>稀疏模式要 <strong>按 head 定制</strong>。</li><li>稀疏模式要 <strong>一次计算，多步复用</strong>。</li><li>前期要 <strong>先 full attention，再切 sparse attention</strong>。</li></ul>
+<p>SparseD 不是做 KV eviction，也不是做 cache reuse，而是直接在 attention 计算图上做稀疏化。</p>
+<p>它的总体流程是：</p>
+<ul><li>在前 <code>skip%</code> 的 denoising steps 使用 full attention。</li><li>在第 <code>T * skip%</code> 步上，计算每个 head 的 sparse attention pattern。</li><li>后续所有 denoising steps 复用这个 sparse pattern。</li></ul>
+<p>对应论文里的三块组件是：</p>
+<ul><li><code>Skipping Sparse</code></li><li><code>Sparse Reusing</code></li><li><code>Isolated Selection</code></li></ul>
+<p>从这篇论文的结果看，原因可能有两点：</p>
+<ul><li>SparseD 仍然在每个 step 计算当前 attention，只是减少连接数，没有直接跳过某些状态更新。</li><li>cache-based 方法在 DLM 里引入了“状态陈旧”问题，长上下文时误差会更明显累计。</li></ul>
+<p>所以作者把 SparseD 定位成：</p>
+<p><strong>相对 lossless，但速度增益没有 cache-based 路线那么激进。</strong></p>
+<p>SparseD 清楚地表明：</p>
+<ul><li>early denoising steps 对 DLM 很敏感</li><li>aggressive sparsification 不应该太早介入</li></ul>
+<p>所以如果你以后做：</p>
+<ul><li>entropy-based KV sampling</li><li>influence-based history retrieval</li><li>uncertainty-guided cache eviction</li></ul>
+<p>也很可能要加一条策略：</p>
+<p><strong>前若干 denoising steps 不做激进采样，等模型进入较稳定阶段后再启用。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文主表如下：</p>
+<p>| 模型/方法 | MMLU | GSM8K | HumanEval | RULER-4k | RULER-8k | Avg. |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|</p>
+<p>| Dream-7B-Instruct | 66.42 | 80.74 | 53.05 | 90.13 | 71.79 | 72.42 |</p>
+<p>| + dKV-Cache | 66.32 | 80.67 | 54.88 | 81.41 | 55.08 | 67.67 |</p>
+<p>| + Fast-dLLM | 65.51 | 78.17 | 48.78 | 81.68 | 55.64 | 65.95 |</p>
+<p>| + Slide Window | 63.45 | 70.20 | 34.76 | 41.46 | 34.36 | 48.84 |</p>
+<p>| + StreamingLLM | 64.19 | 72.86 | 33.54 | 43.94 | 36.36 | 50.17 |</p>
+<p>| + SparseD | 66.34 | 80.29 | 53.05 | 89.76 | 72.47 | 72.38 |</p>
+<p>| LLaDA-1.5 | 64.24 | 80.38 | 40.85 | 90.45 | 60.73 | 67.33 |</p>
+<p>| + dKV-Cache | 63.45 | 79.98 | 40.85 | 88.18 | 57.11 | 65.91 |</p>
+<p>| + Fast-dLLM | 63.17 | 82.64 | 40.24 | 86.64 | 47.76 | 64.09 |</p>
+<p>| + Slide Window | 63.72 | 57.77 | 27.44 | 39.20 | 36.32 | 44.89 |</p>
+<p>| + StreamingLLM | 63.52 | 52.01 | 37.20 | 40.39 | 36.62 | 45.94 |</p>
+<p>| + SparseD | 64.14 | 79.80 | 40.85 | 90.89 | 62.44 | 67.62 |</p>
+<p>作者的核心结论基本成立：</p>
+<ul><li>SparseD 相比原始模型几乎无损。</li><li>比 AR 稀疏方法稳很多。</li><li>比 dKV-Cache / Fast-dLLM 在长上下文下更稳。</li></ul>
+<p>尤其在 <code>RULER-8k</code> 上：</p>
+<ul><li>Dream-7B-Instruct:</li><li>原始模型 <code>71.79</code></li><li>SparseD <code>72.47</code></li><li>dKV-Cache <code>55.08</code></li><li>Fast-dLLM <code>55.64</code></li></ul>
+<ul><li>LLaDA-1.5:</li><li>原始模型 <code>60.73</code></li><li>SparseD <code>62.44</code></li><li>dKV-Cache <code>57.11</code></li><li>Fast-dLLM <code>47.76</code></li></ul>
+<p>这说明：</p>
+<p><strong>SparseD 在长上下文 DLM 上的“lossless”程度，明显强于当时的 cache-based 路线。</strong></p>
+<p>论文在 <code>T=128</code> 和更大步数下都测了延迟。</p>
+<p>主要结果：</p>
+<ul><li>在 <code>4k</code>、<code>8k</code> 长度下，SparseD 与 FlashAttention 接近。</li><li>在 <code>16k+</code> 以上，SparseD 开始明显更快。</li><li>在 <code>64k</code> 上：</li><li>Dream-7B-Instruct: <code>1.23x</code> speedup over FlashAttention</li><li>LLaDA-1.5: <code>1.25x</code> speedup over FlashAttention</li><li>在 <code>64k</code> + <code>1024 steps</code> 上：</li><li>Dream-7B-Instruct: <code>1.50x</code>...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>这篇论文对你前面关心的“attention-free KV 采样”有几个很直接的启发。</p>
+<ul><li>问题定义非常清晰</li><li>不去和 cache-based 方法抢同一个点，而是直指 DLM 中 attention 本身的代价。</li></ul>
+<ul><li>三个 observation 很扎实</li><li>head-specific</li><li>cross-step similarity</li><li>early-step sensitivity</li></ul>
+<ul><li>方法设计和 observation 对得很紧</li><li>skipping sparse 对应 early-step sensitivity</li><li>sparse reusing 对应 cross-step similarity</li><li>isolated selection 对应 prefill/gen 不平衡</li></ul>
+<ul><li>实验结论有说服力</li><li>相对 AR sparse methods，精度明显更稳</li><li>相对 cache-based DLM acceleration，在长上下文下更稳</li></ul>
+<ul><li>工程上有现实感</li><li>明确使用 FlashAttention + FlexAttention 混合后端</li><li>使用 block-wise 选择而不是过度理想化的点状稀疏</li></ul>
+<p>这篇论文自己的 limitation 写得比较克制，但结合方法本身看，局限比较明确：</p>
+<ul><li><strong>仍依赖 attention score</strong></li><li>这意味着它没有摆脱 attention-map extraction 这件事。</li><li>如果目标是尽量保持全程 FlashAttention-like 的高效路径，这仍然不够理想。</li></ul>
+<ul><li><strong>需要更灵活的 sparse backend</strong></li><li>它后半段切到 FlexAttention。</li><li>这让它更实用，但也说明它不是“零改动兼容现有 FlashAttention”。</li></ul>
+<ul><li><strong>加速幅度是中等，不是极端激进</strong></li><li>最好结果约 <code>1.5x</code>。</li><li>对某些场景这已经很好，但如果用户期待 <code>3x-10x</code>，这篇路线不是那种风格。</li></ul>
+<ul><li><strong>依赖 attention pattern 跨 step 稳定</strong></li><li>虽然平均上成立，但 appendix 也承认存在少数 corner case。</li><li>如果未来遇到更强 reasoning 型 dLLM，pattern 稳定性可能会下降。</li></ul>
+<ul><li><strong>没有和 attention-free 稀疏标准比较</strong></li><li>没有把 logits-based / entropy-based / influence-based 方案纳入比较。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/SparseD.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/SparseD.png" alt="SparseD 框架"></a><figcaption>SparseD 框架</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/attention_analysis.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/attention_analysis.png" alt="LLaDA-1.5 attention 分析"></a><figcaption>LLaDA-1.5 attention 分析</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/32_steps.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/32_steps.png" alt="32 steps 下 early-step 敏感性"></a><figcaption>32 steps 下 early-step 敏感性</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2508-02558">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2508.02558</span><span class="badge">detailed</span></div>
+    <h2>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2508.02558" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2508.02558.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/OpenMOSS/Sparse-dLLM" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2508.02558</li><li>URL (abs/pdf): <a href="https://arxiv.org/abs/2508.02558" target="_blank" rel="noopener">abs</a> / <a href="https://arxiv.org/pdf/2508.02558.pdf" target="_blank" rel="noopener">pdf</a></li><li>主题目录: diffusion_llm</li><li>总结粒度: detailed</li><li>发表会议: AAAI 2026</li><li>作者团队: Yuerong Song, Xiaoran Liu, Ruixiao Li, Zhigeng Liu, Zengfeng Huang, Qipeng Guo, Ziwei He, Xipeng Qiu（Fudan University, Shanghai Innovation Institute, Shanghai AI Lab）</li><li>方法名: <strong>Sparse-dLLM</strong></li><li>代码: https://github.com/OpenMOSS/Sparse-dLLM</li></ul>
+<p>---</p>
+<p>## 2...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>现有工作（dLLM-Cache、dKV-Cache、FreeCache、Fast-dLLM）利用相邻解码步 KV 状态几乎相同的观察，将 ARM 的 KV cache 机制适配到 dLLMs：</p>
+<ul><li><strong>dLLM-Cache</strong>：为 prompt cache 和 response cache 设置不同刷新间隔，用特征相似度部分更新 response</li><li><strong>dKV-Cache</strong>：实现一步延迟缓存（decoded tokens 在下一步才被缓存）+ 刷新机制</li><li><strong>FreeCache</strong>：仅缓存 prompt tokens 的 KV 状态（基于 mask tokens 对早期 unmasked tokens 贡献迅速衰减的观察）</li><li><strong>Fast-dLLM</strong>：缓存当前解码 block 之外的所有 KV 状态</li></ul>
+<p><strong>核心不足</strong>：这些方法<strong>仅仅引入了 KV cache，但没有进一步分析 cache 内部特性或对其进行稀疏化</strong>。它们存储完整的 KV 表示，导致巨大的内存开销，限制了长上下文场景的实际部署。</p>
+<p>Sparse-dLLM 是<strong>第一个训练无关 (training-free)</strong> 的框架，将动态 cache 驱逐与稀疏注意力集成到 dLLMs 中。核心包含两个策略：</p>
+<ul><li><strong>动态双向 cache 驱逐</strong>：利用 token 显著性的时间一致性，用注意力感知的稀疏模式动态驱逐前缀和后缀 token 的低重要性 KV 条目</li><li><strong>延迟 cache 更新</strong>：cache 更新故意延迟一步以提高稳定性；切换到新的解码 block 时完全刷新 cache</li></ul>
+<p>与 ARM 只能稀疏化前缀 token 不同，Sparse-dLLM 同时针对<strong>前缀</strong>（当前 block 之前的 token）和<strong>后缀</strong>（当前 block 之后的 token）进行驱逐。</p>
+<p>设 $b$ 为 block 长度，$p$ 为 prompt 长度，$o \in [p, L)$ 为当前 block 首 token 的位置偏移。当前 block 之外的候选 KV 状态：</p>
+<p>$$\mathbf{K}_f = \text{Concat}[\mathbf{K}_{:o}, \mathbf{K}_{o+b:}], \quad \mathbf{V}_f = \text{Concat}[\mathbf{V}_{:o}, \mathbf{V}_{o+b:}]$$</p>
+<p>通过当前 block 的 query 状态 $\mathbf{Q}_b$ 计算注意力分数：</p>
+<p>$$\mathbf{A} = \frac{\mathbf{Q}_b \mathbf{K}_f^T}{\sqrt{d_k}}$$</p>
+<p>借鉴 SnapKV，引入 <strong>max pooling</strong> 聚合局部信息（防止驱逐后数据不完整导致性能退化）。设 $r$ 为保留比，$s$ 为 max pooling 核大小，通过 top-$k$ 选择 pivotal token 索引（$k = (L-b) \times r$）：</p>
+<p>$$\text{Indices} = \text{top-}k(\text{MaxPool}(\mathbf{A}))$$</p>
+<p>最终 cache 只保留选中的 KV：</p>
+<p>$$\mathbf{K}_c = \mathbf{K}_f[\text{Indices}], \quad \mathbf{V}_c = \mathbf{V}_f[\text{Indices}]$$</p>
+<p><strong>算法伪代码</strong>（Algorithm 1）：</p>
+<ul><li>提取当前 block 之外的 KV 状态（前缀+后缀拼接）</li><li>计算 block query 的平均值 $\bar{q} = \text{Mean}(\mathbf{Q}_b)$</li><li>计算注意力分数 $\mathbf{A} = \text{MatMul}(\bar{q}, \mathbf{K}_f^T)$</li><li>MaxPool1D 聚合 → TopKIndices → 选出 pivotal token 的 KV</li><li>更新 cache</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <ul><li><strong>模型</strong>：LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-7B-Base、Dream-v0-7B-Instruct</li><li><strong>默认超参</strong>：block length=32，保留比 $r=0.5$，max pooling 核大小 $s=3$，随机种子 2025</li><li><strong>基线</strong>：vanilla dLLM、dLLM-Cache、dKV-Cache、Fast-dLLM</li><li><strong>评估指标</strong>：Accuracy（3 次独立实验均值）、Throughput (TPS)、Peak Memory (GB)</li><li><strong>基准测试</strong>：MMLU (5-shot)、ARC-C (0-shot)、PIQA (0-shot)、GPQA (5-shot)、GSM8K (4-shot)、Math (4-shot)、HumanEval (0-shot)</li><li><strong>硬件</strong>：NVIDIA 4090 (48GB)</li><li><strong>评估工具</strong>：OpenCompass</li></ul>
+<p>| 方法 | MMLU | ARC-C | PIQA | GPQA | GSM8K | Math | HE | Avg. | Avg. TPS | Avg. Mem |</p>
+<p>|------|:----:|:-----:|:----:|:----:|:-----:|:----:|:--:|:----:|:--------:|:--------:|</p>
+<p>| LLaDA-8B-Instruct | 60.60 | <strong>88.47</strong> | 83.62 | 32.83 | 78.39 | 36.02 | 34.76 | 59.24 | 1.0× | <strong>1.0×</strong> |</p>
+<p>| + dLLM-Cache | 61.40 | 87.46 | 83.62 | 32.83 | 78.92 | <strong>36.56</strong> | <strong>37.80</strong> | 59.80 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 60.87 | 87.80 | 83.73 | <strong>35.35</strong> | <strong>79.30</strong> | 35.46 | 37.20 | <strong>59.96</strong> | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | <strong>61.43</strong> | 87.80 | 83.79 | 32.83 | 75.89 | 33.78 | 36.59 | 58.87 | 2.2× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM</strong> | 61.01 | <strong>88.47</strong> | <strong>84.44</strong> | <strong>35.35</strong> | 77.56 | 34.42 | <strong>37.80</strong> | 59.86 | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p><strong>关键结论</strong>：</p>
+<ul><li>Sparse-dLLM 吞吐量提升 <strong>3.4×</strong>（平均），远超所有基线（Fast-dLLM 2.2×、dLLM-Cache 2.3×）</li><li>内存与 vanilla dLLM 几乎相同（1.0×），而其他 cache 方法增加 10-20% 内存</li><li>性能保持可比，在 ARC-C、PIQA 等任务上达到最优</li></ul>
+<p>| 方法 | MMLU | ARC-C | PIQA | GPQA | GSM8K | Math | HE | Avg. | Avg. TPS | Avg. Mem |</p>
+<p>|------|:----:|:-----:|:----:|:----:|:-----:|:----:|:--:|:----:|:--------:|:--------:|</p>
+<p>| Dream-v0-7B-Base | <strong>72.96</strong> | 82.71 | 81.18 | <strong>32.83</strong> | 70.74 | 20.78 | <strong>53.05</strong> | 59.18 | 1.0× | 1.0× |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>现有工作（dLLM-Cache、dKV-Cache、FreeCache、Fast-dLLM）利用相邻解码步 KV 状态几乎相同的观察，将 ARM 的 KV cache 机制适配到 dLLMs：</p>
+<ul><li><strong>dLLM-Cache</strong>：为 prompt cache 和 response cache 设置不同刷新间隔，用特征相似度部分更新 response</li><li><strong>dKV-Cache</strong>：实现一步延迟缓存（decoded tokens 在下一步才被缓存）+ 刷新机制</li><li><strong>FreeCache</strong>：仅缓存 prompt tokens 的 KV 状态（基于 mask tokens 对早期 unmasked tokens 贡献迅速衰减的观察）</li><li><strong>Fast-dLLM</strong>：缓存当前解码 block 之外的所有 KV 状态</li></ul>
+<p><strong>核心不足</strong>：这些方法<strong>仅仅引入了 KV cache，但没有进一步分析 cache 内部特性或对其进行稀疏化</strong>。它们存储完整的 KV 表示，导致巨大的内存开销，限制了长上下文场景的实际部署。</p>
+<ul><li><strong>训练无关、即插即用</strong>：不需修改模型或重新训练，直接加速任何预训练 dLLM</li><li><strong>吞吐量大幅提升</strong>：平均 3.4-3.6× 加速，长上下文最高 10×，远超所有现有 cache 方法</li><li><strong>内存效率最优</strong>：与 vanilla dLLM 几乎相同（甚至更低），而其他 cache 方法增加 10-30% 内存</li><li><strong>长上下文可扩展</strong>：内存增长曲线几乎平坦，其他方法会 OOM</li><li><strong>性能保持甚至提升</strong>：在某些任务（如 Dream 上）平均精度超越基线</li><li><strong>双向稀疏化</strong>：同时驱逐前缀和后缀的低重要性 KV，充分利用 dLLM 双向注意力的特性</li></ul>
+<ul><li><strong>代码任务表现下降</strong>：HumanEval 上 Sparse-dLLM 弱于基线和完整 cache 方法——代码任务可能需要完整上下文</li><li><strong>Pivotal tokens 多为无语义 token</strong>：当前策略保留的 pivotal tokens 主要是换行符和空格，未来可探索更细粒度的语义感知驱逐</li><li><strong>超参数需设置</strong>：$r=0.5$、$s=3$ 是经验最优，可能在不同模型/任务上有差异</li><li><strong>延迟策略固定</strong>：当前固定延迟 1 步，N-step 延迟消融显示 3 步延迟准确率更高但吞吐量下降，自适应延迟值得探索</li><li><strong>未与训练阶段结合</strong>：如果训练时就考虑稀疏注意力模式，可能进一步提升性能</li></ul>
+<p>---</p>
+<ul><li><strong>dLLM 推理加速的通用框架</strong>：Sparse-dLLM 的核心思路——利用注意力稀疏性和跨步一致性进行 cache 驱逐——是一个通用范式，可直接应用于任何 dLLM 的推理加速，无需重新训练...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" alt="Sparse-dLLM 总览"></a><figcaption>Sparse-dLLM 总览</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/Obs-a.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/Obs-a.png" alt="dLLMs 中的注意力稀疏模式：跨层和跨步一致性"></a><figcaption>dLLMs 中的注意力稀疏模式：跨层和跨步一致性</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/kv_loss_for_delay_cache.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/kv_loss_for_delay_cache.png" alt="相邻步 KV 状态变化的 L2-norm：step 0→1 变化最大，支持延迟策略"></a><figcaption>相邻步 KV 状态变化的 L2-norm：step 0→1 变化最大，支持延迟策略</figcaption></figure>
+    </div>
+  </section>
+</article>
+  </main>
+  <footer>Generated from local detailed summaries in <code>diffusion_llm/</code>.</footer>
+</body>
+</html>

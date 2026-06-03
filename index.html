@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Read Paper — 论文精读整理</title>
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #6b7280;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --accent-hover: #1d4ed8;
+    --border: #e2e8f0;
+    --shadow: 0 4px 16px rgba(0,0,0,0.06);
+    --radius: 16px;
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --orange: #f59e0b;
+    --orange-bg: #fffbeb;
+    --gray: #9ca3af;
+    --gray-bg: #f3f4f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d6cdf 60%, #4f8ef7 100%);
+    color: #fff;
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .hero .stats {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .hero .stat {
+    text-align: center;
+  }
+  .hero .stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    display: block;
+  }
+  .hero .stat-label {
+    font-size: 0.85rem;
+    opacity: 0.75;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    max-width: 1100px;
+    margin: -1.5rem auto 0;
+    padding: 0 1rem;
+    position: relative;
+    z-index: 10;
+  }
+  .filter-inner {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+  .filter-inner span.label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .filter-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Grid */
+  .container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* Card */
+  .topic-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1.8rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+  .topic-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+  .topic-card.no-link {
+    cursor: default;
+  }
+  .topic-card.no-link:hover {
+    transform: none;
+    box-shadow: var(--shadow);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .card-header h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+  }
+  .card-header .subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+  .card-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    flex: 1;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .badge-ready { background: var(--green-bg); color: var(--green); }
+  .badge-partial { background: var(--orange-bg); color: var(--orange); }
+  .badge-pending { background: var(--gray-bg); color: var(--gray); }
+  .badge-count { background: var(--accent-light); color: var(--accent); }
+  .enter-arrow {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .topic-card:hover .enter-arrow { opacity: 1; }
+  .topic-card.no-link .enter-arrow { display: none; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 3rem 1rem 2rem; }
+    .hero .stats { gap: 1.5rem; }
+    .grid { grid-template-columns: 1fr; }
+    .topic-card { padding: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>📚 Read Paper</h1>
+  <p>论文精读与工作整理 — 按 Topic 分类浏览</p>
+  <div class="stats">
+    <div class="stat"><span class="stat-num">11</span><span class="stat-label">Topic</span></div>
+    <div class="stat"><span class="stat-num">243+</span><span class="stat-label">论文笔记</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-label">已整理</span></div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <span class="label">筛选：</span>
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="ready">✅ 已整理</button>
+    <button class="filter-btn" data-filter="partial">🔨 整理中</button>
+    <button class="filter-btn" data-filter="pending">📋 待整理</button>
+  </div>
+</div>
+
+<!-- Topic Grid -->
+<div class="container">
+  <div class="grid">
+
+    <!-- OPD -->
+    <a class="topic-card" href="opd_工作整理_github.html" data-status="ready">
+      <div class="card-header">
+        <div class="card-icon" style="background:#ede9fe;color:#7c3aed;">🎯</div>
+        <div><h2>OPD</h2><span class="subtitle">On-Policy Distillation</span></div>
+      </div>
+      <div class="card-desc">知识蒸馏 + RL 范式下的 on-policy distillation 方法研究，包括 SCOPE、EOPD、LSM、HDPO、TSD-KD、TIP 等。</div>
+      <div class="card-footer">
+        <span class="badge badge-ready">✅ 已整理</span>
+        <span class="badge badge-count">83 篇笔记 · 5 篇精读</span>
+      </div>
+      <span class="enter-arrow">→</span>
+    </a>
+
+    <!-- OPSD -->
+    <a class="topic-card" href="opsd_工作整理_github.html" data-status="ready">
+      <div class="card-header">
+        <div class="card-icon" style="background:#dbeafe;color:#2563eb;">🔄</div>
+        <div><h2>OPSD</h2><span class="subtitle">On-Policy Self-Distillation</span></div>
+      </div>
+      <div class="card-desc">自蒸馏 + RL 范式：同一模型充当 student 和 teacher，利用 privileged context 在 on-policy rollout 上做 token 级分布对齐。</div>
+      <div class="card-footer">
+        <span class="badge badge-ready">✅ 已整理</span>
+        <span class="badge badge-count">31 篇笔记 · 28 篇精读</span>
+      </div>
+      <span class="enter-arrow">→</span>
+    </a>
+
+    <!-- Agent -->
+    <a class="topic-card" href="agent_工作整理_github.html" data-status="ready">
+      <div class="card-header">
+        <div class="card-icon" style="background:#d1fae5;color:#059669;">🤖</div>
+        <div><h2>Agent</h2><span class="subtitle">LLM Agent</span></div>
+      </div>
+      <div class="card-desc">大语言模型智能体：工具调用、规划、多轮交互、self-play 等方向。</div>
+      <div class="card-footer">
+        <span class="badge badge-ready">✅ 已整理</span>
+        <span class="badge badge-count">42 篇笔记</span>
+      </div>
+      <span class="enter-arrow">→</span>
+    </a>
+
+    <!-- Diffusion & LLM -->
+    <a class="topic-card" href="diffusion_llm_工作整理_github.html" data-status="ready">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fce7f3;color:#db2777;">🎨</div>
+        <div><h2>Diffusion + LLM</h2><span class="subtitle">diffusion_llm</span></div>
+      </div>
+      <div class="card-desc">扩散模型与大语言模型的交叉研究，包括视觉生成、统一架构等。</div>
+      <div class="card-footer">
+        <span class="badge badge-ready">✅ 已整理</span>
+        <span class="badge badge-count">50 篇笔记 · 21 篇精读</span>
+      </div>
+      <span class="enter-arrow">→</span>
+    </a>
+
+    <!-- VLM -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fef3c7;color:#d97706;">👁️</div>
+        <div><h2>VLM</h2><span class="subtitle">Vision-Language Model</span></div>
+      </div>
+      <div class="card-desc">视觉语言模型：多模态理解、视觉推理、图文对齐等。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">14 篇笔记</span>
+      </div>
+    </div>
+
+    <!-- OCR / Image2Code -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e0e7ff;color:#4f46e5;">📄</div>
+        <div><h2>OCR / Image2Code</h2><span class="subtitle">OCR_Image2Code</span></div>
+      </div>
+      <div class="card-desc">OCR 识别与图像到代码生成，文档理解与结构化提取。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">14 篇笔记</span>
+      </div>
+    </div>
+
+    <!-- RL -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fee2e2;color:#dc2626;">🎮</div>
+        <div><h2>RL</h2><span class="subtitle">Reinforcement Learning</span></div>
+      </div>
+      <div class="card-desc">强化学习基础与 LLM 强化学习训练方法。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">3 篇笔记</span>
+      </div>
+    </div>
+
+    <!-- AIGC -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f0fdf4;color:#16a34a;">✨</div>
+        <div><h2>AIGC</h2><span class="subtitle">AI Generated Content</span></div>
+      </div>
+      <div class="card-desc">AI 生成内容相关研究，覆盖文本、图像、多模态生成。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">6 篇笔记</span>
+      </div>
+    </div>
+
+    <!-- LLM -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f5f3ff;color:#7c3aed;">🧠</div>
+        <div><h2>LLM</h2><span class="subtitle">Large Language Model</span></div>
+      </div>
+      <div class="card-desc">大语言模型基础研究：预训练、对齐、效率等。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">2 篇笔记</span>
+      </div>
+    </div>
+
+    <!-- Benchmark -->
+    <div class="topic-card no-link" data-status="pending">
+      <div class="card-header">
+        <div class="card-icon" style="background:#ecfdf5;color:#059669;">📊</div>
+        <div><h2>Benchmark</h2><span class="subtitle">评测基准</span></div>
+      </div>
+      <div class="card-desc">LLM / Agent 评测基准与数据分析。</div>
+      <div class="card-footer">
+        <span class="badge badge-pending">📋 待整理</span>
+        <span class="badge badge-count">—</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <p>Read Paper — 论文精读整理 · Built with ❤️</p>
+</footer>
+
+<script>
+// Filter functionality
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.topic-card').forEach(card => {
+      if (filter === 'all') {
+        card.style.display = '';
+      } else {
+        card.style.display = card.dataset.status === filter ? '' : 'none';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

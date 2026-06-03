@@ -1,0 +1,698 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>训练、采样与强化学习 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-card p,
+  .paper-card li {
+    font-size: 0.98rem;
+    color: #24324a;
+  }
+  .paper-card ul {
+    padding-left: 1.2rem;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.95rem 1.05rem;
+    border-radius: 0 14px 14px 0;
+    margin: 1rem 0 1.2rem;
+  }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 1.4rem 0 0.7rem;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.35rem;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .feature-figure {
+    margin: 16px 0 12px;
+    padding: 18px;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+    border: 1px solid #d6e4ff;
+    border-radius: 18px;
+  }
+  .feature-figure img {
+    display: block;
+    width: 100%;
+    max-height: 620px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+  .feature-figure figcaption {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .feature-note {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border-left: 4px solid var(--accent);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 0 12px 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  .result-table th,
+  .result-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .result-table th {
+    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 700;
+  }
+</style>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+</head>
+<body>
+  <header class="hero">
+    <h1>训练、采样与强化学习</h1>
+    <p>聚焦 RL 后训练、guided denoising、自蒸馏、采样目标与长度控制，强调训练稳定性与优化目标设计。</p>
+    <div class="stats">
+      <span class="stat">本页 5 篇</span>
+      <span class="stat">所属主题 diffusion_llm</span>
+      <span class="stat">更新日期 2026-06-02</span>
+    </div>
+  </header>
+  <main class="layout">
+    <a class="back-link" href="../diffusion_llm_工作整理.html">&larr; 返回 Diffusion LLM 工作整理</a>
+    <nav class="work-list" aria-label="本页目录">
+      <h2>本页目录</h2>
+      <p>这一页只收录同一主题下的论文，先看目录再下滑会更高效。</p>
+      <ol>
+        <li><a href="#arxiv-2605-29398">GDSD: Reinforcement Learning as Guided Denoiser Self-Distillation for Diffusion Language Models</a><span class="work-meta">arXiv 2605.29398 | Xiaohang Tang, Keyue Jiang, Che Liu, Qifang Zhao, Xiaoxiao Xu, Sangwoong Yoon, Ilija Bogunovic</span></li>
+<li><a href="#arxiv-2603-06743">Stabilizing Reinforcement Learning for Diffusion Language Models</a><span class="work-meta">arXiv 2603.06743 | Jianyuan Zhong, Kaibo Wang, Ding Ding, Zijin Feng, Haoli Bai, Yang Xiang, Jiacheng Sun, Qiang Xu</span></li>
+<li><a href="#arxiv-2602-18176">Improving Sampling for Masked Diffusion Models via Information Gain</a><span class="work-meta">arXiv 2602.18176</span></li>
+<li><a href="#arxiv-2602-07546">Improving Variable-Length Generation in Diffusion Language Models via Length Regularization</a><span class="work-meta">arXiv 2602.07546 | Zicong Cheng, Ruixuan Jia, Jia Li, Guo-Wei Yang, Meng-Hao Guo, Shi-Min Hu</span></li>
+<li><a href="#arxiv-2510-02880">Consolidating Reinforcement Learning for Multimodal Discrete Diffusion Models</a><span class="work-meta">arXiv 2510.02880 | Tianren Ma, Mu Zhang, Yibing Wang, Qixiang Ye</span></li>
+      </ol>
+    </nav>
+    <nav class="work-list" aria-label="其他子页">
+      <h2>其他子页</h2>
+      <p>如果你想按主题继续读，可以从这里跳到其他 diffusion LLM 子页。</p>
+      <ol>
+        <li><a href="diffusion_llm_工作整理_overview_foundation.html">综述、基础建模与多模态扩展</a><span class="work-meta">8 篇</span></li> <li><a href="diffusion_llm_工作整理_training_alignment.html">训练、采样与强化学习</a><span class="work-meta">5 篇</span></li> <li><a href="diffusion_llm_工作整理_inference_acceleration.html">推理加速、缓存与并行解码</a><span class="work-meta">8 篇</span></li>
+      </ol>
+    </nav>
+    <!-- PAPER_CARD_START source="diffusion_llm/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models.md" arxiv="2605.29398" -->
+    <article class="paper-card" id="arxiv-2605-29398" data-source="diffusion_llm/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models.md" data-arxiv="2605.29398">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2605.29398</span><span class="badge">GDSD</span><span class="badge">detailed</span></div>
+    <h2>GDSD: Reinforcement Learning as Guided Denoiser Self-Distillation for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2605.29398" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2605.29398.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/GaryBall/GDSD" target="_blank" rel="noopener">GitHub</a> | <a href="../diffusion_llm/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Xiaohang Tang, Keyue Jiang, Che Liu, Qifang Zhao, Xiaoxiao Xu, Sangwoong Yoon, Ilija Bogunovic</p>
+    <p><strong>机构</strong>：UCL, Alibaba Group, Imperial College London, UNIST, University of Basel</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>GDSD 不再把 ELBO 当作可替代 likelihood 的 RL 中介，而是把 diffusion LLM 的 policy improvement 改写成 advantage-guided denoiser self-distillation。这样它绕开了 surrogate ratio 的系统偏差，也更贴近 diffusion 模型真正优化的去噪对象。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>此前 dLLM 做 RL 时，常用套路是拿 ELBO 或 Monte Carlo proxy 近似 sequence likelihood，再沿用 PPO / GRPO 风格的 ratio correction。问题在于，这会把 ELBO gap 与 training-inference mismatch 一起放大，最后让 importance ratio 又偏又噪。</p>
+  <p>GDSD 的判断很直接：既然 surrogate ratio 本身就站不稳，不如不再围绕它修补，而是把 RL 目标直接落到去噪 teacher-student 对齐上。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>作者从 reverse-KL regularized RL 目标出发，把最优策略改写成由 old policy、reference policy 与 advantage 共同诱导的 guided teacher。关键变化不是换个 clipping，而是把 sequence-level policy improvement 转成 denoiser-level matching。</p>
+  <ul>
+    <li><strong>一致 corruption 条件：</strong>当前模型、旧模型与 reference 模型在相同前向噪声下比较。</li>
+    <li><strong>guided teacher：</strong>student 不再拟合 noisy ratio，而是蒸馏一个带 advantage 偏置的去噪 teacher。</li>
+    <li><strong>normalization-free distillation：</strong>实现上用 squared-logit 形式，避免再次退回 softmax ratio 的高噪空间。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/flow_gdsd.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/flow_gdsd.png" alt="GDSD framework overview"></a>
+    <figcaption>最值得看的方法图：GDSD 不是“更稳地估 ratio”，而是把 RL 信号重新放进 guided denoiser 蒸馏里。</figcaption>
+  </figure>
+  <p class="feature-note">这也是它和很多 ELBO-based 方法最本质的区别：优化接口变了，所以它能同时绕开 TIM 与 surrogate bias。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>论文在 <code>LLaDA-8B</code> 与 <code>Dream-7B</code> 上测试 planning、math、coding。整体结论很一致：GDSD 在两类 dLLM 上都优于此前 ELBO-based 方法，其中 planning 收益最大，摘要里最高到 <strong>+19.6%</strong>。</p>
+  <table class="result-table">
+    <tr><th>观察</th><th>结论</th></tr>
+    <tr><td>跨模型</td><td>LLaDA-8B 与 Dream-7B 都稳定受益</td></tr>
+    <tr><td>跨任务</td><td>planning / math / coding 普遍提升，不是只在单一 benchmark 生效</td></tr>
+    <tr><td>最强收益</td><td>planning 最突出，符合长程 credit 更受益的直觉</td></tr>
+    <tr><td>训练动态</td><td>reward 曲线更稳，后期退化更轻</td></tr>
+  </table>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/methods_histogram_llada_subplots_best.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/methods_histogram_llada_subplots_best.png" alt="Main results on LLaDA"></a>
+    <figcaption>主结果图已经足够说明问题：GDSD 的收益是跨任务成立的，而不是某个指标上的偶然波动。</figcaption>
+  </figure>
+  <p class="feature-note">这张图尤其能看出 planning 优势最明显，也最契合“guided denoising 更利于长程决策”的方法直觉。</p>
+  <p>作者还观察到 guidance coefficient <code>\psi</code> 不能太弱，否则 guided self-distillation 会退化成温和模仿；而 TLC 这类 calibration 组件则能继续减轻训练后期抖动。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>把 dLLM RL 的核心矛盾重新表述成“不要再把 ELBO 当 likelihood”。</li>
+    <li><strong>局限：</strong>方法仍然依赖 reward / advantage 质量，本质上没有离开 RL；主要论证也集中在 masked diffusion setting。</li>
+    <li><strong>启发：</strong>后续 diffusion RL 也许更该寻找与 denoiser 对齐的优化接口，而不是继续沿用 AR LLM 的 sequence-level update。</li>
+    <li><strong>验证边界：</strong>当前主要围绕 LLaDA、Dream 等代表性 dLLM，其他变体仍需更多实验支持。</li>
+  </ul>
+</article>
+    <!-- PAPER_CARD_END -->
+
+<article class="paper-card" id="arxiv-2603-06743">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2603.06743</span><span class="badge">detailed</span></div>
+    <h2>Stabilizing Reinforcement Learning for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2603.06743" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2603.06743.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/JianyuanZhong/StableDRL" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2603_stabilizing_reinforcement_learning_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Jianyuan Zhong, Kaibo Wang, Ding Ding, Zijin Feng, Haoli Bai, Yang Xiang, Jiacheng Sun, Qiang Xu</p>
+    <p><strong>机构</strong>：Huawei Foundation Model Department, CUHK, HKUST</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>StableDRL 不再把重点放在“估一个更准的 surrogate likelihood ratio”上，而是直接稳定 noisy proxy ratio 进入梯度聚合器的几何方式。做法很克制：先对 proxy ratio 做无条件裁剪，再做组内 self-normalization，把更新限制在样本梯度的稳定凸组合里。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>AR LLM 可以精确计算 importance ratio，但 masked diffusion LM 的序列似然不可 tractable，只能依赖 ELBO/Monte Carlo proxy。这个 proxy 一旦被指数化，就会把局部估计噪声放大成长尾权重，进一步触发 gradient spike 和 policy drift。</p>
+  <div class="formula-block">\[
+\hat{\rho}(x)=\exp\left(\hat{\mathcal{L}}_\theta(x)-\hat{\mathcal{L}}_{\theta_{\text{old}}}(x)\right)
+\]</div>
+  <p>因此作者的诊断不是泛泛地说“方差大”，而是更具体地指出：noisy proxy ratio、conditional clipping 和 group-level 随机步长会一起形成 self-reinforcing instability loop。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>作者先指出 dLLM 版 GRPO 的问题：负优势样本上的 conditional clipping 仍可能让极端 ratio 穿透 trust region，所以仅仅“有 clipping”还不够。</p>
+  <div class="formula-block">\[
+\nabla_\theta\mathcal{J}_{\text{GRPO}} = \mathbb{E}\left[ \frac{1}{G}\sum_{j=1}^{G} \min\Big( \rho_{j} A_{j}, \text{clip}_\epsilon(\rho_{j}) A_{j} \Big) g_j \right]
+\]</div>
+  <ul>
+    <li><strong>Unconditional clipping：</strong>先把每个样本权重裁剪到对称区间，避免负优势分支绕过裁剪。</li>
+    <li><strong>Self-normalization：</strong>再做组内归一化，去掉 \(\sum_j w_j\) 带来的随机 step-size scaling。</li>
+  </ul>
+  <div class="formula-block">\[
+w^j=\operatorname{clip}(\hat{\rho}^j,1-\epsilon,1+\epsilon),\qquad
+\alpha^j=\frac{w^j}{\sum_{k=1}^{G}w^k}
+\]</div>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_stabilizing_reinforcement_learning_for_diffusion_language_models/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_stabilizing_reinforcement_learning_for_diffusion_language_models/main.png" alt="StableDRL instability loop and intervention points"></a>
+    <figcaption>主框架图：把 reward collapse、instability loop、unconditional clipping 与 self-normalization 两个干预点串成同一条机制链，比 teaser 更适合放在方法区理解整篇论文。</figcaption>
+  </figure>
+  <p class="feature-note">这张图最值得看的地方，不是“结果更高”，而是它清楚地解释了为什么 dLLM RL 会炸、为什么只是换 reward 不够、以及 StableDRL 为什么用两个小改动就能把训练几何拉回稳定区间。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>在 <code>LLaDA-8B-Instruct</code> 上，StableDRL 在四类任务平均分都最好：GSM8K 84.2、MATH500 41.8、Countdown 83.5、Sudoku 91.5。它的优势不只是单点峰值更高，而是在不同 decoding budget 下都更稳。</p>
+  <table class="result-table">
+    <tr><th>方法</th><th>GSM8K</th><th>MATH500</th><th>Countdown</th><th>Sudoku</th></tr>
+    <tr><td>ESPO</td><td>82.0</td><td>39.5</td><td>81.0</td><td>86.0</td></tr>
+    <tr><td>SPG w/ Mixture</td><td>83.0</td><td>38.4</td><td>69.9</td><td>90.0</td></tr>
+    <tr><td><strong>StableDRL</strong></td><td><strong>84.2</strong></td><td><strong>41.8</strong></td><td><strong>83.5</strong></td><td><strong>91.5</strong></td></tr>
+  </table>
+  <p>作者还把方法扩展到 <code>SDAR-8B-Chat</code>。在 static setting 下，StableDRL 在 MATH500/GSM8K/AIME24 上达到 79.2/92.4/16.7，说明它不只适用于 full-attention LLaDA。不过目前主要验证仍集中在 LLaDA-8B-Instruct 与 SDAR-8B，对更多 dLLM 变体还需要进一步验证。</p>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_stabilizing_reinforcement_learning_for_diffusion_language_models/combined_stress_grad_analysis_wide.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_stabilizing_reinforcement_learning_for_diffusion_language_models/combined_stress_grad_analysis_wide.png" alt="Exploding weight stress test"></a>
+    <figcaption>机制验证图：在人为放大 proxy variance 的 stress test 里，StableDRL 比 ESPO/SPG 更能抑制 reward collapse 和 gradient spike。这说明它不是“碰巧提分”，而是真正打到了 instability mechanism。</figcaption>
+  </figure>
+  <p class="feature-note">如果只留一张实验图，这张最关键。它直接把理论里的 noisy proxy ratio 假设变成了可观测现象，也解释了为什么 StableDRL 的提升不只是 benchmark 调参好运。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>把 dLLM RL instability 解释成 noisy proxy ratio 与 policy drift 的闭环，并用很简单的权重几何改造解决。</li>
+    <li><strong>局限：</strong>理论更偏解释性，不是严格收敛保证；收益来自稳定聚合几何，不会自动修正 proxy estimator 的系统偏差。</li>
+    <li><strong>验证边界：</strong>full-attention 主要围绕 LLaDA-8B-Instruct，block diffusion 主要围绕 SDAR-8B；其他 dLLM 架构、尺寸和采样器仍需要更多验证。</li>
+    <li><strong>启发：</strong>做 dLLM RL 时，先保证 noisy ratio 进入 optimizer 的方式稳定，往往比继续堆更复杂的 reward shaping 更重要。</li>
+  </ul>
+</article>
+
+<article class="paper-card" id="arxiv-2602-18176">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2602.18176</span><span class="badge">detailed</span></div>
+    <h2>Improving Sampling for Masked Diffusion Models via Information Gain</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2602.18176" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2602.18176.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/yks23/Information-Gain-Sampler" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Kaisen Yang, Jayden Teoh, Kaicheng Yang, Yitong Zhang, Alex Lamb</p>
+    <p><strong>机构</strong>：Tsinghua University, Singapore Management University, Shanghai Jiao Tong University, Beihang University</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>Info-Gain Sampler 认为 masked diffusion 的采样器不该只看“当前哪个位置最确定”，而应该看这一步解码会让后续整体不确定性下降多少。于是它把局部 greedy decoding 改成了面向未来的 information-gain 选择。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>很多 masked diffusion sampler 都是两步贪心：先给每个 mask 位置采样候选 token，再按局部 confidence、entropy 或 margin 选出最确定的位置优先解码。这样的策略短视，容易优先处理“看起来简单”的 token，却忽略哪些决策更能减少后续整体搜索难度。</p>
+  <p>作者用单向乘法等 toy case 说明：有些 token 局部不确定性很低，但过早固定会把系统推进错误分支；真正更优的动作，应该优先解开对后续最有信息价值的位置。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>Info-Gain Sampler 的核心不是改模型，而是改“选哪个位置先解码”。它先用模型分布为每个待解码位置生成候选，再估计如果当前释放该位置，接下来整个采样过程的累计不确定性会下降多少，把这个值当作信息增益分数。</p>
+  <ul>
+    <li><strong>从局部置信度到全局收益：</strong>评分目标由“当前 token 最稳”换成“当前 token 是否最能帮后续去不确定”。</li>
+    <li><strong>兼容现有 masked diffusion 模型：</strong>不要求重训，只是在推理时多做一步 look-ahead 估计。</li>
+    <li><strong>更像 planning：</strong>它本质是在采样阶段引入短期前瞻，而不是把解码完全交给一步贪心启发式。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/workflow_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/workflow_v2.png" alt="Info-Gain Sampler workflow"></a>
+    <figcaption>工作流图已经把差异说得很清楚：传统 sampler 只排序“当前谁最确定”，Info-Gain 则显式评估当前动作对未来采样轨迹的影响。</figcaption>
+  </figure>
+  <p class="feature-note">这篇论文最值得保留的不是复杂细节，而是这个视角转换：在 masked diffusion 里，位置选择本身就是 sequential decision problem。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>论文在代码、推理与一般语言生成场景上比较了多种采样器。主结论不是“所有任务都大幅领先”，而是：当任务存在明显的长程依赖和先后解码耦合时，Info-Gain 的优势最稳定，因为它更擅长避免早期局部贪心带来的后续锁死。</p>
+  <ul>
+    <li>在 case study 中，Info-Gain 能明显避开“先解看似容易但信息价值低的 token”这一错误路径。</li>
+    <li>在真实 benchmark 上，它相对纯 confidence / entropy 型采样器表现更稳，尤其适合结构约束强的生成任务。</li>
+    <li>它的收益主要来自采样顺序优化，而不是模型参数变化，因此迁移成本较低。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/toy1-v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/toy1-v4.png" alt="Info-Gain toy case"></a>
+    <figcaption>这个 toy case 比长表格更能说明论文贡献：Info-Gain 优先解真正影响后续搜索空间的变量，因此整体轨迹比 greedy sampler 更合理。</figcaption>
+  </figure>
+  <p class="feature-note">如果后面还要继续整理这篇卡片，最值得补的一张图会是累积熵轨迹；但在当前页面里，这张 toy case 更容易让读者立刻理解方法直觉。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>把 masked diffusion sampling 从“局部置信度排序”提升到了“面向未来的信息价值排序”。</li>
+    <li><strong>局限：</strong>前瞻式评分会带来额外推理成本，收益大小也依赖任务是否真的存在强顺序耦合。</li>
+    <li><strong>启发：</strong>后续 diffusion 解码器可以继续引入 planning / value estimation 视角，而不是只在 confidence heuristic 上做微调。</li>
+  </ul>
+</article>
+
+<article class="paper-card" id="arxiv-2602-07546">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2602.07546</span><span class="badge">detailed</span></div>
+    <h2>Improving Variable-Length Generation in Diffusion Language Models via Length Regularization</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2602.07546" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2602.07546.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2602_improving_variable_length_generation_in_diffusion_language_models_via_length_regularization.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Zicong Cheng, Ruixuan Jia, Jia Li, Guo-Wei Yang, Meng-Hao Guo, Shi-Min Hu</p><p><strong>机构</strong>：Tsinghua University, Proxseer Inc.</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>这篇工作解决的是 diffusion LLM 最常见却也最尴尬的问题之一: 生成长度事先并不知道。作者提出 LR-DLLM，用一个带 \(\log L\) 校准项的长度置信度信号，在不重训模型的前提下做 variable-length generation。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>固定长度 canvas 是 dLLM 很自然的生成形式，但它默认目标 span 长度已知。到了 infilling、continuation 或通用补全场景，这个前提经常不成立：mask 太短会欠生成，mask 太长又会让模型为了填满画布而重复、拖沓或产生无关后续。</p>
+  <p>作者指出更深一层的问题是：不同 mask length 下的 raw confidence 不能直接比较，因为长度本身就会系统性改变平均置信度。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>LR-DLLM 的做法很克制：仍然使用原来的 diffusion LM，只是在推理时先评估多个候选长度，再根据“校准后的长度置信度”选出更合理的 span 长度。</p>
+  <div class="formula-block">\[
+\mathrm{CL}(L)=\mathrm{AVG}_{\mathrm{conf}}(L)-k\log L
+\]</div>
+  <ul>
+    <li><strong>长度偏置校准：</strong>作者观察到平均置信度随 mask length 变化更接近 \(\log L\) 而非线性关系，因此用 \(k\log L\) 去掉长度诱导偏置。</li>
+    <li><strong>instance-specific probing：</strong><code>k</code> 不是全局常数，而是按样本轻量估计，所以比固定 heuristic 更稳。</li>
+    <li><strong>training-free：</strong>不改预训练、不加特殊终止 token，更适合直接叠到现有 dLLM 推理流程上。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_variable_length_generation_in_diffusion_language_models_via_length_regularization/observation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_variable_length_generation_in_diffusion_language_models_via_length_regularization/observation.png" alt="Average confidence vs mask length"></a>
+    <figcaption>这张观察图是全篇方法成立的前提：raw confidence 随长度漂移，所以必须先做长度校准，不能直接拿不同长度的 confidence 硬比。</figcaption>
+  </figure>
+  <p class="feature-note">这也是这篇论文比一般“长度搜索技巧”更值得记住的地方：它先解释了为什么 naive confidence 失真，再给出一个可落地的校准项。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>实验主要覆盖 code infilling、code generation 与 math reasoning。总体趋势很清楚：当任务对生成长度敏感时，LR-DLLM 几乎总比 fixed-length baseline 更稳，且多数情况下比 DreamOn / FlexMDM 这类替代方案更强。</p>
+  <table class="result-table">
+    <tr><th>模型</th><th>设置</th><th>代表性结果</th></tr>
+    <tr><td>LLaDA-8B</td><td>HumanEval-Infilling</td><td>Mean 从 23.4 提升到 36.7</td></tr>
+    <tr><td>Dream-7B</td><td>HumanEval-Infilling</td><td>Mean 从 22.5 提升到 44.8</td></tr>
+    <tr><td>DreamCoder-7B</td><td>HumanEval-Infilling</td><td>Mean 从 39.1 提升到 51.3</td></tr>
+  </table>
+  <p>值得注意的是，它的收益并不是来自更复杂的模型结构，而是更合理地选择生成长度，因此尤其适合“我不想重训，只想让现有 dLLM 推理更聪明”的使用场景。</p>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_variable_length_generation_in_diffusion_language_models_via_length_regularization/ablation_logL_hatch.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_variable_length_generation_in_diffusion_language_models_via_length_regularization/ablation_logL_hatch.png" alt="Ablation of log L"></a>
+    <figcaption>\(\log L\) 校准的消融图直接说明：如果去掉长度正则，长度选择能力会明显回落，这不是随便加个搜索流程就能得到的收益。</figcaption>
+  </figure>
+  <p class="feature-note">在页面里保留这一张消融图就够了，因为它正好对应方法中最关键、也最容易被忽视的那一步。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>给 dLLM 的 variable-length generation 提供了一条真正 training-free 的路径，特别适合 infilling / continuation 这种不知道该补多长的任务。</li>
+    <li><strong>局限：</strong>它通过 probing 与搜索换来更好的长度判断，因此 forward call 会增加，真实 wall-clock 成本不能忽略。</li>
+    <li><strong>启发：</strong>长度选择本身就是解码策略的一部分，未来可以与 cache reuse、稀疏解码、planner-style sampler 联动设计。</li>
+  </ul>
+</article>
+
+<article class="paper-card" id="arxiv-2510-02880">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2510.02880</span><span class="badge">detailed</span></div>
+    <h2>Consolidating Reinforcement Learning for Multimodal Discrete Diffusion Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2510.02880" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2510.02880.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/martian422/MaskGRPO" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2510_consolidating_reinforcement_learning_for_multimodal_discrete_diffusion_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Tianren Ma, Mu Zhang, Yibing Wang, Qixiang Ye</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>MaskGRPO 想回答一个很实际的问题: AR LLM 已经能用 GRPO 做在线 RL，那么离散 diffusion model 能不能也有一套可计算、跨文本和视觉都能工作的 RL 接口？论文给出的答案是，把不可 tractable 的 DDM likelihood ratio 近似成 masked prediction loss 差值，再配合 modality-aware rollout 与 reversing 策略。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>难点在于 DDM 不是按 token 自回归展开，而是在多个位置并行去 mask，所以传统 GRPO 里那套 token-level likelihood ratio 无法直接套用。与此同时，RL 又要求同一个 prompt 下采样多个 rollout 做 group-relative advantage，这对离散扩散模型的采样多样性与稳定性都提出了更高要求。</p>
+  <p>论文因此瞄准两件事：先把 importance estimation 做到“能算”，再把文本与视觉的 rollout 设计成真正适合各自模态结构的形式。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>作者把 response corruption 写成 \(o^t\sim q(o^t\mid o,t)\)，再用同一 corrupted completion 上的 masked prediction loss 差来近似 policy ratio 变化。核心思想是：虽然 DDM 的完整 completion likelihood 难算，但在相同噪声状态下比较两个模型的 denoising loss，依然能给出可用的相对更新信号。</p>
+  <div class="formula-block">\[
+\hat{\rho}_i^t=\exp\left(\ell_{\pi_\theta}(o_i^t,o_i\mid\mathbf{c})-\ell_{\pi_{\theta_{\mathrm{old}}}}(o_i^t,o_i\mid\mathbf{c})\right)
+\]</div>
+  <div class="formula-block">\[
+\hat{\mathbb{D}}_{\mathrm{KL}}^{i,t}=\exp\left(\ell_{\pi_{\theta_{\mathrm{ref}}}}-\ell_{\pi_\theta}\right)-\left(\ell_{\pi_{\theta_{\mathrm{ref}}}}-\ell_{\pi_\theta}\right)-1
+\]</div>
+  <ul>
+    <li><strong>统一估计接口：</strong>importance ratio 与 KL penalty 都落到 masked prediction loss 差值上。</li>
+    <li><strong>文本策略：</strong>利用 AR-like fading-out reversing，让文本 rollout 更接近顺序展开的 reasoning 结构。</li>
+    <li><strong>视觉策略：</strong>用 high-mask random reversing 与 Token Emerge sampler，为高熵视觉 token 提供更强探索。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2510_consolidating_reinforcement_learning_for_multimodal_discrete_diffusion_models/banner.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2510_consolidating_reinforcement_learning_for_multimodal_discrete_diffusion_models/banner.png" alt="MaskGRPO overview"></a>
+    <figcaption>总览图已经把论文的主线压缩得很完整：统一的 loss-based estimator，加上按模态区分的 reversing / rollout 设计。</figcaption>
+  </figure>
+  <p class="feature-note">这张图比单独记公式更重要，因为它解释了为什么论文敢把“文本 + 图像”一起放进同一个 RL 框架里。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>文本侧，作者在 <code>LLaDA-8B-Instruct</code> 上测试 GSM8K、MATH500、MBPP；视觉侧则在 <code>MMaDA-8B-Base</code> 上做图像偏好与对齐训练。核心结果是：MaskGRPO 在文本推理和代码上都明显优于 diffu-GRPO、UniGRPO、TraceRL 等基线，并把此前 RL 收益进一步拉大。</p>
+  <table class="result-table">
+    <tr><th>方法</th><th>GSM8K 256</th><th>MATH500 512</th><th>MBPP 256</th></tr>
+    <tr><td>LLaDA-8B-Instruct</td><td>76.7</td><td>36.2</td><td>39.0</td></tr>
+    <tr><td>TraceRL</td><td>82.1</td><td>39.5</td><td>43.9</td></tr>
+    <tr><td><strong>MaskGRPO</strong></td><td><strong>84.2</strong></td><td><strong>41.5</strong></td><td><strong>45.4</strong></td></tr>
+  </table>
+  <p>这些结果说明收益不是来自简单的训练步数增加，而是 DDM 版 importance estimation 和 rollout 设计终于开始“对上模型结构”。视觉实验也支持同样结论，不过它更多体现为统一框架跨模态有效，而不是单一 unified model 一次性解决全部模态问题。</p>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2510_consolidating_reinforcement_learning_for_multimodal_discrete_diffusion_models/reverse_method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2510_consolidating_reinforcement_learning_for_multimodal_discrete_diffusion_models/reverse_method.png" alt="Reversing method comparison"></a>
+    <figcaption>这张 reversing 对比图和结果表配在一起最合适：前者解释“为什么这样 roll out”，后者说明“这样 roll out 确实能提分”。</figcaption>
+  </figure>
+  <p class="feature-note">如果后面还要进一步精简本页，我会优先保留这张 reversing 图，因为它恰好体现了这篇工作最有辨识度的模态感知设计。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>给离散 diffusion model 提供了一套真正可计算的 GRPO 风格 RL 接口，并展示了文本与视觉可共用一个上层框架。</li>
+    <li><strong>局限：</strong>likelihood 近似本身仍有 bias；图像侧又依赖 reward model 组合，因此 reward hacking 与偏好偏置问题并没有彻底解决。</li>
+    <li><strong>启发：</strong>DDM 的 RL 不应机械照搬 AR LLM，也不该直接套 continuous diffusion 的做法，而要把 reversing / sampler 一起视作 policy optimization 的组成部分。</li>
+  </ul>
+</article>
+  </main>
+  <footer>Generated from local detailed summaries in <code>diffusion_llm/</code>.</footer>
+</body>
+</html>
+

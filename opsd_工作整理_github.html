@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSD 工作整理 — On-Policy Self-Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px;
+    border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0;
+    color: var(--text); border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img {
+    max-width: 100%; max-height: 360px; object-fit: contain;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem;
+  }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.6rem 0; }
+  .pros-cons > div { padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.88rem; }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap { position: fixed; top: 2rem; left: 1rem; z-index: 100; }
+  .toc-btn {
+    display: inline-block; padding: 6px 16px; background: var(--card-bg);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); font-size: 0.82rem; font-weight: 700;
+    color: var(--accent); cursor: pointer;
+  }
+  .toc-panel {
+    display: none; position: absolute; top: 0; left: 0;
+    width: 520px; max-height: calc(100vh - 4rem); overflow-y: auto;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); padding: 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .toc ol { padding-left: 1.2rem; margin: 0; }
+  .toc li { margin-bottom: 0.25rem; font-size: 0.75rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 1px 7px; border-radius: 99px; font-size: 0.65rem; font-weight: 600;
+    margin-right: 0.3rem; vertical-align: middle;
+  }
+  @media (max-width: 640px) { .pros-cons { grid-template-columns: 1fr; } .paper-card { padding: 1.2rem; } }
+  .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--border); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27,39,78,.07); }
+  .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+  .work-list p { margin: 0 0 12px; color: var(--text-secondary); }
+  .work-list ol { margin: 0; padding-left: 1.25rem; }
+  .work-list li { margin: 8px 0; padding-left: 4px; }
+  .work-list a { font-weight: 700; }
+  .work-meta { display: block; margin-top: 2px; color: var(--text-secondary); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>OPSD 工作整理</h1>
+  <p>On-Policy Self-Distillation 论文精读与整理 · 28 篇</p>
+</header>
+
+<div class="toc-wrap">
+  <div class="toc-btn">目录</div>
+  <div class="toc-panel">
+    <h3>目录</h3>
+    <ol>
+      <li><span class="toc-tag">SPIN</span><a href="#card-spin">SPIN: Self-Play Fine-Tuning Converts Weak LMs to Strong LMs</a></li>
+      <li><span class="toc-tag">Falcon</span><a href="#card-falcon">Falcon: Coupled Sequential Glancing Distillation for SD</a></li>
+      <li><span class="toc-tag">CORAL</span><a href="#card-coral">CORAL: Cross-Step Representation Alignment for SD</a></li>
+      <li><span class="toc-tag">Step-Audio-R1</span><a href="#card-step-audio-r1">Step-Audio-R1: On-Policy Self-Distillation for Audio Reasoning</a></li>
+      <li><span class="toc-tag">SDPO</span><a href="#card-sdpo">Reinforcement Learning via Self-Distillation (SDPO)</a></li>
+      <li><span class="toc-tag">OPSD</span><a href="#card-opsd">Self-Distilled Reasoner: On-Policy Self-Distillation for LLMs</a></li>
+      <li><span class="toc-tag">SDFT</span><a href="#card-sdft">SDFT-Continual: Self-Distillation Fine-Tuning for Continual Learning</a></li>
+      <li><span class="toc-tag">GATES</span><a href="#card-gates">GATES: Self-Distillation under Privileged Context for Document QA</a></li>
+      <li><span class="toc-tag">MTP</span><a href="#card-mtp">MTP Self-Distillation: Multi-Token Prediction via Self-Distillation</a></li>
+      <li><span class="toc-tag">OPCD</span><a href="#card-opcd">OPCD: On-Policy Context Distillation for Knowledge Internalization</a></li>
+      <li><span class="toc-tag">CRISP</span><a href="#card-crisp">CRISP: On-Policy Self-Distillation for Reasoning Compression</a></li>
+      <li><span class="toc-tag">OEL</span><a href="#card-oel">OEL: Online Experiential Learning via Self-Distillation</a></li>
+      <li><span class="toc-tag">PACED</span><a href="#card-paced">PACED: Frontier Curriculum Self-Distillation at Student Boundary</a></li>
+      <li><span class="toc-tag">Analysis</span><a href="#card-why-degrade">Why Does Self-Distillation (Sometimes) Degrade Reasoning?</a></li>
+      <li><span class="toc-tag">SSD</span><a href="#card-ssd">Embarrassingly Simple Self-Distillation Improves Code Generation</a></li>
+      <li><span class="toc-tag">RLSD</span><a href="#card-rlsd">Self-Distilled RLVR: RLSD (Reinforcement Learning with SD)</a></li>
+      <li><span class="toc-tag">SRPO</span><a href="#card-srpo">SRPO: Unifying Group-Relative and Self-Distillation via Sample Routing</a></li>
+      <li><span class="toc-tag">Skill-SD</span><a href="#card-skill-sd">Skill-SD: Skill-Conditioned Self-Distillation for Multi-Turn Agents</a></li>
+      <li><span class="toc-tag">SD-Zero</span><a href="#card-sd-zero">SD-Zero: Self-Revision Turns Binary Rewards into Dense Supervision</a></li>
+      <li><span class="toc-tag">π-Play</span><a href="#card-pi-play">π-Play: Multi-Agent Self-Play via Privileged SD without External Data</a></li>
+      <li><span class="toc-tag">OPSDL</span><a href="#card-opsdl">OPSDL: On-Policy Self-Distillation for Long-Context LLMs</a></li>
+      <li><span class="toc-tag">PBSD</span><a href="#card-pbsd">PBSD: Preference-Based Self-Distillation via Reward Regularization</a></li>
+      <li><span class="toc-tag">TRACE</span><a href="#card-trace">TRACE: Distilling Where It Matters via Token-Routed Self On-Policy Alignment</a></li>
+      <li><span class="toc-tag">RLRT</span><a href="#card-rlrt">Rebellious Student: Reversing Teacher Signals for Reasoning Exploration</a></li>
+      <li><span class="toc-tag">RESD</span><a href="#card-resd">RESD: Learning with Rare Success via Reflection-Enhanced SD</a></li>
+      <li><span class="toc-tag">SDAR</span><a href="#card-sdar">SDAR: Self-Distilled Agentic Reinforcement Learning</a></li>
+      <li><span class="toc-tag">Vision-OPD</span><a href="#card-vision-opd">Vision-OPD: Learning to See Fine Details for MLLMs via SD</a></li>
+      <li><span class="toc-tag">DASD</span><a href="#card-dasd">DASD: Direction-Adaptive Self-Distillation for LLM Reasoning</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ========== CARD 1: SPIN ========== -->
+<article class="paper-card" id="card-spin">
+<h2>SPIN: Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models</h2>
+<div class="meta-row">
+  <span class="tag">SPIN</span>
+  <a href="https://arxiv.org/abs/2401.01335" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2401.01335.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/uclaml/SPIN" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">UCLA · arXiv 2401.01335</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>使用 self-play 范式让弱模型与自己的前一版本竞争，通过 DPO 偏好优化迭代提升模型能力——"与昨天的自己竞争"。</div>
+<h3 class="section-title">方法要点</h3>
+<ul>
+  <li>当前模型生成回答，前一 frozen checkpoint 生成回答作为"弱"对手</li>
+  <li>使用 DPO 让学生偏好自己的当前输出而非前一 checkpoint 的输出</li>
+  <li>迭代进行：每次更新后前一 checkpoint 滚动更新</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>无需外部 teacher，迭代 self-play 可持续提升</li><li>与 DPO 天然兼容，实现简单</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>更准确说是"iterative on-policy DPO"，非严格 per-token logit 蒸馏</li><li>supervision 是 sequence-level DPO preference</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>Self-play + DPO 范式的代表作，属于 OPSD 谱系中的"迭代自竞争"分支。</p>
+</article>
+
+<!-- ========== CARD 2: Falcon ========== -->
+<article class="paper-card" id="card-falcon">
+<h2>Falcon: Coupled Sequential Glancing Distillation for Speculative Decoding</h2>
+<div class="meta-row">
+  <span class="tag">Falcon</span>
+  <a href="https://arxiv.org/abs/2412.12639" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2412.12639.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/Bestpay-inc/Falcon" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">Bestpay · arXiv 2412.12639</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过 Semi-AR draft model + glancing 交叉熵 + 知识蒸馏实现自推测解码加速，glancing 机制使用 draft samples 做 partial on-policy 蒸馏。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>Glancing 机制提供选择性使用 draft samples 的方式</li><li>与 speculative decoding 加速框架兼容</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>Partial on-policy，不满足严格 on-policy 条件</li><li>主要用于 speculative decoding 加速而非 reasoning 提升</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>Speculative decoding 加速方向的 self-distillation 变体，属于 OPSD 谱系边缘的 specdec 应用。</p>
+</article>
+
+<!-- ========== CARD 3: CORAL ========== -->
+<article class="paper-card" id="card-coral">
+<h2>CORAL: Cross-Step Representation Alignment for Self-Speculative Decoding</h2>
+<div class="meta-row">
+  <span class="tag">CORAL</span>
+  <span class="tag" style="background:#fef3c7;color:#92400e;">ACL 2025</span>
+  <a href="https://arxiv.org/abs/2502.16880" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2502.16880.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2502.16880</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过跨步表示对齐 + 交叉熵损失修复 draft model 训练与推理之间的不匹配，实现 on-policy 多步自推测解码。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>Cross-step alignment 修复了训练-推理不匹配</li><li>ACL 2025 发表，经过同行评审验证</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>无公开代码</li><li>主要用于 speculative decoding 加速而非 reasoning 提升</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>ACL 2025 发表的 speculative decoding 工作，通过跨步表示对齐修复 draft model mismatch。</p>
+</article>
+
+<!-- ========== CARD 4: Step-Audio-R1 ========== -->
+<article class="paper-card" id="card-step-audio-r1">
+<h2>Step-Audio-R1: On-Policy Self-Distillation for Audio Reasoning</h2>
+<div class="meta-row">
+  <span class="tag">Step-Audio-R1</span>
+  <a href="https://arxiv.org/abs/2511.15848" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2511.15848.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/stepfun-ai/Step-Audio-R1" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">StepFun · arXiv 2511.15848</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>将 on-policy self-distillation 应用于音频推理任务，通过迭代 self-distillation + SFT + PPO/RLVR 混合管线提升多模态音频推理能力。仅使用模态相关问题做 self-distill 更有效。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>将 OPSD 拓展到多模态（音频）推理场景</li><li>模态特定数据筛选策略有效</li><li>有开源代码和模型</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>音频模态的 privileged context 设计细节未充分展开</li><li>与纯文本 OPSD 的差异分析不足</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>多模态（音频）OPSD 的代表工作，展示了 self-distillation 范式在非文本模态上的可行性。</p>
+</article>
+
+<!-- ========== CARD 5: SDPO ========== -->
+<article class="paper-card" id="card-sdpo">
+<h2>SDPO: Reinforcement Learning via Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">SDPO</span>
+  <a href="https://arxiv.org/abs/2601.20802" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2601.20802.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/lasgroup/SDPO" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">ETH Zurich / MPI / MIT / Stanford · arXiv 2601.20802</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>不依赖外部强教师，把"当前模型在看到 rich feedback 后形成的 hindsight token distribution"当作 self-teacher，蒸馏回原始 student，将 RLVR 中稀疏的 scalar reward 转化为 dense logit-level credit assignment。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2601_sdpo_self_distillation_policy_optimization/sdpo-fig-rlrf_new_palatino.png" alt="RLRF vs RLVR"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2601_sdpo_self_distillation_policy_optimization/sdpo-schematic-v5-grid-shorter.png" alt="SDPO schematic"></div>
+</div>
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Credit assignment 太稀疏：</strong>RLVR 中所有 token 共享同一个 reward，难以定位错误位置</li>
+  <li><strong>Group reward collapse：</strong>GRPO 全组 rollout 失败时 advantage 塌为 0</li>
+  <li><strong>核心洞察：</strong>LLM 已具备 in-context hindsight correction 能力——看到反馈后能回顾性识别自己哪里出错了</li>
+</ul>
+<h3 class="section-title">方法：Self-Distillation Policy Optimization</h3>
+<ul>
+  <li>定义 <strong>RLRF</strong> 范式：将 scalar reward 升级为 tokenized feedback（runtime error、failing tests）</li>
+  <li>构造 <strong>self-teacher</strong>：$q_\theta(\cdot|x,f) = \pi_\theta(\cdot|\text{reprompt}(x,f))$，同一模型+反馈条件</li>
+  <li>SDPO 目标：$\mathcal{L}_{\text{SDPO}} = \sum_t \text{KL}(\pi_\theta(\cdot|x,y_{&lt;t}) \| \text{stopgrad}(\pi_\theta(\cdot|x,f,y_{&lt;t})))$</li>
+  <li>用 top-K distillation 节省显存，trust-region/EMA teacher regularization 保证稳定</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Setting</th><th>Method</th><th>Performance</th></tr>
+  <tr><td>LCBv6 Coding</td><td>GRPO</td><td>41.2%</td></tr>
+  <tr><td></td><td class="best">SDPO</td><td class="best">48.8% (+7.6pp)</td></tr>
+  <tr><td>Science QA (Olmo3 Chem)</td><td>GRPO 5h</td><td>~50%</td></tr>
+  <tr><td></td><td class="best">SDPO 50min</td><td class="best">同等效果 (~6x speedup)</td></tr>
+</table>
+<p>响应长度缩短 3.2x（820→256 tokens）。Test-Time SDPO 在 very hard 题上 discovery@k 达 53.2% vs best-of-k 41.5%。</p>
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>Credit assignment 粒度：</strong>logit-level > token-level > sequence-level > GRPO</li>
+  <li><strong>Teacher regularization：</strong>无正则 teacher 发散 (36.1%)，trust-region best (50.6%)</li>
+  <li><strong>Feedback 类型：</strong>environment output + sample solution 联合效果最好</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>无需外部 teacher，利用模型自身 ICL 能力构建 self-teacher</li><li>Dense logit-level credit assignment 远优于 sequence-level reward</li><li>兼容现有 RLVR pipeline，额外开销仅 ~1.2-1.5x</li><li>响应更高效简洁，长度缩短 3-11x</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>依赖 base model 的 hindsight 能力，弱模型上不如 GRPO 稳定</li><li>需要 rich feedback，标准 RLVR 环境效果不如有真正环境反馈</li><li>主实验偏向 verifiable/agentic tasks，开放式生成未系统探索</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将 RLVR 升级为 RLRF 范式，通过 self-teacher hindsight distribution 实现无需外部 teacher 的 dense credit assignment，是 OPSD 方向中"内生自蒸馏+RL"的代表作。</p>
+</article>
+
+<!-- ========== CARD 6: OPSD (Self-Distilled Reasoner) ========== -->
+<article class="paper-card" id="card-opsd">
+<h2>OPSD: Self-Distilled Reasoner — On-Policy Self-Distillation for Large Language Models</h2>
+<div class="meta-row">
+  <span class="tag">OPSD</span>
+  <a href="https://arxiv.org/abs/2601.18734" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2601.18734.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/siyan-zhao/OPSD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2601.18734</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>让同一个 LLM 同时充当 student（只看问题）和 teacher（额外看 ground-truth reasoning trace），在 student 自己采样的 rollout 上做逐 token 分布对齐。核心假设：rationalization is easier than generation。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2601_self_distilled_reasoner_on_policy_self_distillation_for_large_language_models/opsd.png" alt="OPSD framework"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>Student 只看问题 $x$，teacher 额外看到 ground-truth solution $y^*$，参数共享但上下文不同</li>
+  <li>主目标：full-vocabulary forward KL 蒸馏在 student rollout 上</li>
+  <li><strong>Pointwise KL clipping：</strong>限制极端 divergence 项的影响，防止 style token 吞没数学 token 监督</li>
+  <li>最优配置：student thinking mode off + teacher thinking mode on</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>OPSD</th><th>GRPO</th><th>SFT</th><th>Base</th></tr>
+  <tr><td>Qwen3-8B avg</td><td class="best">64.8</td><td>64.0</td><td>59.8</td><td>61.8</td></tr>
+  <tr><td>Qwen3-4B avg</td><td class="best">63.6</td><td>62.7</td><td>—</td><td>61.2</td></tr>
+  <tr><td>Qwen3-1.7B avg</td><td class="best">43.4</td><td>37.7</td><td>—</td><td>37.1</td></tr>
+</table>
+<p>小模型收益最大（1.7B 提升 ~6pp）。Token efficiency：OPSD 每题 1 rollout×1024 tokens×100 steps vs GRPO 8 条×16k×500 steps。</p>
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>Divergence 目标：</strong>Forward KL >> Reverse KL, JSD</li>
+  <li><strong>Full-vocabulary vs sampled-token：</strong>全词表蒸馏显著更优（AIME25 84.1 vs 82.1）</li>
+  <li><strong>Generation length：</strong>1024 vs 4096 差异不大，前期 token 监督价值更高</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>设定干净：只利用 ground-truth solution 作为 privileged information</li><li>Token efficiency 显著高于 GRPO</li><li>对小模型尤其有效：1.7B 上提升 ~6pp</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>只验证到 8B 规模，更大模型上未验证</li><li>依赖 ground-truth solution，无高质量 reference 时不适用</li><li>尚未引入显式 correctness verification</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>OPSD 方向的核心代表作，在 SFT 和 RL 之间找到平衡——兼具 on-policy 真实性与 dense supervision，且不依赖外部大 teacher。</p>
+</article>
+
+<!-- ========== CARD 7: SDFT-Continual ========== -->
+<article class="paper-card" id="card-sdft">
+<h2>SDFT-Continual: Self-Distillation Fine-Tuning for Continual Learning</h2>
+<div class="meta-row">
+  <span class="tag">SDFT</span>
+  <a href="https://arxiv.org/abs/2601.19897" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2601.19897.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/idanshen/Self-Distillation" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">MIT / ETH · arXiv 2601.19897</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>使用 demo-conditioned 的同一模型作为教师，在学生自己的 rollout 上做 reverse KL self-distillation，实现持续学习而不遗忘。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>概念简洁：持续学习 = 持续 self-distillation</li><li>无需外部 teacher，用 privileged context 同一模型作为锚定教师</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>简略摘要，缺乏详细实验数据</li><li>Demo conditioning 的 prompt 设计细节未展开</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将 self-distillation 应用于持续学习场景，通过 privileged context 锚定防止灾难性遗忘。</p>
+</article>
+
+<!-- ========== CARD 8: GATES ========== -->
+<article class="paper-card" id="card-gates">
+<h2>GATES: Self-Distillation under Privileged Context for Document QA</h2>
+<div class="meta-row">
+  <span class="tag">GATES</span>
+  <a href="https://arxiv.org/abs/2602.20574" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.20574.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">UMD · arXiv 2602.20574</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>在 Document QA 中利用文档作为 privileged context 构造 tutor，通过混合 on/off-policy 的 trajectory-level self-distillation 将文档知识蒸馏给学生，并用 tutor consensus gating 保证信号质量。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>Tutor consensus gating 可推广到多教师场景</li><li>混合 on/off-policy 设计提供灵活性</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>核心增益主要来自 off-policy，on-policy 贡献有限</li><li>仅在 Document QA 单一场景验证</li><li>无公开代码</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>Document QA 场景下的 privileged-context self-distillation，揭示了 off-policy 是主要驱动力。</p>
+</article>
+
+<!-- ========== CARD 9: MTP Self-Distill ========== -->
+<article class="paper-card" id="card-mtp">
+<h2>MTP Self-Distillation: Multi-Token Prediction via Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">MTP</span>
+  <a href="https://arxiv.org/abs/2602.06019" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.06019.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/jwkirchenbauer/mtp-lm" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">UMD / LLNL · arXiv 2602.06019</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过 self-distillation 将 next-token prediction head 的知识蒸馏到 multi-token prediction head，稳定 MTP 训练过程，同时提升推理速度和表示质量。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>将 MTP 训练与 self-distillation 结合，思路新颖</li><li>可同时提升推理速度和表示质量</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>实验细节记录不足</li><li>具体数值结果和 ablation 缺失</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将 self-distillation 应用于 multi-token prediction 训练稳定性的方法。</p>
+</article>
+
+<!-- ========== CARD 10: OPCD ========== -->
+<article class="paper-card" id="card-opcd">
+<h2>OPCD: On-Policy Context Distillation for Knowledge Internalization</h2>
+<div class="meta-row">
+  <span class="tag">OPCD</span>
+  <a href="https://arxiv.org/abs/2602.12275" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.12275.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/microsoft/LMOps" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">Microsoft Research · arXiv 2602.12275</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过 on-policy reverse-KL 蒸馏将 in-context knowledge 内化到模型参数中，使模型在移除上下文后仍能保持高性能。"知识内化 = self-distillation with context"。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>教师：同一模型 + in-context knowledge（privileged context）</li>
+  <li>学生：同一模型，无上下文</li>
+  <li>学生在无上下文时自行 rollout，教师在相同 rollout prefix 上（带上下文）提供 per-token 监督</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>"知识内化"范式清晰可推广</li><li>可用于将 Agent 的工具文档、知识库等上下文信息内化</li><li>有 Microsoft 官方代码</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>简略摘要，具体实验数值和 ablation 细节缺失</li><li>泛化到更复杂知识类型的有效性待验证</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>On-policy context distillation 的代表性工作，将上下文知识内化到模型参数。</p>
+</article>
+
+<!-- ========== CARD 11: CRISP ========== -->
+<article class="paper-card" id="card-crisp">
+<h2>CRISP: On-Policy Self-Distillation for Reasoning Compression</h2>
+<div class="meta-row">
+  <span class="tag">CRISP</span>
+  <a href="https://arxiv.org/abs/2603.05433" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.05433.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/HJSang/CRISP_Reasoning_Compression" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">LinkedIn · arXiv 2603.05433</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>给教师添加 "be concise" 指令作为 privileged context，再用 on-policy RKL 蒸馏让学生学会在无显式指令时也产生简洁推理链，压缩推理长度而不导致 entropy collapse。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>"通过指令蒸馏压缩推理"可推广到控制输出长度场景</li><li>有效区分了 self-distillation 与 RL 长度惩罚在 entropy collapse 上的差异</li><li>方法简洁实用，有公开代码</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>缺少具体压缩率数值和 benchmark 结果</li><li>压缩效果的跨任务泛化性待验证</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>推理链压缩场景下的 on-policy self-distillation，避免了 RL 长度惩罚的 entropy collapse 问题。</p>
+</article>
+
+<!-- ========== CARD 12: OEL ========== -->
+<article class="paper-card" id="card-oel">
+<h2>OEL: Online Experiential Learning for Language Models</h2>
+<div class="meta-row">
+  <span class="tag">OEL</span>
+  <a href="https://arxiv.org/abs/2603.16856" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.16856" target="_blank">PDF</a>
+  <a href="https://github.com/microsoft/LMOps" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">Microsoft Research · arXiv 2603.16856</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>在真实部署后将文本交互经验提炼为可迁移知识，再用 OPCD 风格的 on-policy context distillation 将知识压进模型权重，实现 reward-free 的在线持续学习闭环。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>两阶段闭环：先从交互轨迹中提取 experiential knowledge，再用 OPCD 做 on-policy RKL 蒸馏内化</li>
+  <li>经验提取器将 trajectory 压缩成可迁移规则/策略（非原始轨迹），token efficiency 更高</li>
+  <li>整个流程 reward-free，不需要 server 访问原始 user environment</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Setting</th><th>Knowledge</th><th>Raw Trajectory</th><th>w/o Experience</th></tr>
+  <tr><td>Sokoban in-context</td><td class="best">18.2</td><td>10.9</td><td>7.5</td></tr>
+  <tr><td>Sokoban consolidate</td><td class="best">21.4</td><td>7.8</td><td>7.5</td></tr>
+  <tr><td>Qwen3-1.7B 自身经验</td><td class="best">23.8 / 31.1</td><td colspan="2">On-policy 知识来源更关键</td></tr>
+</table>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>问题设置现实：不要求 reward、不要求人标、不要求 server 访问用户环境</li><li>经验提炼视角强：不是记忆原始轨迹而是抽象成可迁移知识</li><li>闭环完整：部署→经验回流→知识提炼→参数内化→再部署</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>实验环境较简单（Frozen Lake、Sokoban）</li><li>知识质量依赖 extractor，可能累积偏差</li><li>Online loop 可能引入自我强化偏差</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将 OPD/OPCD 作为核心 consolidation engine，支撑 reward-free 在线自我改进系统的框架性工作。</p>
+</article>
+
+<!-- ========== CARD 13: PACED ========== -->
+<article class="paper-card" id="card-paced">
+<h2>PACED: Frontier Curriculum Self-Distillation at Student Competence Boundary</h2>
+<div class="meta-row">
+  <span class="tag">PACED</span>
+  <a href="https://arxiv.org/abs/2603.11178" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.11178.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/HJSang/OPSD_OnPolicyDistillation" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">LinkedIn · arXiv 2603.11178</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>发现梯度信噪比随学生通过率呈钟形曲线，提出在学生"能力边界"（pass rate p ≈ 0.5）的问题上集中训练，用 $w(p)=p(1-p)$ 构造 frontier curriculum 以显著提升 OPD 效率。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>直觉清晰："跳一跳够得着"的问题最有训练价值</li><li>简单高效：仅需 pass rate 即可计算权重</li><li>与任何 OPD 方法兼容（采样策略而非损失修改）</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>需要定期评估 pass rate，带来额外推理开销</li><li>缺少具体数值实验结果</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>面向 on-policy distillation 的课程学习采样策略，在学生能力边界上集中训练以提升效率。</p>
+</article>
+
+<!-- ========== CARD 14: Why-SD-Degrade ========== -->
+<article class="paper-card" id="card-why-degrade">
+<h2>Why Does Self-Distillation (Sometimes) Degrade Reasoning?</h2>
+<div class="meta-row">
+  <span class="tag">Analysis</span>
+  <a href="https://arxiv.org/abs/2603.24472" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.24472.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/beanie00/self-distillation-analysis" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">MSR / KAIST / SNU · arXiv 2603.24472</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>诊断性研究发现 rich privileged context 的教师会抑制学生的 epistemic verbalization（不确定性表达），导致学生"假装确定"，在 OOD 任务上出现最高 40% 的性能退化。</div>
+<h3 class="section-title">核心发现</h3>
+<ul>
+  <li><strong>Epistemic Verbalization Collapse：</strong>rich privileged context 抑制学生不确定性表达</li>
+  <li>Rich context 带来更大 in-domain 增益，但造成更严重 OOD 退化</li>
+  <li>Thin privileged context 提供更平衡的 in-domain/OOD 表现</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>揭示了 OPSD 的关键失败模式</li><li>Epistemic verbalization collapse 概念化具有理论深度</li><li>对方法设计有重要指导意义</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>纯分析论文，未提出解决方案</li><li>如何平衡 in-domain 增益与 OOD 退化仍需后续探索</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>诊断性分析工作，揭示了 OPSD 在 rich privileged context 下的 epistemic verbalization collapse 失败模式。</p>
+</article>
+
+<!-- ========== CARD 15: SSD ========== -->
+<article class="paper-card" id="card-ssd">
+<h2>SSD: Embarrassingly Simple Self-Distillation Improves Code Generation</h2>
+<div class="meta-row">
+  <span class="tag">SSD</span>
+  <a href="https://arxiv.org/abs/2604.01193" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.01193.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/apple/ml-ssd" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">Apple MLR · arXiv 2604.01193</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过训练时温度与截断配置系统性改写目标分布，使普通交叉熵训练也能诱导非平凡自我提升——压缩无用 tail、保留有价值的 head 探索。方法极简：无验证器、无 RL、无教师、无正确性过滤。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>用训练时解码配置 $(T_{\text{train}}, \rho_{\text{train}})$ 从冻结基础模型采样，不做执行验证</li>
+  <li>理论分解：support compression（压低外部尾部概率）+ within-support reshaping（保留头内有效探索）</li>
+  <li>有效温度 $T_{\text{eff}} = T_{\text{train}} \cdot T_{\text{eval}}$，最佳工作带约在 1.2 附近</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>Base</th><th>SSD</th><th>Change</th></tr>
+  <tr><td>Qwen3-30B-Instruct LCBv6</td><td>42.4%</td><td class="best">55.3%</td><td>+12.9pp</td></tr>
+  <tr><td>Qwen3-4B-Instruct</td><td>—</td><td>+7.5pp</td><td>—</td></tr>
+</table>
+<p>提升主要集中在中等/困难问题。即使 62% 输出无法提取代码的高温数据仍能带来提升。单纯调温度的解码扫描 vs SSD 差 11.8pp。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>方法极简但收益硬（+12.9pp on 30B）</li><li>提供完整机制叙事：lock/fork、支持压缩、有效温度</li><li>是 OPD/self-distillation 的重要低复杂度对照基线</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>适用性高度依赖代码任务的 lock/fork 结构</li><li>需要仔细调节训练/推理解码超参数</li><li>与 OPD 联系是"邻近机制"而非同一算法族</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>无 reward 自提升的机制型论文，适合作为复杂 RL 方法的低复杂度对照基线。</p>
+</article>
+
+<!-- ========== CARD 16: RLSD ========== -->
+<article class="paper-card" id="card-rlsd">
+<h2>RLSD: Self-Distilled RLVR — Reinforcement Learning with Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">RLSD</span>
+  <a href="https://arxiv.org/abs/2604.03128" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.03128.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.03128</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>OPSD 训练后期退化是因为教师控制了更新方向导致信息泄漏。RLSD 提出用环境奖励决定更新方向、自蒸馏只提供 token 级更新幅度，实现"方向与幅度分离"的无泄漏共享参数自蒸馏。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_self_distilled_rlvr/sigma-intro.png" alt="RLSD: sigma intro"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_self_distilled_rlvr/RLSD-method.png" alt="RLSD method"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>Step 1: 计算特权信息增益 $\Delta_t = \text{sg}(\log P_T - \log P_S)$</li>
+  <li>Step 2: 方向感知证据比率 $w_t = \exp(\text{sign}(A) \cdot \Delta_t)$（只改幅度不改方向）</li>
+  <li>Step 3: 裁剪 token 级优势 $\hat{A}_t = A \cdot \text{clip}(w_t, 1-\epsilon_w, 1+\epsilon_w)$</li>
+  <li>结构保证：方向隔离、支持隔离、幅度有界 → 无泄漏</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Method</th><th>MMMU</th><th>MathVista</th><th>MathVision</th><th>Avg</th></tr>
+  <tr><td>GRPO</td><td>62.44</td><td>73.80</td><td>47.37</td><td>53.86</td></tr>
+  <tr><td>OPSD</td><td>60.44</td><td>73.60</td><td>46.47</td><td>52.49</td></tr>
+  <tr><td class="best">RLSD</td><td class="best">67.22</td><td class="best">78.10</td><td class="best">52.73</td><td class="best">56.18</td></tr>
+</table>
+<p>200 步 RLSD 已超过 400 步 GRPO。OPSD 前期快但中后期退化，RLSD 兼顾前期加速和后期稳定性。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>先把 OPSD 为何失败讲清楚，再给解法（诊断型论文）</li><li>"方向 vs 幅度"抽象可迁移到多种 token 级 credit assignment 场景</li><li>工程轻量，只需额外一遍带特权信息的前向传播</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>实验集中在多模态推理</li><li>仍依赖可验证奖励或最终真实答案</li><li>Bayesian 解释依赖模型近似先验/后验能力</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>把"教师有特权信息时自蒸馏的边界"说清楚的诊断+方法论论文，提出方向与幅度分离的核心原则。</p>
+</article>
+
+<!-- ========== CARD 17: SRPO ========== -->
+<article class="paper-card" id="card-srpo">
+<h2>SRPO: Unifying Group-Relative and Self-Distillation Policy Optimization via Sample Routing</h2>
+<div class="meta-row">
+  <span class="tag">SRPO</span>
+  <a href="https://arxiv.org/abs/2604.02288" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.02288.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.02288</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>对每个 rollout 做样本级路由：正确样本走 GRPO 分支，错误且有教师信息的走 SDPO 分支，配合基于教师熵的动态加权，统一 GRPO 的稳定性和 SDPO 的高效细粒度纠错。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_unifying_group_relative_and_self_distillation_policy_optimization_via_sample_routing/method.png" alt="SRPO method"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>样本路由：正确 → GRPO；错误有教师信息 → SDPO；错误无信息 → 回退 GRPO</li>
+  <li>Dynamic-Weighted SDPO：基于教师 token 熵的动态加权，熵低权重高</li>
+  <li>自动课程学习：早期错误多→SDPO 占比大；后期正确多→GRPO 占主导</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>GRPO</th><th>SDPO</th><th class="best">SRPO</th></tr>
+  <tr><td>Qwen3-8B avg</td><td>74.0</td><td>71.1</td><td class="best">77.4 (+3.4)</td></tr>
+  <tr><td>Qwen3-4B avg</td><td>69.7</td><td>66.7</td><td class="best">74.2 (+4.5)</td></tr>
+</table>
+<p>后期计算成本更低：10h 时 SRPO 每步 75.8s vs GRPO 91.5s（快 17.2%）。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>问题定义精准：明确指出 SDPO 崩溃的两个原因</li><li>路由规则简单但有效，不需额外混合超参数</li><li>后期成本更低（正确样本增多→教师计算减少）</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>教师信息依赖同组正确兄弟 rollout，一组全错时无法触发 SDPO</li><li>适用范围还局限在五个基准</li><li>动态权重只看熵，未来可结合更多可靠性指标</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>把"什么时候蒸馏、什么时候不蒸馏"讲得非常具体的样本级路由方法，统一 GRPO 与 SDPO。</p>
+</article>
+
+<!-- ========== CARD 18: Skill-SD ========== -->
+<article class="paper-card" id="card-skill-sd">
+<h2>Skill-SD: Skill-Conditioned Self-Distillation for Multi-Turn LLM Agents</h2>
+<div class="meta-row">
+  <span class="tag">Skill-SD</span>
+  <a href="https://arxiv.org/abs/2604.10674" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.10674.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.10674</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>把智能体轨迹中总结出的自然语言 skills 只给教师看、不给学生看，通过重要性加权逆 KL 的 on-policy 自蒸馏将 skill 内化到学生，将 OPD 从"固定答案蒸馏"推进到"动态 skill 蒸馏"。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_skill_sd_skill_conditioned_self_distillation_for_multi_turn_llm_agents/Skill-SD.png" alt="Skill-SD framework"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>从历史轨迹中用外部 LLM 总结出 skills（success_analysis + mistake_analysis + golden_workflow）</li>
+  <li>推导了 importance-weighted reverse-KL 估计器，修正跨 prompt 自蒸馏的梯度偏差</li>
+  <li>训练目标 = GRPO（任务级 credit）+ λ·SDL（token 级塑形）</li>
+  <li>学生始终在 plain prompt 下 on-policy rollout，推理时无需依赖 skill 检索</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Benchmark</th><th>Vanilla GRPO</th><th>Skill-Augmented GRPO</th><th class="best">Skill-SD</th></tr>
+  <tr><td>AppWorld</td><td>50.9%</td><td>42.1%</td><td class="best">64.9% (+14.0%)</td></tr>
+  <tr><td>Sokoban</td><td>51.6%</td><td>20.3%</td><td class="best">62.5% (+10.9%)</td></tr>
+</table>
+<p>Skill-Augmented GRPO 反而变差——证明 skill 不应直接给 student。教师拥有的 rollout 在 Sokoban 上几乎完全崩溃（10.9%），证明 on-policy rollout 不可放松。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>将 OPD 从"固定答案蒸馏"扩展到"动态 skill 蒸馏"</li><li>重要性加权逆 KL 推导是跨 prompt 自蒸馏的核心贡献</li><li>清晰证明 skills 应作为 training-only 特权信息</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>仅 AppWorld 和 Sokoban 两个基准</li><li>Skill 总结依赖外部 LLM API</li><li>仅在单一模型尺度（4B）验证</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将 OPD 从单步/单答案问题扩展到多轮多路径智能体任务的关键工作。</p>
+</article>
+
+<!-- ========== CARD 19: SD-Zero ========== -->
+<article class="paper-card" id="card-sd-zero">
+<h2>SD-Zero: Self-Revision Turns Binary Rewards into Dense Supervision</h2>
+<div class="meta-row">
+  <span class="tag">SD-Zero</span>
+  <a href="https://arxiv.org/abs/2604.12002" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.12002.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">Princeton / Toronto / CMU · arXiv 2604.12002</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>使用单一模型扮演 Generator 和 Reviser 双角色，Reviser 接收 Generator 的回答 + 二值奖励作为条件，通过自我修正将稀疏二值奖励转化为密集 token 级监督。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>Generator 生成初始回答，Reviser 接收回答 + 二值奖励作为条件生成修正版</li>
+  <li>通过逐 token KL 蒸馏从 Reviser 到 Generator</li>
+  <li>特权上下文是非文本的：Generator 完整回答 + 标量二值奖励</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>"二值奖励 → 密集监督"的优雅转化</li><li>在 Qwen3-4B / OLMo-3-7B 上比基础模型提升 ≥10%</li><li>优于 RFT、GRPO、SDFT（匹配样本预算下）</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>仍需要可验证的二值奖励信号</li><li>Generator-Reviser 共同进化的稳定性待深入分析</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将自我修正作为桥接稀疏奖励与密集监督的机制，是 OPSD 中"非文本特权上下文"的代表。</p>
+</article>
+
+<!-- ========== CARD 20: π-Play ========== -->
+<article class="paper-card" id="card-pi-play">
+<h2>π-Play: Multi-Agent Self-Play via Privileged Self-Distillation without External Data</h2>
+<div class="meta-row">
+  <span class="tag">π-Play</span>
+  <a href="https://arxiv.org/abs/2604.14054" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.14054.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.14054</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>将自博弈过程中天然产生的 Question Construction Path (QCP) 重新解释为内在的特权信息，用它驱动同规模教师对 on-policy 学生轨迹做 token 级自蒸馏，将稀疏自博弈训练转化为 dense-feedback 自进化框架。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_pi_play_multi_agent_self_play_via_privileged_self_distillation_without_external_data/framework_compare4.png" alt="π-Play framework"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_pi_play_multi_agent_self_play_via_privileged_self_distillation_without_external_data/teacher_guidance6.png" alt="Teacher guidance"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>三个角色：Examiner（生成问题+QCP）、Teacher（看问题+QCP）、Student（只看问题，on-policy）</li>
+  <li>Teacher 是学生的 EMA 平滑副本（τ=0.05），看到特权 QCP</li>
+  <li>完全无需外部数据/人工标注/更强教师</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>Dr.Zero</th><th class="best">π-Play</th></tr>
+  <tr><td>Qwen3-4B-Instruct-2507</td><td>266.3</td><td class="best">277.2 (+10.9)</td></tr>
+  <tr><td>Qwen3-8B</td><td>274.9</td><td class="best">280.3 (+5.4)</td></tr>
+</table>
+<p>一轮迭代即接近或超过 Dr.Zero 三轮效果。训练时间仅增加约 4.3%。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>不依赖外部数据/更强教师/人工密集奖励</li><li>QCP 是自博弈过程天然产物的巧妙利用</li><li>Examiner-Teacher-Student 三者关系清晰</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>QCP 质量依赖 examiner 本身，初期构题质量不高可能带偏学生</li><li>仅在搜索 QA 场景验证</li><li>Teacher 用 EMA 近似，未显式优化</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>将自博弈的中间结构转化为自蒸馏所需的特权信息，是 self-play + self-distillation 的范式融合。</p>
+</article>
+
+<!-- ========== CARD 21: OPSDL ========== -->
+<article class="paper-card" id="card-opsdl">
+<h2>OPSDL: On-Policy Self-Distillation for Long-Context Language Models</h2>
+<div class="meta-row">
+  <span class="tag">OPSDL</span>
+  <a href="https://arxiv.org/abs/2604.17535" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.17535.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">Baidu · arXiv 2604.17535</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>使用短上下文的同一模型作为教师，对长上下文学生做逐点逆 KL 蒸馏，通过自蒸馏让长上下文模型学会保持短上下文模型的精确推理能力。</div>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>长上下文优化的新方案，无需外部教师</li><li>短上下文教师提供了稳定的推理锚定</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>简略版未记录详细实验数据</li><li>依赖于短上下文与长上下文之间的性能差距作为驱动力</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>长上下文 LLM 优化的自蒸馏方案，将短上下文精确性迁移到长上下文。</p>
+</article>
+
+<!-- ========== CARD 22: PBSD ========== -->
+<article class="paper-card" id="card-pbsd">
+<h2>PBSD: Preference-Based Self-Distillation beyond KL Matching via Reward Regularization</h2>
+<div class="meta-row">
+  <span class="tag">PBSD</span>
+  <a href="https://arxiv.org/abs/2605.05040" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.05040.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.05040</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>把 self-distillation 从纯 KL matching 提升到 reward-regularized 目标——student 不应照抄 teacher，而应学习 teacher 分布按 latent reward 指数重加权后的 reward-tilted distribution，用 DPO 风格 pairwise preference objective 近似优化。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_preference_based_self_distillation_beyond_kl_matching_via_reward_regularization/fig_tsd_vs_DPOSD.png" alt="PBSD vs OPSD"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_preference_based_self_distillation_beyond_kl_matching_via_reward_regularization/aime25_step_acc_curve.png" alt="AIME25 step accuracy"></div>
+</div>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>OPSD</th><th>GRPO</th><th class="best">PBSD</th></tr>
+  <tr><td>Qwen3-8B Math Avg</td><td>64.2</td><td>63.8</td><td class="best">65.2</td></tr>
+  <tr><td>Qwen3-8B Tool Use</td><td>65.6</td><td>—</td><td class="best">72.0</td></tr>
+  <tr><td>Qwen3-1.7B Math Avg</td><td>43.2</td><td>—</td><td class="best">44.3</td></tr>
+</table>
+<p>OPSD 早早到峰值后退化，PBSD 更稳定持续提升。1.7B 收益最完整。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>观点很强：teacher 不是 oracle，不该被完整复制</li><li>理论与算法衔接自然：reward-regularized optimum → preference-margin → DPO-style</li><li>Tool-use 结果证明不只在 math 上 work</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>仍依赖 privileged context，若上下文很弱收益受限</li><li>latent reward 不可直接观测</li><li>最大只验证到 8B</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>对 OPSD 的直接升级，把 self-distillation 从 imitation-style 推向 reward-aware self-improvement。</p>
+</article>
+
+<!-- ========== CARD 23: TRACE ========== -->
+<article class="paper-card" id="card-trace">
+<h2>TRACE: Distilling Where It Matters via Token-Routed Self On-Policy Alignment</h2>
+<div class="meta-row">
+  <span class="tag">TRACE</span>
+  <a href="https://arxiv.org/abs/2605.10194" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.10194.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.10194</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>只在真正关键的 reasoning span（≤25% token）上蒸馏，对不同类型 span 用不同 KL 方向（FKL/RKL/无），且 privileged KL 通道在短暂 warm-up 后衰减为 0，避免全 token 蒸馏的伤害。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_trace_distilling_where_it_matters_via_token_routed_self_on_policy_alignment/trace_final.png" alt="TRACE framework"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>Span Annotator 标出关键 span（key spans / error spans），覆盖率 ≤25%</li>
+  <li>Key spans 用 FKL，error spans 用 RKL；KL 权重快速 decay 到 0</li>
+  <li>剩余 token 走 GRPO，span token 在 KL 衰减后也交还给 GRPO</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Method</th><th>AVG</th><th>AIME25</th><th>AIME24</th><th>GPQA-D</th></tr>
+  <tr><td>GRPO</td><td>78.75</td><td>68.96</td><td>77.08</td><td>—</td></tr>
+  <tr><td>RLSD</td><td>78.99</td><td>—</td><td>—</td><td>—</td></tr>
+  <tr><td class="best">TRACE (FKL on key)</td><td class="best">81.51</td><td class="best">73.54</td><td class="best">80.21</td><td>58.33</td></tr>
+</table>
+<p>GPQA-Diamond 几乎保住 base model OOD 水平（58.33 vs base 58.27）。Qwen3-1.7B 最优配置翻转为 RKL on error spans。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>把 self-OPD 问题从"teacher 好不好"转成"蒸馏粒度对不对"</li><li>FKL/RKL 路由有机制解释：under-allocation 用 FKL，confident-wrong 用 RKL</li><li>Privileged leakage 控制成显式设计目标</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>依赖 annotator 的 span 定位质量</li><li>目前主要验证在 math RLVR</li><li>Coarse type taxonomy 仍是人工设计</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>把 self-distillation 失败重新解释为 supervision granularity / divergence direction / privileged exposure 三重 mismatch。</p>
+</article>
+
+<!-- ========== CARD 24: RLRT ========== -->
+<article class="paper-card" id="card-rlrt">
+<h2>RLRT: Rebellious Student — Reversing Teacher Signals for Reasoning Exploration</h2>
+<div class="meta-row">
+  <span class="tag">RLRT</span>
+  <a href="https://arxiv.org/abs/2605.10781" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.10781.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">MSR / KAIST · arXiv 2605.10781</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>在正确 rollout 上把 teacher signal 反过来读——强化 student 背离 teacher 但仍然做对的 token（self-driven reasoning），把 teacher-student gap 从"对齐目标"重解释为"有价值探索信号"。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>RLRT 将 RLSD 的 ratio 翻转：$(P_S/P_T)^{\text{sign}(A)}$ 而非 $(P_T/P_S)^{\text{sign}(A)}$</li>
+  <li>只在正确 rollout（reward gate）上启用 reversed signal，错误 rollout 退回 vanilla GRPO</li>
+  <li>用 clip + mixing 限制 reversed signal 强度</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>GRPO Avg</th><th class="best">RLRT Avg</th><th>Gain</th></tr>
+  <tr><td>Qwen3-4B-Base</td><td>—</td><td class="best">—</td><td>+18.0%</td></tr>
+  <tr><td>Qwen3-8B-Base</td><td>—</td><td class="best">—</td><td>+12.0%</td></tr>
+  <tr><td>AIME24 4B-Base</td><td>15.0</td><td class="best">22.5</td><td>+50%</td></tr>
+  <tr><td>AIME24 8B-Base</td><td>19.8</td><td class="best">27.9</td><td>+41%</td></tr>
+</table>
+<p>Base 模型收益最大，thinking-tuned 收益最小。从 pass@1 到 pass@256 全面压过 GRPO+EntropyBonus。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>问题抓得准：self-distillation 在正确 rollout 上可能扼杀学生自己的 reasoning</li><li>方法简单但语义全新：翻转 ratio + reward gate，从 imitation 变成 exploration</li><li>分析扎实：因果干预 + distribution shift + pass@k 三层分析</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>目前是 self-distillation setting，teacher 和 student 共享参数</li><li>实验集中在数学推理</li><li>尚未探索外部更强 teacher 等更多 context 形式</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>提出新的 self-distillation 设计轴——teacher 信号可以不是对齐目标而是探索定位器。</p>
+</article>
+
+<!-- ========== CARD 25: RESD ========== -->
+<article class="paper-card" id="card-resd">
+<h2>RESD: Learning with Rare Success via Reflection-Enhanced Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">RESD</span>
+  <a href="https://arxiv.org/abs/2605.12741" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.12741" target="_blank">PDF</a>
+  <a href="https://github.com/horizon-llm/RESD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.12741</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>在标准 SDPO 框架里，把 teacher 看到的失败反馈从"原始错误信息"升级成"reflection + playbook + solution buffer"组成的增强上下文，让 self-teacher 在 rare-success 场景下仍能给出强 token-level 纠错监督。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_learning_with_rare_success_but_rich_feedback_via_reflection_enhanced_self_distillation/resd_workflow_v3.png" alt="RESD workflow"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li><strong>Retrospective Reflection：</strong>对失败轨迹做回顾性反思，分析失败原因</li>
+  <li><strong>Playbook Curation：</strong>全局持久化经验集，跨 step 积累可复用纠错规则</li>
+  <li><strong>Solution Buffer：</strong>缓存稀少成功轨迹供 teacher 参考</li>
+  <li><strong>Success-Rate Rebalancing：</strong>按 batch success rate 对样本做梯度再平衡</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Benchmark (m@4)</th><th>Base</th><th>SDPO</th><th class="best">RESD</th></tr>
+  <tr><td>Manufactoria-Has</td><td>0.38</td><td>0.95</td><td class="best">35.80</td></tr>
+  <tr><td>BouncingSim-Easy</td><td>—</td><td>1.00</td><td class="best">4.25</td></tr>
+  <tr><td>Finer</td><td>—</td><td>40.93</td><td class="best">53.66</td></tr>
+</table>
+<p>Manufactoria-Has Per-Test-Case Accuracy: RESD 76.95 vs SDPO 37.66（巨幅提升）。</p>
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li>去掉 reflection：Manufactoria-Has 从 76.95 掉到 51.41，影响最大</li>
+  <li>去掉 playbook：从 76.95 掉到 60.65，跨 step 经验积累不可少</li>
+  <li>去掉 solution buffer：从 76.95 掉到 60.24</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>抓住 rare-success bootstrapping 真实瓶颈</li><li>把 failure feedback 从一次性信号变成跨 step 可复用资产</li><li>在极低成功率任务上效果非常强</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>Reflection 质量仍依赖模型自身，可能产生"坏经验累积"</li><li>更多是 teacher prompt engineering + online memory，非全新优化原理</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>低成功率阶段更高效的 bootstrapping 工具，建议先 RESD 再切 GRPO 的阶段性训练策略。</p>
+</article>
+
+<!-- ========== CARD 26: SDAR ========== -->
+<article class="paper-card" id="card-sdar">
+<h2>SDAR: Self-Distilled Agentic Reinforcement Learning</h2>
+<div class="meta-row">
+  <span class="tag">SDAR</span>
+  <a href="https://arxiv.org/abs/2605.15155" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.15155.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/ZJU-REAL/SDAR" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">ZJU-REAL · arXiv 2605.15155</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>把 OPSD 放到多轮 agent RL 场景中，用 token-level detached sigmoid gate 严格调制 teacher guidance，承认 skill-conditioned privileged teacher 只是局部可信，RL 保留为任务优化主干。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_self_distilled_agentic_reinforcement_learning/sdart_method.png" alt="SDAR method"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>GRPO 主干 + SDAR 辅助项解耦：RL 对齐任务回报，distillation 只补充 token-level shaping</li>
+  <li>Teacher-student gap $\Delta_t$ 经 detached sigmoid gate 过滤：$g_t=\sigma(\beta\Delta_t)$</li>
+  <li>Gate 只在 teacher 正向背书 student token 时放大 distillation，负向信号温和抑制</li>
+  <li>使用 reverse KL，mode-seeking 更适合"只吸收 teacher 正向支持"</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Benchmark</th><th>GRPO</th><th>GRPO+OPSD</th><th class="best">SDAR</th></tr>
+  <tr><td>ALFWorld</td><td>81.2</td><td>80.4 (不稳)</td><td class="best">85.9</td></tr>
+  <tr><td>Search-QA</td><td>42.0</td><td>—</td><td class="best">49.0</td></tr>
+  <tr><td>WebShop Score</td><td>80.9</td><td>—</td><td class="best">89.4</td></tr>
+</table>
+<p>GRPO+OPSD 在 7B ALFWorld 上不稳定，说明 naive OPSD 不是普适解。Random retrieval 仍优于无 OPSD。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>问题定位准：多轮 agent OPSD 失败是多重因素叠加</li><li>方法简单可插拔：只需两个上下文前向 + token-level gate</li><li>对 retrieval 质量不敏感，Random retrieval 仍有收益</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>依赖 skill library，系统性偏差强时 gate 无法创造正确知识</li><li>训练需额外 teacher-context forward pass</li><li>仅在 ALFWorld/Search-QA/WebShop 验证</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>首次把 OPSD 安全接入多轮 agent RL 的工作，核心创新是 token-level detached sigmoid gate。</p>
+</article>
+
+<!-- ========== CARD 27: Vision-OPD ========== -->
+<article class="paper-card" id="card-vision-opd">
+<h2>Vision-OPD: Learning to See Fine Details for Multimodal LLMs via On-Policy Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">Vision-OPD</span>
+  <a href="https://arxiv.org/abs/2605.18740" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.18740.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.18740</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>把同一个 MLLM 的"区域裁剪视角"当特权教师、"全图视角"当学生，在 on-policy 轨迹上做 token-level 分布对齐，将"测试时缩放看细节"的收益内化进单次前向推理。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_vision_opd_learning_to_see_fine_details_for_multimodal_llms_via_on_policy_self_distillation/Vision-OPD-cropped.png" alt="Vision-OPD framework"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_vision_opd_learning_to_see_fine_details_for_multimodal_llms_via_on_policy_self_distillation/regional_to_global_gap.png" alt="Regional-to-global gap"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>构建三元组数据（全图+红框/裁剪放大图/细粒度问题），约 6.2K 条训练数据</li>
+  <li>教师：裁剪图条件；学生：全图条件，同一 MLLM</li>
+  <li>EMA teacher 正则（α=0.05）、JSD 散度（β=0.5）、Top-K logits distillation（K=100）</li>
+  <li>推理时只需单次前向，无需多步工具调用</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>创新地把"视觉条件差异"作为特权教师构造方式</li><li>不增加推理时代理复杂度</li><li>训练数据量小（6.2K），性价比高</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>区域提议偏差会污染监督</li><li>验证集中在细粒度视觉问答</li><li>未报告详细 benchmark 对比分数</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>首次将 OPSD 范式引入多模态 LLM 细粒度视觉理解，用"输入条件更清晰的同模态视角"当 teacher。</p>
+</article>
+
+<!-- ========== CARD 28: DASD ========== -->
+<article class="paper-card" id="card-dasd">
+<h2>DASD: Direction-Adaptive Self-Distillation for LLM Reasoning</h2>
+<div class="meta-row">
+  <span class="tag">DASD</span>
+  <a href="https://arxiv.org/abs/2605.22263" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.22263.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.22263</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>把传统"统一吸引式"self-distillation 改成"按 token 不确定性切换吸引/排斥方向"——高熵 fork token 用 repulsion 保持探索，低熵 scaffold token 用 attraction 保持执行稳定。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_tailoring_teaching_to_aptitude_direction_adaptive_self_distillation_for_llm_reasoning/rq2_unified_pressure.png" alt="DASD: unified pressure analysis"></div>
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_tailoring_teaching_to_aptitude_direction_adaptive_self_distillation_for_llm_reasoning/fig_model_scaling.png" alt="DASD: model scaling"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>用 student entropy $H_t$ 做 entropy router 决定 distillation 方向（attraction vs repulsion）</li>
+  <li>路由系数 $\omega_t = \tanh((\tau_\rho - H_t)/\hat\sigma_H) \cdot \sigma(|\bar\delta_t|-1)$</li>
+  <li>与 verifier anchor 结合：trajectory-level reward 做全局锚点 + token-level signed correction</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model (Avg@16)</th><th>GRPO</th><th>RLSD</th><th class="best">DASD</th></tr>
+  <tr><td>Qwen3-8B</td><td>46.5</td><td>47.5</td><td class="best">52.5 (+6.0)</td></tr>
+  <tr><td>Qwen3-4B</td><td>45.8</td><td>—</td><td class="best">49.5</td></tr>
+  <tr><td>Qwen3-1.7B</td><td>33.8</td><td>—</td><td class="best">37.7</td></tr>
+</table>
+<p>AIME24 诊断：DASD StepAcc 63.7, Exploration density 4.3 vs OPSD 59.1/0.7。8B 时 DASD 优势最明显。</p>
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li>低熵+Conformity StepAcc +18.3%，高熵+Novelty exploration +61.3%</li>
+  <li>路由反了就复现 OPSD 失败模式</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>诊断链条完整：failure analysis → token probe → causal intervention → 方法设计</li><li>方法实现干净：最终只是 token-level correction 写进 advantage</li><li>Scaling 性能好：模型越大 margin 越大</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>依赖 privileged context 和 verified trace</li><li>Entropy 是否总是最好的 router 在 agent/multimodal 下未确定</li><li>实验主体集中在 math reasoning</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>在 OPSD 谱系中首次把"distillation direction"作为独立设计维度，提出 entropy-routed signed KL 框架。</p>
+</article>
+
+  <nav class="work-list" aria-label="已整理工作列表">
+    <h2>已整理工作列表</h2>
+    <p>点击标题可直接跳转到对应论文卡片。</p>
+    <ol>
+      <li><a href="#card-spin">SPIN: Self-Play Fine-Tuning Converts Weak LMs to Strong LMs</a><span class="work-meta">arXiv 2401.01335 · Self-Play + DPO</span></li>
+      <li><a href="#card-falcon">Falcon: Coupled Sequential Glancing Distillation for SD</a><span class="work-meta">arXiv 2412.12639 · Speculative Decoding</span></li>
+      <li><a href="#card-coral">CORAL: Cross-Step Representation Alignment for SD</a><span class="work-meta">arXiv 2502.16880 · ACL 2025 · Speculative Decoding</span></li>
+      <li><a href="#card-step-audio-r1">Step-Audio-R1: On-Policy Self-Distillation for Audio Reasoning</a><span class="work-meta">arXiv 2511.15848 · 多模态音频</span></li>
+      <li><a href="#card-sdpo">SDPO: Reinforcement Learning via Self-Distillation</a><span class="work-meta">arXiv 2601.20802 · ETH/MPI/MIT/Stanford · RLRF</span></li>
+      <li><a href="#card-opsd">OPSD: Self-Distilled Reasoner</a><span class="work-meta">arXiv 2601.18734 · Forward KL · Full-vocab</span></li>
+      <li><a href="#card-sdft">SDFT-Continual: Self-Distillation Fine-Tuning for Continual Learning</a><span class="work-meta">arXiv 2601.19897 · 持续学习</span></li>
+      <li><a href="#card-gates">GATES: Self-Distillation under Privileged Context for Document QA</a><span class="work-meta">arXiv 2602.20574 · Document QA</span></li>
+      <li><a href="#card-mtp">MTP Self-Distillation: Multi-Token Prediction via Self-Distillation</a><span class="work-meta">arXiv 2602.06019 · Multi-Token Prediction</span></li>
+      <li><a href="#card-opcd">OPCD: On-Policy Context Distillation for Knowledge Internalization</a><span class="work-meta">arXiv 2602.12275 · Microsoft · 知识内化</span></li>
+      <li><a href="#card-crisp">CRISP: On-Policy Self-Distillation for Reasoning Compression</a><span class="work-meta">arXiv 2603.05433 · LinkedIn · 推理压缩</span></li>
+      <li><a href="#card-oel">OEL: Online Experiential Learning for Language Models</a><span class="work-meta">arXiv 2603.16856 · Microsoft · 在线持续学习</span></li>
+      <li><a href="#card-paced">PACED: Frontier Curriculum Self-Distillation</a><span class="work-meta">arXiv 2603.11178 · LinkedIn · 课程学习</span></li>
+      <li><a href="#card-why-degrade">Why Does Self-Distillation (Sometimes) Degrade Reasoning?</a><span class="work-meta">arXiv 2603.24472 · MSR/KAIST · 诊断分析</span></li>
+      <li><a href="#card-ssd">SSD: Embarrassingly Simple Self-Distillation for Code Generation</a><span class="work-meta">arXiv 2604.01193 · Apple · 无Reward自提升</span></li>
+      <li><a href="#card-rlsd">RLSD: Self-Distilled RLVR</a><span class="work-meta">arXiv 2604.03128 · 方向与幅度分离</span></li>
+      <li><a href="#card-srpo">SRPO: Unifying GRPO and SDPO via Sample Routing</a><span class="work-meta">arXiv 2604.02288 · 样本路由</span></li>
+      <li><a href="#card-skill-sd">Skill-SD: Skill-Conditioned Self-Distillation for Multi-Turn Agents</a><span class="work-meta">arXiv 2604.10674 · 多轮Agent</span></li>
+      <li><a href="#card-sd-zero">SD-Zero: Self-Revision Turns Binary Rewards into Dense Supervision</a><span class="work-meta">arXiv 2604.12002 · Princeton · 自我修正</span></li>
+      <li><a href="#card-pi-play">π-Play: Multi-Agent Self-Play via Privileged SD</a><span class="work-meta">arXiv 2604.14054 · Self-Play + SD</span></li>
+      <li><a href="#card-opsdl">OPSDL: On-Policy Self-Distillation for Long-Context LLMs</a><span class="work-meta">arXiv 2604.17535 · Baidu · 长上下文</span></li>
+      <li><a href="#card-pbsd">PBSD: Preference-Based Self-Distillation via Reward Regularization</a><span class="work-meta">arXiv 2605.05040 · Reward-aware SD</span></li>
+      <li><a href="#card-trace">TRACE: Distilling Where It Matters via Token-Routed Alignment</a><span class="work-meta">arXiv 2605.10194 · Token/Span路由</span></li>
+      <li><a href="#card-rlrt">RLRT: Rebellious Student — Reversing Teacher Signals</a><span class="work-meta">arXiv 2605.10781 · MSR/KAIST · 探索式SD</span></li>
+      <li><a href="#card-resd">RESD: Learning with Rare Success via Reflection-Enhanced SD</a><span class="work-meta">arXiv 2605.12741 · Rare-success</span></li>
+      <li><a href="#card-sdar">SDAR: Self-Distilled Agentic Reinforcement Learning</a><span class="work-meta">arXiv 2605.15155 · ZJU · 多轮Agent RL</span></li>
+      <li><a href="#card-vision-opd">Vision-OPD: Learning to See Fine Details for MLLMs</a><span class="work-meta">arXiv 2605.18740 · 多模态视觉</span></li>
+      <li><a href="#card-dasd">DASD: Direction-Adaptive Self-Distillation for LLM Reasoning</a><span class="work-meta">arXiv 2605.22263 · Entropy路由方向</span></li>
+    </ol>
+  </nav>
+
+</div>
+</body>
+</html>

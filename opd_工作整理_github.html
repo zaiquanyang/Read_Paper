@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD 工作整理 — On-Policy Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.2rem 0 0.5rem 0;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li {
+    font-size: 0.92rem;
+    color: #333;
+    margin-bottom: 0.4rem;
+  }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.8rem 0;
+  }
+  .fig-row img {
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0;
+    font-size: 0.88rem;
+  }
+  .result-table th, .result-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 0.6rem 0;
+  }
+  .pros-cons > div {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+  }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap {
+    position: fixed;
+    top: 2rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 480px;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .toc ol {
+    padding-left: 1.2rem;
+    margin: 0;
+  }
+  .toc li {
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+  }
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  @media (max-width: 640px) {
+    .pros-cons { grid-template-columns: 1fr; }
+    .paper-card { padding: 1.2rem; }
+  }
+  @media (max-width: 1400px) {
+    .toc {
+      position: static;
+      width: 100%;
+      max-height: none;
+      margin-bottom: 2rem;
+    }
+    body { padding-left: 1rem; }
+  }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>OPD 工作整理</h1>
+  <p>On-Policy Distillation / Knowledge Distillation 论文精读与整理</p>
+</header>
+
+<div class="toc-wrap">
+  <div class="toc-btn">目录</div>
+  <div class="toc-panel">
+    <h3>目录</h3>
+    <ol>
+      <li><span class="toc-tag">SCOPE</span><a href="#card-scope">Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting</a></li>
+      <li><span class="toc-tag">EOPD</span><a href="#card-eopd">Entropy-Aware On-Policy Distillation of Language Models</a></li>
+      <li><span class="toc-tag">LSM</span><a href="#card-lsm">Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes</a></li>
+      <li><span class="toc-tag">HDPO</span><a href="#card-hdpo">Hybrid Distillation Policy Optimization via Privileged Self-Distillation</a></li>
+      <li><span class="toc-tag">TIP</span><a href="#card-tip">TIP: Token Importance in On-Policy Distillation</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2604_scope_signal_calibrated_on_policy_distillation_enhancement_with_dual_path_adaptive_weighting.md" arxiv="2604.10688" -->
+<article class="paper-card" id="card-scope">
+
+<h2>SCOPE: Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting</h2>
+
+<div class="meta-row">
+  <span class="tag">SCOPE</span>
+  <a href="https://arxiv.org/abs/2604.10688" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.10688.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/machine981/SCOPE" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.10688</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>OPD 最大的问题是把所有 rollout 的监督信号当成同等可信。SCOPE 按 trajectory correctness 分流——错误轨迹用 teacher PPL 加权（teacher 越自信越值得学），正确轨迹用 student PPL 加权（student 越不确定的正确路径越值得强化），实现 trajectory-level signal calibration。
+</div>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_scope_signal_calibrated_on_policy_distillation_enhancement_with_dual_path_adaptive_weighting/main_framework_SCOPE_v3.png" alt="SCOPE framework overview">
+  </div>
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Pass@k paradox</strong>：现有 OPD/RL 方法提升 Pass@1 却降低 Pass@k——概率质量被压缩到少数路径，牺牲多样性。</li>
+  <li><strong>Flawed prefix trap</strong>：teacher 在 student 的错误 prefix 上也会被拖偏，高 teacher PPL 的错误前缀 recovery rate 显著更低。</li>
+  <li>核心问题：<strong>"哪些 trajectory 值得教、值得教多少"</strong>。</li>
+</ul>
+
+<h3 class="section-title">方法：Dual-Path Adaptive Weighting (DPAW)</h3>
+<ul>
+  <li><strong>Correctness 分流：</strong>rollout 按 verifier 分成正确组 $\Omega_c$ 和错误组 $\Omega_w$。</li>
+  <li><strong>错误轨迹 (teacher-guided)：</strong>走标准 OPD surrogate，用 teacher PPL inverse 加权——teacher 越自信，纠错信号越可信。</li>
+  <li><strong>正确轨迹 (student-guided)：</strong>改用 MLE self-reinforcement，用 student PPL 加权——student 越不确定的正确路径越值得强化。</li>
+</ul>
+
+<h3 class="section-title">实验结果</h3>
+
+<table class="result-table">
+  <tr><th>Setting</th><th>Method</th><th>Avg@32</th><th>Pass@32</th></tr>
+  <tr><td rowspan="2">DeepSeek-R1-Distill-Qwen-1.5B<br><small>(SkyWork-OR1-7B → 1.5B)</small></td><td>OPD</td><td>52.3</td><td>73.1</td></tr>
+  <tr><td class="best">SCOPE</td><td class="best">55.2 (+5.5%)</td><td class="best">75.0 (+2.6%)</td></tr>
+  <tr><td rowspan="2">Qwen3-1.7B-Base<br><small>(Qwen3-8B → 1.7B)</small></td><td>OPD</td><td>30.6</td><td>55.9</td></tr>
+  <tr><td class="best">SCOPE</td><td class="best">32.5 (+6.2%)</td><td class="best">58.6 (+4.8%)</td></tr>
+</table>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_scope_signal_calibrated_on_policy_distillation_enhancement_with_dual_path_adaptive_weighting/pass_at_k_aime24.png" alt="Pass@k curve AIME24">
+  </div>
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_scope_signal_calibrated_on_policy_distillation_enhancement_with_dual_path_adaptive_weighting/fig_truncation_ppl.png" alt="Flawed prefix trap: truncation PPL">
+  </div>
+</div>
+
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>去掉 DPAW：</strong>Avg@32 42.7 → 39.9，uniform weighting 问题复现。</li>
+  <li><strong>去掉 student-guided weight：</strong>Pass@32 77.9 → 74.1——正确路径保 diversity 有价值。</li>
+  <li><strong>反转 teacher-guided weight：</strong>Avg@32 42.7 → 38.6——应优先学 teacher 自信的样本。</li>
+</ul>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>精准拆穿 "uniform supervision" 假设，问题定义强</li>
+      <li>正误路径用相反 PPL 逻辑，直觉自然且有实验支撑</li>
+      <li>同时提升 Avg@32 和 Pass@32</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>依赖 verifier 分流，更适用于数学/代码等 objective task</li>
+      <li>多 rollout + teacher scoring 开销大（641.9s vs OPD 227.5s）</li>
+      <li>未直接处理 token-level teacher uncertainty</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>trajectory-level signal routing for OPD。与 EOPD（token-level KL routing）、LSM（token-level supervision granularity）互补。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2603_entropy_aware_on_policy_distillation_adaptive_fkl_rkl_switching.md" arxiv="2603.07079" -->
+<article class="paper-card" id="card-eopd">
+
+<h2>EOPD: Entropy-Aware On-Policy Distillation of Language Models</h2>
+
+<div class="meta-row">
+  <span class="tag">EOPD</span>
+  <a href="https://arxiv.org/abs/2603.07079" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.07079.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/WLS04/EOPD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">KAIST / IBM / Toronto / Vector &middot; arXiv 2603.07079</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>标准 OPD 用统一的 reverse KL 处理所有 token，但在 teacher 高熵 token 上 RKL 会 mode-seeking 过头，压塌多样性和学习稳定性。EOPD 在低熵 token 继续用 RKL，在高熵 token 额外加 forward KL，实现 entropy-aware 的 KL routing。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Diversity degradation：</strong>teacher 高熵 token 占 18.5%，student 经 OPD 后只剩 6.8%。</li>
+  <li><strong>Reward instability：</strong>高熵 teacher 区域 RKL reward 不稳定，student top-1 频繁变化。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_entropy_aware_on_policy_distillation_adaptive_fkl_rkl_switching/entropy_distribution_comparison.png" alt="Entropy distribution: teacher vs OPD student">
+  </div>
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_entropy_aware_on_policy_distillation_adaptive_fkl_rkl_switching/entropy_stability_comparison.png" alt="High vs low entropy teacher stability">
+  </div>
+</div>
+
+<h3 class="section-title">方法：Entropy-Aware RKL/FKL Routing</h3>
+<ul>
+  <li>Token-level 目标：$\mathcal{L}_t^{\text{EOPD}} = \mathcal{L}_t^{\text{OPD}} + \alpha \cdot \mathbb{I}[H_t^{\text{te}} > \tau]\, \mathcal{L}^{\text{FKL}}_t$</li>
+  <li><strong>低熵 token：</strong>teacher 很确定 → 只用 RKL，精确模仿主模态</li>
+  <li><strong>高熵 token：</strong>teacher 保留多 plausible continuation → 额外加 FKL，传递"有结构的不确定性"</li>
+  <li>FKL 只在 teacher top-k (k=16) token 上近似，额外开销仅 ~4.5%</li>
+</ul>
+
+<h3 class="section-title">实验结果</h3>
+
+<p><strong>Qwen3-4B-Base（Teacher: Qwen3-8B）— Pass@8 提升最显著</strong></p>
+<table class="result-table">
+  <tr><th>Benchmark</th><th>OPD</th><th>EOPD</th></tr>
+  <tr><td>MATH500 Pass@8</td><td>90.80</td><td class="best">93.00</td></tr>
+  <tr><td>AMC23 Pass@8</td><td>80.00</td><td class="best">87.50</td></tr>
+  <tr><td>AIME24 Pass@8</td><td>26.67</td><td class="best">36.67</td></tr>
+  <tr><td>AIME25 Pass@8</td><td>30.00</td><td class="best">33.33</td></tr>
+</table>
+<p>Qwen3-1.7B 上同样全面优于 OPD，Avg@8 +0.99，Pass@8 +2.39。Student 越强，保留 teacher uncertainty 的收益越明显。</p>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_entropy_aware_on_policy_distillation_adaptive_fkl_rkl_switching/topk_tradeoff.png" alt="Top-k tradeoff analysis">
+  </div>
+</div>
+
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>Random FKL：</strong>随机选 20% token 加 FKL 明显不如 EOPD——"加在哪些 token 上"很关键。</li>
+  <li><strong>Full FKL：</strong>低熵 token 加 FKL 反而干扰 RKL，不如 selective。</li>
+  <li><strong>Entropy Bonus ≠ EOPD：</strong>只鼓励高熵不等于更像 teacher，FKL 传递的是结构化不确定性。</li>
+</ul>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>改动极小（OPD + selective FKL），逻辑干净</li>
+      <li>额外开销仅 ~4.5%，selective FKL 显存省 7.4x</li>
+      <li>Pass@k 提升明显，尤其对更强 student 更有效</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>基于阈值 $\tau$ 的 hard routing，非完全自适应</li>
+      <li>主实验在 math reasoning，泛化待验证</li>
+      <li>只解决 token-level uncertainty，不涉及 trajectory-level credit</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>token-level entropy-aware KL routing for OPD。与 SCOPE（trajectory-level signal calibration）、LSM（token-level supervision granularity）互补。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2603_revisiting_on_policy_distillation_empirical_failure_modes_and_simple_fixes.md" arxiv="2603.25562" -->
+<article class="paper-card" id="card-lsm">
+
+<h2>Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes</h2>
+
+<div class="meta-row">
+  <span class="tag">LSM</span>
+  <a href="https://arxiv.org/abs/2603.25562" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.25562" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.25562</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>系统诊断 sampled-token OPD 的三个 failure mode（信号不均衡、teacher prefix drift 后不可靠、tokenizer mismatch），提出 teacher top-K local support matching：在 teacher top-K candidate set 上做 truncated reverse-KL + renormalization，配合 top-p rollout。Multi-task 下 reasoning average 相对 sampled-token OPD +19.8%。
+</div>
+
+<h3 class="section-title">三个 Failure Mode</h3>
+<ul>
+  <li><strong>FM1 — 信号不均衡：</strong>sampled token 大多落在 teacher prob &lt; student prob 区域，训练信号大量为负。</li>
+  <li><strong>FM2 — Teacher prefix drift：</strong>student 生成退化 prefix 时，teacher 局部概率仍可能对齐，甚至奖励重复 token。</li>
+  <li><strong>FM3 — Tokenizer mismatch：</strong>不同 tokenizer 切分不同，exact token comparison 产生假负样本。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_revisiting_on_policy_distillation_empirical_failure_modes_and_simple_fixes/toy_variance.png" alt="Token vs sequence-level OPD variance">
+  </div>
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_revisiting_on_policy_distillation_empirical_failure_modes_and_simple_fixes/reward_scatter.png" alt="FM1: reward signal imbalance">
+  </div>
+</div>
+
+<h3 class="section-title">方法：Teacher Top-K Local Support Matching</h3>
+<ul>
+  <li>在 teacher top-K（K=32）token set 上做 truncated reverse-KL，替代 sampled-token 单点 log-ratio。</li>
+  <li><strong>Support renormalization：</strong>截断后 teacher/student 概率质量不匹配，必须分别归一化。</li>
+  <li><strong>Top-p rollout (p=0.9)：</strong>限制 rollout 在 typical 区域，减轻 prefix drift。</li>
+  <li>LSM 本身对 tokenizer mismatch 更鲁棒（w/ mask 与 w/o mask 差别很小）。</li>
+</ul>
+
+<h3 class="section-title">实验结果</h3>
+
+<p><strong>Multi-task ALFWorld + Math（Qwen2.5-7B）</strong></p>
+<table class="result-table">
+  <tr><th>Method</th><th>ALFWorld</th><th>Math500</th><th>AIME24</th><th>Reasoning Avg.</th></tr>
+  <tr><td>Sampled-token OPD</td><td>90.6</td><td>74.8</td><td>13.3</td><td>34.8</td></tr>
+  <tr><td>Sampled-token OPD w/ mask</td><td>93.8</td><td>76.0</td><td>20.0</td><td>36.6</td></tr>
+  <tr><td class="best">LSM w/o mask (ours)</td><td class="best">95.3</td><td class="best">82.0</td><td class="best">33.3</td><td class="best">41.7</td></tr>
+</table>
+<p>Single-task math 上 LSM 也将 average 从 36.4 提到 41.7（+14.6%），且 w/ mask 与 w/o mask 差别很小，说明 LSM 对 tokenizer mismatch 更鲁棒。</p>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_revisiting_on_policy_distillation_empirical_failure_modes_and_simple_fixes/curves_multi_task.png" alt="Multi-task learning curves">
+  </div>
+</div>
+
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>Renormalization 必须做：</strong>不做会快速 collapse。</li>
+  <li><strong>Top-p 必须配合 top-K：</strong>teacher top-K 单独用并不好，先 top-p 保持 typical prefix，LSM 才更稳。</li>
+</ul>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>Failure mode 诊断系统，对理解 OPD 很有价值</li>
+      <li>LSM 在 full-vocab KL 与 sampled-token 之间找到实用折中</li>
+      <li>Multi-task（agentic + reasoning）是真实的困难场景</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>Truncated objective 仍有偏，top-K 外 token 无梯度</li>
+      <li>Teacher matching ≠ task success，off-distribution prefix 仍可能偏</li>
+      <li>与 teacher 性能差距仍大（56.0 vs 41.7）</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>改 token-level supervision 的 <em>granularity</em>：从 point-wise sampled token 升级到 top-K support 上的 truncated distribution matching。与 EOPD（改 KL 方向）、SCOPE（改 trajectory weighting）互补。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2603_hdpo_hybrid_distillation_policy_optimization_via_privileged_self_distillation.md" arxiv="2603.23871" -->
+<article class="paper-card" id="card-hdpo">
+
+<h2>HDPO: Hybrid Distillation Policy Optimization via Privileged Self-Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">HDPO</span>
+  <a href="https://arxiv.org/abs/2603.23871" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.23871.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.23871</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>RL 训练中的 cliff prompts（所有 rollout 都失败、梯度为零）形成学习死区。HDPO 不回避 cliff，而是让同一个模型在 privileged context（附加 ground truth）下生成 teacher 轨迹，筛选正确样本后用 JSD 蒸馏给 student——直接给 RL 无梯度区域补学习信号，同时揭示 coverage 与 greedy accuracy 之间可调的权衡。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Cliff prompts 问题：</strong>某个 prompt 上所有 rollout 都失败 → reward 全为 0 → advantage 无方差 → 梯度消失。最难、最需要学习的样本反而拿不到训练信号。</li>
+  <li>已有解法（curriculum / hint / replay / PRM / RL+SFT 交替）普遍需要额外模块或调度器，工程复杂度高。</li>
+  <li>核心问题：<strong>"RL 在 cliff prompts 上零梯度时，能否不依赖外部教师模型，仍给模型可靠的学习信号？"</strong></li>
+</ul>
+<p>从 OPD 角度看，HDPO 是一种 <strong>on-policy distillation for failure regions</strong>——distill 对象是 cliff prompts，teacher 是 privileged version of self，蒸馏目标是给 RL 无梯度区域补信号，损失函数用 JSD 做更偏 mode covering。</p>
+
+<h3 class="section-title">方法：Privileged Self-Distillation</h3>
+<ul>
+  <li><strong>Step 1 — 标准 GRPO rollout：</strong>student 看原始题目 $x$，正常采样并更新 $\mathcal{L}_{\mathrm{GRPO}}$。</li>
+  <li><strong>Step 2 — 定位 cliff prompts：</strong>所有 rollout 都失败的 prompt 集合 $\mathcal{C}$。</li>
+  <li><strong>Step 3 — Privileged teacher 采样：</strong>对每个 $x \in \mathcal{C}$，将 ground truth $y^*$ 拼入输入，让同一模型生成 teacher rollout，只保留正确轨迹 $\mathcal{T}$。</li>
+  <li><strong>Step 4 — JSD 蒸馏：</strong>在 teacher 正确轨迹上计算 token-level JSD，作为辅助损失。</li>
+</ul>
+<p>联合目标：</p>
+\[
+\mathcal{L}_{\mathrm{HDPO}}(\theta) = \mathcal{L}_{\mathrm{GRPO}}(\theta) + \lambda \cdot \mathcal{L}_{\mathrm{JSD}}(\theta)
+\]
+<p>选 JSD 而非 KL 的动机是 <strong>mode covering</strong>——扩大对多种正确策略的覆盖，提升 pass@$k$。teacher 和 student 共享参数，差别仅在输入是否含 privileged information，realizability gap 更小。</p>
+
+<h3 class="section-title">实验结果</h3>
+<p>基座 <code>Qwen2.5-Math-1.5B-Instruct</code>，数据集 <code>OpenMathInstruct-2</code>，GRPO $G=16$，2000 步。</p>
+
+<table class="result-table">
+  <tr><th>Method</th><th>pass@1</th><th>pass@4</th><th>pass@8</th></tr>
+  <tr><td>GRPO Baseline</td><td class="best">0.6519</td><td>0.7749</td><td>0.8228</td></tr>
+  <tr><td>HDPO (frozen, $\lambda\!=\!0.01$)</td><td class="best">0.6519</td><td>0.7812</td><td>0.8218</td></tr>
+  <tr><td>HDPO (frozen, $\lambda\!=\!0.1$)</td><td>0.6304</td><td>0.7812</td><td class="best">0.8398</td></tr>
+  <tr><td>HDPO (drifting, $\lambda\!=\!0.01$)</td><td>0.6514</td><td class="best">0.7861</td><td>0.8271</td></tr>
+  <tr><td>HDPO (drifting, $\lambda\!=\!0.1$)</td><td>0.6294</td><td>0.7856</td><td>0.8364</td></tr>
+</table>
+
+<ul>
+  <li><strong>低 $\lambda$：</strong>coverage 提升但 greedy accuracy 基本不掉（drifting $\lambda\!=\!0.01$：pass@4 +1.1%，pass@1 持平）。</li>
+  <li><strong>高 $\lambda$：</strong>pass@8 显著提升但 pass@1 下降约 2–3%——exploration-exploitation 权衡。</li>
+  <li><strong>Drifting teacher</strong> 在低 $\lambda$ 下更好（realizability gap 更小），frozen teacher 在高 $\lambda$ 下提供更多 signal diversity。</li>
+</ul>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>精准命中 RL 的零梯度死区，问题定义准确</li>
+      <li>无需额外 teacher model / replay buffer / PRM / 多阶段切换</li>
+      <li>same-model privileged distillation 设定干净，理论可解释</li>
+      <li>明确展示 coverage vs. greedy accuracy 的可控权衡</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>依赖 ground truth 作为 privileged information，仅适用可判定答案任务</li>
+      <li>实验规模窄：1.5B 模型、1 个数据集、1 类任务</li>
+      <li>覆盖提升幅度不算大，对 run-to-run variance 敏感</li>
+      <li>额外计算开销真实存在（privileged generation + JSD 计算）</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>针对 RL failure region 的 privileged self-distillation。与 SCOPE（trajectory-level signal routing）、EOPD（token-level KL routing）、LSM（token-level supervision granularity）互补。启发：teacher 不必更强只需信息更全；JSD 适合 coverage-oriented distillation；"expand then sharpen"两阶段训练值得跟进。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation.md" arxiv="2603.13260" -->
+<article class="paper-card" id="card-tsd-kd">
+
+<h2>TSD-KD: Explain in Your Own Words — Token-Selective Dual Knowledge Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">TSD-KD</span>
+  <span class="tag" style="background:#fef3c7;color:#92400e;">ICLR 2026</span>
+  <a href="https://arxiv.org/abs/2603.13260" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.13260.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/kmswin1/TSD-KD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.13260</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>更细粒度、更 student-centric 的 OPD 变体。不要求 student 在每个 token 上模仿 teacher，而是只在关键 token 上施加监督，拆成 <strong>间接偏好蒸馏（teacher 只做 ranking）+ 直接 selective KD（entropy gap gating）+ selective entropy regularization</strong> 三部分。Reasoning 任务上多次实现 student 超越 teacher。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>全 token 监督过重：</strong>标准 OPD/GKD 在 student 生成的每个 token 上都做 KL/JSD 对齐，小模型 capacity 不够，被 teacher 完整分布压住，学不会"用自己的方式"推理。</li>
+  <li><strong>不是所有 token 同等重要：</strong>reasoning 里关键分叉点集中在较早的 token，对 student 最有帮助的不是处处模仿 teacher，而是在困难 token 上获得恰到好处的引导。</li>
+  <li>核心判断：<strong>"对 reasoning student 来说，最好的 teacher 不是时时刻刻都在讲话的 teacher，而是在关键分叉点给一点点高价值提示的 teacher。"</strong></li>
+</ul>
+<p>从 OPD 角度看，它是 <strong>OPD + selective KD + preference-style weak supervision</strong>，而非 RL-style OPD。仍用 on-policy 数据和蒸馏损失，但 token 选择基于 entropy gap，间接监督借 preference modeling 形式。</p>
+
+<h3 class="section-title">方法：Token-Selective Dual KD</h3>
+<ul>
+  <li><strong>1. 间接蒸馏（Indirect）：</strong>student 提出 top-$k$ 候选 token，teacher 只做 preference ranking（Plackett-Luce），不暴露自身完整分布。保留 student 自主表达空间。</li>
+  <li><strong>2. Opener 机制：</strong>高熵 token 集中在 reasoning trace 前部。从序列开头累计 entropy，当前缀累计熵达总熵的 $c\%$（默认 10%）时停下，间接蒸馏只作用于这段 opener。</li>
+  <li><strong>3. 直接蒸馏（Direct）：</strong>entropy gap soft gating——student 高熵 + teacher 低熵时加大蒸馏权重，student 自信时弱化蒸馏。</li>
+  <li><strong>4. Selective entropy minimization：</strong>只在 top-10% 高熵 token 上做 entropy regularization，防止关键 reasoning step 犹豫，又避免过度自信。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/entropy.png" alt="Entropy distribution across token positions">
+  </div>
+</div>
+
+<h3 class="section-title">实验结果</h3>
+<p>主实验 <code>Qwen2.5-14B → 1.5B</code>，泛化 <code>Gemma2-9B → 2B</code>、<code>Qwen3-8B → 1.7B</code>。On-policy 数据来自 UltraInteract prompts。</p>
+
+<table class="result-table">
+  <tr><th>Method</th><th>GSM8K</th><th>GSM-Plus</th><th>MATH</th><th>MBPP</th><th>IFEval</th><th>MMLU-STEM</th></tr>
+  <tr><td>Teacher 14B</td><td>80.3</td><td>59.7</td><td>21.7</td><td>78.9</td><td>85.9</td><td>70.5</td></tr>
+  <tr><td>Student 1.5B</td><td>57.1</td><td>38.8</td><td>16.9</td><td>38.4</td><td>53.1</td><td>49.5</td></tr>
+  <tr><td>MiniLLM</td><td>57.7</td><td>39.7</td><td>17.8</td><td>42.2</td><td>54.7</td><td>48.2</td></tr>
+  <tr><td>GKD</td><td>57.9</td><td>39.9</td><td>18.1</td><td>41.8</td><td>52.3</td><td>47.7</td></tr>
+  <tr><td class="best">TSD-KD</td><td class="best">60.1</td><td class="best">40.5</td><td class="best">26.1</td><td>42.1</td><td class="best">55.2</td><td class="best">50.0</td></tr>
+</table>
+
+<ul>
+  <li><strong>MATH 上 student 超 teacher：</strong>teacher 21.7，TSD-KD student 做到 26.1（+20.3%）。</li>
+  <li><strong>SciQ：</strong>student 甚至超过 teacher（86.4 → 93.0）。</li>
+  <li>Gemma2-2B 上 6 个指标拿 5 个最优；Qwen3-1.7B 上 MATH = 28.0（teacher 22.4）。</li>
+</ul>
+
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>三个组件都有效：</strong>从 GKD baseline 逐步加 selective gating → indirect distillation → entropy minimization，MATH 从 18.1 提到 26.1。</li>
+  <li><strong>Opener 比例 $c=10\%$ 最优：</strong>$c=100\%$ 退化为全序列蒸馏，效果反而更差——直接证据表明全 token OPD 不是最优。</li>
+  <li><strong>Top-$k=10$ 最优：</strong>候选太多把 teacher 弱监督变噪声。</li>
+  <li><strong>Selective entropy min 也必须 selective：</strong>对所有 token 都做会过度自信。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/top_c.png" alt="Opener ratio ablation">
+  </div>
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/top_k.png" alt="Top-k ablation">
+  </div>
+</div>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>清楚指出 OPD 里"不是所有 token 都值得 teacher 介入"</li>
+      <li>间接蒸馏设计聪明——teacher 只做 ranking，不强灌 full distribution</li>
+      <li>reasoning 任务极强，多次 student 超 teacher</li>
+      <li>跨模型家族有效，PEFT 下也成立</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>indirect distillation 需 teacher 逐 token rerank top-$k$ 候选，推理成本不低</li>
+      <li>仅验证 reasoning/instruction/code 场景，开放式生成是否有效未知</li>
+      <li>student 超 teacher 有 benchmark contamination 潜在疑问，未深挖</li>
+      <li>不是 RL-style OPD，不直接解决 rollout-level reward 问题</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>token-selective + preference-style OPD。把 OPD 往更细粒度、更选择性、更偏 preference 的方向推进。与 SCOPE（trajectory-level routing）、EOPD（entropy-aware KL routing）、HDPO（privileged self-distillation for cliff prompts）互补。核心启发：(1) OPD 不一定要全 token 对齐；(2) 弱监督比强监督更适合小模型 reasoning；(3) 可拆成 sequence-level guidance（indirect）+ token-level correction（direct）。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="OPD/arxiv_2604_tip_token_importance_in_on_policy_distillation.md" arxiv="2604.14084" -->
+<article class="paper-card" id="card-tip">
+
+<h2>TIP: Token Importance in On-Policy Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">TIP</span>
+  <a href="https://arxiv.org/abs/2604.14084" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.14084.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.14084</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>OPD 里并非所有 rollout token 都值得蒸馏。只用 student entropy 选 token 会漏掉最危险的 Q3（自信但错误）token。TIP 将 uncertainty 和 teacher-student disagreement 融合为 Soft-OR 分数，只蒸馏高价值 token，50% 预算下性能全面超过 full-token OPD，显存下降约 47%。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Token 训练价值不均：</strong>传统 full-token OPD 对整条 student 轨迹每个 token 都做蒸馏，但大量 token 训练价值很低。</li>
+  <li><strong>Entropy-only 的盲区：</strong>只按 student entropy 选 token 时，Q3（低熵但 teacher 强烈不同意）和 Q4（低熵且正确）无法区分——自信但错误的 token 被一起忽略。</li>
+  <li><strong>核心判断：</strong>token importance 必须同时考虑 <em>uncertainty</em>（student 知不知道自己不会）和 <em>disagreement</em>（teacher 觉不觉得 student 走偏了）。</li>
+</ul>
+
+<h3 class="section-title">方法：Soft-OR Token Selection</h3>
+<ul>
+  <li><strong>四象限 taxonomy：</strong>按 student entropy $h_t$ 和 teacher-student KL divergence $\delta_t$ 将 token 分为 Q1（高熵+高分歧，最值得纠正）、Q2（高熵+低分歧）、Q3（低熵+高分歧，最危险）、Q4（低熵+低分歧，最不重要）。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_tip_token_importance_in_on_policy_distillation/taxonomy.png" alt="TIP taxonomy: Q1/Q2/Q3/Q4 quadrant">
+  </div>
+</div>
+
+<ul>
+  <li><strong>Soft-OR scoring：</strong>$s_t = \hat{h}_t + \hat{\delta}_t - \hat{h}_t \hat{\delta}_t$，任一信号高即可把 token 选出，避免 Q3 被漏掉。</li>
+  <li><strong>Top-$k$ selection：</strong>按 $s_t$ 取 top-$\lfloor\rho m\rfloor$ token 做蒸馏，$\rho$ 为保留比例。</li>
+  <li><strong>最终损失：</strong>只在选中 token 上做 KL distillation，$\hat{\delta}_t=0$ 时退化回 entropy-only。</li>
+</ul>
+
+<h3 class="section-title">实验结果</h3>
+
+<p><strong>Soft-OR vs Full-token OPD</strong></p>
+<table class="result-table">
+  <tr><th>Setting</th><th>Benchmark</th><th>Full-token OPD</th><th>Soft-OR (Budget)</th><th>Change</th></tr>
+  <tr><td rowspan="3">Qwen3-8B → 4B</td><td>MATH-500</td><td>76.7</td><td class="best">79.1 (50%)</td><td>+2.4</td></tr>
+  <tr><td>AIME'24</td><td>21.9</td><td class="best">25.7 (50%)</td><td>+3.8</td></tr>
+  <tr><td>AIME'25</td><td>19.4</td><td class="best">23.2 (20%)</td><td>+3.8</td></tr>
+  <tr><td rowspan="3">Llama-70B → 8B</td><td>MATH-500</td><td>71.0</td><td class="best">74.7 (50%)</td><td>+3.7</td></tr>
+  <tr><td>AIME'24</td><td>21.5</td><td class="best">26.0 (50%)</td><td>+4.5</td></tr>
+  <tr><td>AIME'25</td><td>4.9</td><td class="best">11.5 (20%)</td><td>+6.6</td></tr>
+</table>
+
+<p><strong>显存下降</strong>：50% retention 时 peak memory 下降约 47%（Qwen3-8B→4B：72.0GB → 38.1GB）。</p>
+
+<p><strong>Beyond Math — DeepPlanning (Agentic)</strong></p>
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_tip_token_importance_in_on_policy_distillation/planner_agentic.png" alt="DeepPlanning agentic results: Q3-only outperforms full OPD">
+  </div>
+</div>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>Q1/Q2/Q3/Q4 分析框架清晰，uncertainty × disagreement 两个维度拆解 token importance</li>
+      <li>Soft-OR 公式简洁直觉强，entropy-only 退化保证兼容性</li>
+      <li>50% 预算全面超过 full-token OPD，显存省 47%</li>
+      <li>Q3-only 在 agentic planning 上甚至超过 full OPD</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>Soft-OR 需要实时计算 teacher-student KL，推理成本仍在</li>
+      <li>主实验集中在 math reasoning，泛化到开放生成待验证</li>
+      <li>Q3 token 数量少、检测依赖 KL，低资源场景可能不稳定</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>token-level importance scoring for OPD。与 EOPD（entropy-aware KL routing）、TSD-KD（token-selective dual KD）互补——TIP 关注"选哪些 token 蒸馏"，EOPD 关注"用什么 KL 蒸馏"，TSD-KD 关注"用什么形式监督"。Q3 correction 在 long-horizon/agentic 场景的启发值得后续跟进。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+  <nav class="work-list" aria-label="已整理工作列表">
+    <h2>已整理工作列表</h2>
+    <p>点击标题可直接跳转到对应论文卡片。</p>
+    <ol>
+      <li><a href="#card-scope">SCOPE: Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting</a></li>
+      <li><a href="#card-eopd">EOPD: Entropy-Aware On-Policy Distillation of Language Models</a></li>
+      <li><a href="#card-lsm">Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes</a></li>
+      <li><a href="#card-hdpo">HDPO: Hybrid Distillation Policy Optimization via Privileged Self-Distillation</a></li>
+      <li><a href="#card-tsd-kd">TSD-KD: Token-Selective Dual Knowledge Distillation</a><span class="work-meta">arXiv 2603.13260 · OPD · TSD-KD</span></li>
+      <li><a href="#card-tip">TIP: Token Importance in On-Policy Distillation</a><span class="work-meta">arXiv 2604.14084 · OPD · Soft-OR</span></li>
+    </ol>
+  </nav>
+<!-- WORK_LIST_END -->
+</body>
+</html>

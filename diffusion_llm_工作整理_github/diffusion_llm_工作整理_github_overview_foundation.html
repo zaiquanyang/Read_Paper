@@ -1,0 +1,847 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>综述、基础建模与多模态扩展 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+</head>
+<body>
+  <header class="hero">
+    <h1>综述、基础建模与多模态扩展</h1>
+    <p>聚焦 diffusion LLM 的整体版图、基础范式、长度自适应建模，以及向统一多模态模型延展的路线。</p>
+    <div class="stats">
+      <span class="stat">本页 8 篇</span>
+      <span class="stat">所属主题 diffusion_llm</span>
+      <span class="stat">更新日期 2026-06-02</span>
+    </div>
+  </header>
+  <main class="layout">
+    <a class="back-link" href="../diffusion_llm_工作整理.html">&larr; 返回 Diffusion LLM 工作整理</a>
+    <nav class="work-list" aria-label="本页目录">
+      <h2>本页目录</h2>
+      <p>这一页只收录同一主题下的论文，先看目录再下滑会更高效。</p>
+      <ol>
+        <li><a href="#arxiv-2601-beyond-hard-masks-progressive-token-evolution-for-diffusion-language-models">Beyond Hard Masks: Progressive Token Evolution for Diffusion Language Models</a></li>
+<li><a href="#arxiv-2605-10938">ELF: Embedded Language Flows</a><span class="work-meta">arXiv 2605.10938 | Keya Hu, Linlu Qiu, Yiyang Lu, Hanhong Zhao, Tianhong Li, Yoon Kim, Jacob Andreas, Kaiming He</span></li>
+<li><a href="#arxiv-2604-20796">LLaDA2.0-Uni: Unifying Multimodal Understanding and Generation with Diffusion Large Language Model</a><span class="work-meta">arXiv 2604.20796</span></li>
+<li><a href="#arxiv-2603-01068">LLaDA-o: An Effective and Length-Adaptive Omni Diffusion Model</a><span class="work-meta">arXiv 2603.01068</span></li>
+<li><a href="#arxiv-2601-19657">One Token Is Enough: Improving Diffusion Language Models with a Sink Token</a><span class="work-meta">arXiv 2601.19657 | Zihou Zhang, Zheyong Xie, Li Zhong, Haifeng Liu, Yao Hu, Shaosheng Cao</span></li>
+<li><a href="#arxiv-2601-04205">STaRR: Spatial-Temporal Token-Dynamics-Aware Responsive Remasking for Diffusion Language Models</a><span class="work-meta">arXiv 2601.04205</span></li>
+<li><a href="#arxiv-2601-03199">DIP: Dynamic In-Context Planner For Diffusion Language Models</a><span class="work-meta">arXiv 2601.03199 | Yang Li, Han Meng, Chenan Wang, Haipeng Chen</span></li>
+<li><a href="#arxiv-2508-10875">A Survey on Diffusion Language Models</a><span class="work-meta">arXiv 2508.10875 | Tianyi Li, Mingda Chen, Bowei Guo, Zhiqiang Shen</span></li>
+      </ol>
+    </nav>
+    <nav class="work-list" aria-label="其他子页">
+      <h2>其他子页</h2>
+      <p>如果你想按主题继续读，可以从这里跳到其他 diffusion LLM 子页。</p>
+      <ol>
+        <li><a href="diffusion_llm_工作整理_overview_foundation.html">综述、基础建模与多模态扩展</a><span class="work-meta">8 篇</span></li> <li><a href="diffusion_llm_工作整理_training_alignment.html">训练、采样与强化学习</a><span class="work-meta">5 篇</span></li> <li><a href="diffusion_llm_工作整理_inference_acceleration.html">推理加速、缓存与并行解码</a><span class="work-meta">8 篇</span></li>
+      </ol>
+    </nav>
+    <article class="paper-card" id="arxiv-2601-beyond-hard-masks-progressive-token-evolution-for-diffusion-language-models">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>Beyond Hard Masks: Progressive Token Evolution for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2601_beyond_hard_masks_progressive_token_evolution_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># Beyond Hard Masks: Progressive Token Evolution for Diffusion Language Models</p>
+<p>## 1. Paper Information</p>
+<ul><li><strong>Title</strong>: Beyond Hard Masks: Progressive Token Evolution for Diffusion Language Models</li><li><strong>arXiv ID</strong>: 2601.07351</li><li><strong>arXiv Link</strong>: <a href="https://arxiv.org/abs/2601.07351" target="_blank" rel="noopener">https://arxiv.org/abs/2601.07351</a></li><li><strong>PDF Link</strong>: <a href="https://arxiv.org/pdf/2601.07351" target="_blank" rel="noopener">https://arxiv.org/pdf/2601.07351</a></li><li><strong>Project Page</strong>: <a href="https://aim-uofa.github.io/EvoTokenDLM" target="_blank" rel="noopener">https://aim-uofa.github.io/EvoTokenDLM</a></li><li><strong>Authors</strong>: Linhao Zho...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>| Dimension | Characteristic |</p>
+<p>|-----------|---------------|</p>
+<p>| Architecture Modification | None required (works as a drop-in refinement strategy) |</p>
+<p>| Training Cost | Only 10k LoRA fine-tuning steps on S1K (1,000 examples) |</p>
+<p>| Inference Overhead | Negligible (primarily element-wise embedding addition) |</p>
+<p>| KV-Cache Compatibility | Seamless integration with Fast-dLLM |</p>
+<p>| Blockwise Diffusion | Natural extension to D2F framework |</p>
+<p>| Cross-Model Generalization | Validated across LLaDA-Instruct-8B, LLaDA-1.5, Dream-Instruct-7B, D2F-LLaDA |</p>
+<p>| Hyperparameter Robustness | Insensitive to alpha, Top-K, and block size |</p>
+<p>| Primary Gain | Most significant on combinatorial reasoning (Countdown) and at higher NFE budgets |</p>
+<p>---</p>
+<p>*Summary generated: 2026-05-10*</p>
+<p>*Local PDF: diffusion_llm/arxiv_2601_beyond_hard_masks_progressive_token_evolution_for_diffusion_language_models.pdf*</p>
+<p>*TeX Source: diffusion_llm/arxiv_2601_beyond_hard_masks_progressive_token_evolution_for_diffusion_language_models_tex/*</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p><strong>NFE / Gen Len = 1</strong> (Highest compute budget, all accuracies in %):</p>
+<p>| Method | Countdown | GSM8K | MATH500 | SVAMP |</p>
+<p>|--------|-----------|-------|---------|-------|</p>
+<p>| Baseline | 22.00 | 77.66 | 34.27 | 86.33 |</p>
+<p>| FT-Base (10k SFT) | 24.74 | 78.57 | 34.40 | 89.00 |</p>
+<p>| <strong>EvoToken (10k SFT)</strong> | <strong>39.45</strong> | <strong>80.74</strong> | <strong>36.33</strong> | <strong>89.56</strong> |</p>
+<p>| Gain vs Baseline | <strong>+17.45</strong> | <strong>+3.08</strong> | <strong>+2.06</strong> | <strong>+3.23</strong> |</p>
+<p>Detailed per-generation-length results (Gen Len 128/256/512):</p>
+<ul><li>Countdown: EvoToken achieves 39.84/35.55/42.97 vs Baseline 21.48/23.83/20.70 (gains: +18.36/+11.72/+22.27)</li><li>GSM8K: EvoToken achieves 74.30/83.47/84.46 vs Baseline 70.20/79.30/83.47 (gains: +4.10/+4.17/+0.99)</li><li>MATH500: EvoToken achieves 28.40/39.60/41.00 vs Baseline 28.80/34.60/39.40 (only -0.40 at 128, gains at 256/512)</li><li>SVAMP: EvoToken achieves 89.00/89.67/90.00 vs Baseline 88.33/84.67/86.00 (gains: +0.67/+5.00/+4.00)</li></ul>
+<p><strong>NFE / Gen Len = 1/2</strong>:</p>
+<p>| Method | Countdown | GSM8K | MATH500 | SVAMP |</p>
+<p>|--------|-----------|-------|---------|-------|</p>
+<p>| Baseline | 19.79 | 75.00 | 30.67 | 85.56 |</p>
+<p>| FT-Base (10k SFT) | 20.44 | 73.84 | 29.27 | 87.11 |</p>
+<p>| <strong>EvoToken (10k SFT)</strong> | <strong>31.64</strong> | <strong>79.12</strong> | <strong>34.33</strong> | <strong>90.44</strong> |</p>
+<p>| Gain vs Baseline | <strong>+11.85</strong> | <strong>+4.12</strong> | <strong>+3.66</strong> | <strong>+4.88</strong> |</p>
+<p><strong>NFE / Gen Len = 1/4</strong> (Lowest compute budget):</p>
+<p>| Method | Countdown | GSM8K | MATH500 | SVAMP |</p>
+<p>|--------|-----------|-------|---------|-------|</p>
+<p>| Baseline | 16.41 | 64.65 | 26.53 | 77.78 |</p>
+<p>| FT-Base (10k SFT) | 12.50 | 57.70 | 19.67 | 71.33 |</p>
+<p>| <strong>EvoToken (10k SFT)</strong> | <strong>17.06</strong> | <strong>70.96</strong> | <strong>28.60</strong> | <strong>81.00</strong> |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>Adaptation from autoregressive (AR) pretrained models faces training difficulties due to fundamental mismatch between unidirectional causal priors and bidirectional iterative refinement. The inherent discrepancy leads to increased training difficulty and slower convergence for AR-based backbones. Substantial computational resources would be required to override the deep-seated unidirectional bias.</p>
+  </section>
+  
+</article>
+
+<article class="paper-card" id="arxiv-2605-10938">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2605.10938</span><span class="badge">detailed</span></div>
+    <h2>ELF: Embedded Language Flows</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2605.10938" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2605.10938.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/lillian039/ELF" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2605_elf_embedded_language_flows.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Keya Hu, Linlu Qiu, Yiyang Lu, Hanhong Zhao, Tianhong Li, Yoon Kim, Jacob Andreas, Kaiming He</p><p><strong>机构</strong>：MIT</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>ELF 是一篇把 <strong>continuous embedding space + continuous-time flow matching + final-step-only discretization</strong> 做得非常干净的 continuous DLM 论文。它真正有价值的地方，不只是“连续模型也能做语言”，而是它证明了：只要接口设计得对，连续 language flow 不但能复用图像 diffusion 社区的成熟技巧，还能在更少训练 token、更少采样步数下，和主流离散 DLM 正面竞争。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>这篇论文想回答一个很关键、但过去几年一直没有被真正做透的问题：</p>
+<p><strong>连续空间的 diffusion / flow language model，究竟是“语言天然更适合离散 token diffusion”，还是“连续 DLM 之前只是设计得还不够好”？</strong></p>
+<p>作者的判断是，过去连续 DLM 表现不如离散 DLM，不一定是因为语言必须做离散扩散，而可能是因为连续 DLM 的接口设计还不够合理。过去常见问题有：</p>
+<ul><li>连续 DLM 往往会在很多 step 上反复插入离散化目标，比如每步都加 token CE。</li><li>latent diffusion 路线常常需要单独 decoder，把连续 latent 再解码回 token。</li><li>连续模型虽然理论上能借用图像 flow/diffusion 的很多成熟技术，但在语言里没有真正“连续到底”。</li></ul>
+<p>ELF 的核心主张很鲜明：</p>
+<ul><li>把语言先映射到连续 embedding 空间。</li><li>在几乎整个生成过程中都停留在这个连续空间里做 denoising / flow matching。</li><li>只在最终时刻再把连续 embedding 映射回离散 token。</li></ul>
+<p>作者把它叫做 <strong>Embedded Language Flows</strong>，并强调它有两层“连续性”：</p>
+<ul><li><strong>continuous embedding space</strong></li><li><strong>continuous time</strong></li></ul>
+<p>这使它能更直接复用图像 flow matching / diffusion 社区里已经很成熟的东西，比如：</p>
+<ul><li><code>x-prediction</code></li><li>ODE / SDE 风格采样</li><li>classifier-free guidance (CFG)</li><li>training-time CFG</li></ul>
+<p>论文的目标不是做系统加速，而是做一种更“像现代图像 flow model”的语言生成模型。</p>
+<p>论文没专门大篇幅写 limitation，但从方法上看，我觉得有几处需要留意：</p>
+<ul><li><strong>强依赖 embedding space 质量</strong></li><li>ELF 的成功很依赖 pretrained contextual embedding。</li><li>这意味着它不是“纯从语言数据端到端学出连续空间”，而是借了一个强先验。</li></ul>
+<ul><li><strong>最终仍然要做离散化</strong></li><li>ELF 只是把离散化延后到最后一步，不是完全摆脱 token space。</li><li>final-step decode 仍可能成为瓶颈或误差集中点。</li></ul>
+<ul><li><strong>Gen. PPL 不是标准 likelihood</strong></li><li>作者用 GPT-2 Large 打生成样本的 perplexity，这很常见，但也不是严格的模型似然。</li></ul>
+<ul><li><strong>训练预算小，不代表所有资源维度都更省</strong></li><li>token 预算更低很亮眼，但 encoder + flow model + long sequence 训练本身仍不轻。</li></ul>
+<ul><li><strong>conditional generation 规模仍偏小</strong></li><li>WMT14 和 XSum 能说明方法成立，但离真正大规模 instruction / reasoning generation 还有距离。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>这篇论文想回答一个很关键、但过去几年一直没有被真正做透的问题：</p>
+<p><strong>连续空间的 diffusion / flow language model，究竟是“语言天然更适合离散 token diffusion”，还是“连续 DLM 之前只是设计得还不够好”？</strong></p>
+<p>作者的判断是，过去连续 DLM 表现不如离散 DLM，不一定是因为语言必须做离散扩散，而可能是因为连续 DLM 的接口设计还不够合理。过去常见问题有：</p>
+<ul><li>连续 DLM 往往会在很多 step 上反复插入离散化目标，比如每步都加 token CE。</li><li>latent diffusion 路线常常需要单独 decoder，把连续 latent 再解码回 token。</li><li>连续模型虽然理论上能借用图像 flow/diffusion 的很多成熟技术，但在语言里没有真正“连续到底”。</li></ul>
+<p>ELF 的核心主张很鲜明：</p>
+<ul><li>把语言先映射到连续 embedding 空间。</li><li>在几乎整个生成过程中都停留在这个连续空间里做 denoising / flow matching。</li><li>只在最终时刻再把连续 embedding 映射回离散 token。</li></ul>
+<p>作者把它叫做 <strong>Embedded Language Flows</strong>，并强调它有两层“连续性”：</p>
+<ul><li><strong>continuous embedding space</strong></li><li><strong>continuous time</strong></li></ul>
+<p>这使它能更直接复用图像 flow matching / diffusion 社区里已经很成熟的东西，比如：</p>
+<ul><li><code>x-prediction</code></li><li>ODE / SDE 风格采样</li><li>classifier-free guidance (CFG)</li><li>training-time CFG</li></ul>
+<p>论文的目标不是做系统加速，而是做一种更“像现代图像 flow model”的语言生成模型。</p>
+<p>ELF 的整体图景可以概括成一句话：</p>
+<p><strong>先把 token 编成连续 embedding，在连续空间里从高斯噪声流到干净 embedding，最后一步才做离散化。</strong></p>
+<p>论文最抓人的结论有三个：</p>
+<ul><li>ELF 在无蒸馏条件下，用更少 sampling steps 就能优于主流离散 DLM 和已有连续 DLM。</li><li>ELF 训练 token 预算远小于既有 DLM baseline。</li><li>ELF 在机器翻译和摘要这样的 conditional generation 上也很强。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>在 <code>WMT14 De-En</code> 与 <code>XSum</code> 上，ELF-B 结果如下：</p>
+<p>| 模型 | 尺寸 | De-En BLEU | XSum R1 | XSum R2 | XSum RL |</p>
+<p>|---|---:|---:|---:|---:|---:|</p>
+<p>| AR | 99M | 25.2 | 30.5 | 10.2 | 24.4 |</p>
+<p>| MDLM | 99M | 18.4 | 33.4 | 11.6 | 25.8 |</p>
+<p>| Duo | 170M (+35M) | 21.3 | 31.4 | 10.1 | 25.0 |</p>
+<p>| E2D2 | 99M | 24.8 | 28.4 | 8.3 | 22.0 |</p>
+<p>| SeqDiffuSeq | - | 21.3 | 19.3 | 1.7 | 14.1 |</p>
+<p>| CDCD | - | 24.9 | - | - | - |</p>
+<p>| ELF | 105M (+35M) | <strong>26.4</strong> | <strong>36.0</strong> | <strong>12.2</strong> | <strong>27.8</strong> |</p>
+<p>这个结果挺硬：</p>
+<ul><li>翻译上，ELF-B <code>BLEU=26.4</code>，超过所有对比方法</li><li>摘要上，ROUGE 全面领先</li></ul>
+<p>这说明 ELF 不是只在无条件文本生成上成立，而是能泛化到 text-to-text generation。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>设计非常统一</li><li>embedding、objective、decoder、sampling 彼此是配套的，不是东拼西凑。</li></ul>
+<ul><li>对 continuous DLM 的问题抓得很准</li><li>不是泛泛说“连续也许可以”，而是具体指出该避免什么样的离散接口。</li></ul>
+<ul><li>实验很有说服力</li><li>无条件、条件生成、消融、scaling、采样器都做了。</li></ul>
+<ul><li>数据效率亮眼</li><li><code>45.2B</code> 对 <code>500B+</code> 的对比非常抓人。</li></ul>
+<ul><li>和图像 diffusion 社区形成了很自然的桥接</li><li>这是它未来最有延展性的地方。</li></ul>
+<p>论文没专门大篇幅写 limitation，但从方法上看，我觉得有几处需要留意：</p>
+<ul><li><strong>强依赖 embedding space 质量</strong></li><li>ELF 的成功很依赖 pretrained contextual embedding。</li><li>这意味着它不是“纯从语言数据端到端学出连续空间”，而是借了一个强先验。</li></ul>
+<ul><li><strong>最终仍然要做离散化</strong></li><li>ELF 只是把离散化延后到最后一步，不是完全摆脱 token space。</li><li>final-step decode 仍可能成为瓶颈或误差集中点。</li></ul>
+<ul><li><strong>Gen. PPL 不是标准 likelihood</strong></li><li>作者用 GPT-2 Large 打生成样本的 perplexity，这很常见，但也不是严格的模型似然。</li></ul>
+<ul><li><strong>训练预算小，不代表所有资源维度都更省</strong></li><li>token 预算更低很亮眼，但 encoder + flow model + long sequence 训练本身仍不轻。</li></ul>
+<ul><li><strong>conditional generation 规模仍偏小</strong></li><li>WMT14 和 XSum 能说明方法成立，但离真正大规模 instruction / reasoning generation 还有距离。</li></ul>
+<p>虽然这篇不是 KV cache 或 sparse attention 论文，但它对你现在在想的 dLLM 路线其实有几个挺重要的启发。</p>
+<p>ELF 是一篇把 <strong>continuous embedding space + continuous-time flow matching + final-step-only discretization</strong> 做得非常干净的 continuous DLM 论文。它真正有价值的地方，不只是“连续模型也能做语言”，而是它证明了：只要接口设计得对，连续 language flow 不但能复用图像 diffusion 社区的成熟技巧，还能在更少训练 token、更少采样步数下，和主流离散 DLM 正面竞争。</p>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/training_inference_pipeline.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/training_inference_pipeline.png" alt="ELF 训练与推理流程"></a><figcaption>ELF 训练与推理流程</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/system_level_comparison.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/system_level_comparison.png" alt="系统级对比"></a><figcaption>系统级对比</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/conditional_cfg.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_elf_embedded_language_flows/conditional_cfg.png" alt="CFG 折中曲线"></a><figcaption>CFG 折中曲线</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2604-20796">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2604.20796</span><span class="badge">detailed</span></div>
+    <h2>LLaDA2.0-Uni: Unifying Multimodal Understanding and Generation with Diffusion Large Language Model</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2604.20796" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2604.20796.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>LLaDA2.0-Uni 的核心贡献是把视觉变成语义离散 token，让文本和图像共享 dLLM 的 block-level masked diffusion 建模，再用 diffusion decoder 还原图像；它证明 diffusion LLM 可以成为统一多模态理解与生成的可行架构，并把真正的潜力指向 interleaved generation and reasoning。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>多模态模型通常分成两条路线：</p>
+<ul><li><strong>理解模型</strong>：例如 Qwen-VL、InternVL，强在 VQA、OCR、文档、图表、推理。</li><li><strong>生成模型</strong>：例如 FLUX、Z-Image、Qwen-Image，强在 text-to-image 和 image editing。</li></ul>
+<p>统一模型的好处很诱人：部署更简单，理解和生成可以互相增强，还能自然支持“边看边想边画”的 interleaved generation and reasoning。但已有统一模型大多基于 autoregressive 架构，或者是文本 AR + 图像 diffusion 的混合架构。</p>
+<p>dLLM / masked diffusion model 的优势是并行解码和双向上下文建模。问题在于，已有统一 masked diffusion 模型仍有几个短板：</p>
+<ul><li>reconstruction-based VQ tokenizer 主要保像素重建，不保语义，导致理解能力弱。</li><li>过度压缩图像 token 会牺牲生成质量。</li><li>完全双向 attention 对文本不稳定。</li><li>一些模型假设固定输出长度，不适合开放式理解任务。</li></ul>
+<p>LLaDA2.0-Uni 的核心解法是：<strong>用 SigLIP-VQ 把图像离散成语义 token，用 16B MoE dLLM backbone 做统一 masked diffusion，再用 diffusion decoder 从语义视觉 token 还原高质量图像。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文在 21 个 multimodal understanding benchmark 上评估，涵盖 general VQA、reasoning、OCR/chart 和其他任务。</p>
+<p>摘取代表性指标如下：</p>
+<p>| Model | MMStar | MMMU | MathVista | ChartQA | OCRBench | DocVQA | AI2D | CountBench |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|---:|---:|</p>
+<p>| Qwen2.5-VL-7B | 63.9 | 51.3 | 68.2 | 84.1 | 84.2 | 94.9 | 82.6 | 84.9 |</p>
+<p>| LLaDA-V | 60.1 | 48.6 | 59.7 | 78.3 | 63.2 | 83.9 | 77.8 | 75.1 |</p>
+<p>| BAGEL | 67.0 | 55.3 | 73.1 | 74.3 | 73.3 | 94.3 | 88.9 | 93.2 |</p>
+<p>| Lumina-DiMOO | 61.0 | 58.6 | 10.3 | 8.3 | 7.6 | 7.2 | 43.2 | 48.4 |</p>
+<p>| LLaDA-o | 58.0 | 44.9 | 66.1 | 87.9 | 74.6 | 91.5 | 79.3 | 91.7 |</p>
+<p>| LLaDA2.0-Uni | 64.1 | 50.1 | 68.1 | 80.1 | 75.7 | 89.5 | 82.0 | 86.0 |</p>
+<p>结论比较克制但重要：</p>
+<ul><li>LLaDA2.0-Uni 明显强于早期 diffusion unified model，例如 Lumina-DiMOO 和 LLaDA-o。</li><li>它在一些指标上接近 Qwen2.5-VL-7B 专用理解模型，例如 MMStar 64.1 vs 63.9、AI2D 82.0 vs 82.6。</li><li>DocVQA 和 OCRBench 仍低于 Qwen2.5-VL-7B，说明统一生成/理解模型在精细 OCR 文档能力上还有差距。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>论文自己也指出了几个局限：</p>
+<ul><li>SigLIP-VQ 语义强，但细节保真不足，影响 detail-sensitive image editing。</li><li>interleaved generation/reasoning 还处在早期，需要更多数据和更大模型容量。</li><li>RL for unified dLLMs 仍在探索，如何对理解、生成、编辑、交错推理统一做 RL 优化还未解决。</li></ul>
+<p>另外，从结果看：</p>
+<ul><li>OCRBench、DocVQA 仍低于 Qwen2.5-VL-7B，说明理解侧的专用 OCR/document 能力还有差距。</li><li>文本渲染虽然是 unified model 中强，但仍弱于 Qwen-Image、LongCat-Image 这种专用图像生成模型。</li><li>diffusion decoder 虽然快速蒸馏到 8 steps，但整体系统仍包含 dLLM denoising + image diffusion decoder，端到端部署复杂度不低。</li></ul>
+<p>LLaDA2.0-Uni 的核心贡献是把视觉变成语义离散 token，让文本和图像共享 dLLM 的 block-level masked diffusion 建模，再用 diffusion decoder 还原图像；它证明 diffusion LLM 可以成为统一多模态理解与生成的可行架构，并把真正的潜力指向 interleaved generation and reasoning。</p>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/architecture.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/architecture.png" alt="Architecture"></a><figcaption>Architecture</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/performance_compare.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/performance_compare.png" alt="Performance comparison"></a><figcaption>Performance comparison</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/intergen.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/intergen.png" alt="InterGen benchmark"></a><figcaption>InterGen benchmark</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2603-01068">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2603.01068</span><span class="badge">detailed</span></div>
+    <h2>LLaDA-o: An Effective and Length-Adaptive Omni Diffusion Model</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2603.01068" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2603.01068.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/ML-GSAI/LLaDA-o" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># LLaDA-o: An Effective and Length-Adaptive Omni Diffusion Model</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2603.01068</li><li>论文链接: https://arxiv.org/abs/2603.01068</li><li>PDF: https://arxiv.org/pdf/2603.01068</li><li>本地 PDF: <code>diffusion_llm/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model.pdf</code></li><li>代码: https://github.com/ML-GSAI/LLaDA-o</li><li>主题归档: diffusion_llm</li><li>总结粒度: detailed</li></ul>
+<p>## 2. 这篇工作要解决什么问题？</p>
+<p>LLaDA-o 关注的是一个很具体但重要的问题：能不能用 diffusion language model 做真正的 omni multimodal model，同时支持图文理解和图像生成？已有 diffusion LLM 主要证明了 masked diffusion...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>LLaDA-o 关注的是一个很具体但重要的问题：能不能用 diffusion language model 做真正的 omni multimodal model，同时支持图文理解和图像生成？已有 diffusion LLM 主要证明了 masked diffusion 在文本建模上可行，而多模态统一模型通常有两条路线：一种是 AR unified model，把文本和图像都变成 token 后做 next-token prediction；另一种是 diffusion-based unified model，但很多方法会把图像也离散化，或把理解和生成揉进同一个 dense diffusion 目标里。</p>
+<p>从上图可以看出，作者想让同一个模型同时完成三类能力：图像理解、根据复杂文本生成图像、以及和已有 omni diffusion 模型进行 case-by-case 对比。论文的关键判断是：文本和图像并不适合同一种 diffusion 动态。文本天然适合离散 token 上的 masked diffusion；图像生成则更适合连续 latent space 上的 continuous diffusion 或 rectified flow。如果强行使用一个统一 dense diffusion objective，容易出现目标不匹配、梯度干扰和训练不稳定。</p>
+<p>这篇论文的第二个问题是长度适配。Masked diffusion text generation 在推理时经常需要预设生成长度或 block length，这对开放式多模态问答很别扭：OCR 只需要几个词，详细 caption 可能需要很长回答。已有 omni diffusion 模型往往固定理解输出长度，导致短任务过度生成、长任务生成不完整。LLaDA-o 的目标就是在不改架构的前提下，让输出长度由输入语义决定，而不是由预设 block size 决定。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>LLaDA-o 的核心是 Mixture of Diffusion, MoD。它不是把所有模态塞进一个扩散专家，而是拆成两个 diffusion experts：</p>
+<ul><li>Understanding expert: 负责文本和视觉 encoder token，使用 masked diffusion。结构上包含 SigLIP vision encoder、两层 MLP projector 和 LLaDA-8B-Instruct language diffusion model。</li><li>Generation expert: 负责图像 latent token，使用 continuous diffusion / rectified flow。结构上包含冻结的 FLUX VAE 和 diffusion Transformer。</li><li>Shared attention backbone: 两个 expert 不是完全隔离的，它们共享 self-attention backbone，用来完成跨模态交互和条件注入。</li></ul>
+<p>这套设计的直觉很清楚：专家层面按模态选择最适合的扩散形式，注意力层面又保留统一模型的交互能力。因此它比“全离散化图像”更适合高质量生成，也比“单一 dense objective”更容易避免离散/连续目标之间的优化冲突。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>模型初始化方面，understanding expert 使用 LLaDA-8B-Instruct 作为语言 diffusion backbone，vision encoder 使用 SigLIP，两层 MLP projector 随机初始化。Generation expert 使用与 LLaDA masked predictor 类似的 diffusion Transformer，并初始化自 LLaDA；时间 embedding 等额外条件参数随机初始化。图像 VAE 使用 FLUX 的 VAE，并在训练中冻结。</p>
+<p>训练分为 projector alignment 和三个主阶段：</p>
+<p>| 阶段 | 目标 | 数据与设置 |</p>
+<p>|---|---|---|</p>
+<p>| Projector alignment | 对齐视觉表示到 understanding expert 的词嵌入空间 | 使用 Infinity-MM Stage 1 数据，只训练 MLP projector，冻结其他模块 |</p>
+<p>| Stage 1 | 建立基础理解和生成能力 | 图像生成限制到 $512$ 分辨率；文本用 in-house 10M SFT；理解用 Infinity-MM、MAmmoTH-VL-Instruct-12M、LLaVA-OneVision-1.5、FineVision；生成用 captioning、PD12M、Text-to-Image-2M、BLIP3o-Pretrain、Nexus-Gen、FLUX-Reason-6M、Qwen-Image synthetic data |</p>
+<p>| Stage 2 | 高分辨率生成与推理能力 | 分辨率提升到 $1024$；理解切换到 Honey-Data-15M；加入 X2Edit、OmniGen2 interleaved data，以及 ShareGPT-4o-Image、OpenGPT-4o-Image editing data |</p>
+<p>| Stage 3 | 激活 variable-length refinement | 对 understanding 应用 adaptive length augmentation；加入 Honey-Data-1M、BLIP3o-60k、GenRef 等更高质量数据 |</p>
+<p>| Model | MMMU | MME cog. | MME perp. | SeedB image | MMB en-dev | MathVerse | MathVista | AI2D | ChartQA | DocVQA | InfoVQA |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|</p>
+<p>| Emu3 | 31.6 | - | - | 68.2 | 58.5 | - | - | 70.0 | 68.6 | 76.3 | 43.8 |</p>
+<p>| Janus-Pro | 41.0 | - | 1567 | 72.1 | 79.2 | - | - | - | - | - | - |</p>
+<p>| Show-o2 | 48.9 | - | 1620 | - | 79.3 | - | - | 78.6 | - | - | - |</p>
+<p>| BAGEL | 55.3 | - | 1687 | - | 85.0 | - | 73.1 | - | - | - | - |</p>
+<p>| LaViDa-L | 43.3 | 341 | 1365 | - | 70.5 | 27.2 | 44.8 | 70.0 | 64.6 | 59.0 | 34.2 |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>这篇论文的主要贡献有三点。第一，它明确提出 text discrete diffusion 与 image continuous diffusion 不应被强行统一成同一种 token/目标，而应通过 MoD 做模态适配。第二，它用 shared attention backbone 保留了统一模型的跨模态交互，同时通过 intra-modality bidirectional attention 降低了推理冗余。第三，它提出 data-centric adaptive length augmentation，使 diffusion text generation 更适合开放式多模态回答。</p>
+<p>局限也比较清楚。首先，LLaDA-o 的语言 backbone 仍弱于顶级 AR LLM，因此在 MMMU、MMBench 等综合理解指标上不能全面超过 BAGEL。其次，GenEval overall 仍低于 Lumina-DiMOO 和 Mogao，说明连续生成专家虽然提升了复杂 prompt 对齐，但空间关系、计数或整体 compositionality 仍有瓶颈。再次，训练成本很高，复现门槛大。最后，论文展示的 failure analysis 不多，对多轮图文交互、编辑一致性和安全性也没有系统展开。</p>
+<p>对 diffusion_llm 方向来说，LLaDA-o 的启发是：未来 dLLM 做 multimodal 不必追求“所有东西都离散化”或“所有目标都一个 loss”。更可行的路线是让不同模态保留各自最有效的生成机制，再在 attention、conditioning、cache 和训练数据层面设计统一接口。换句话说，统一不一定发生在 token 空间，统一也可以发生在交互骨架和推理协议上。</p>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/introduction.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/introduction.png" alt="LLaDA-o 能力总览"></a><figcaption>LLaDA-o 能力总览</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/architecture.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/architecture.png" alt="MoD 架构"></a><figcaption>MoD 架构</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/und_attn.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2603_llada_o_an_effective_and_length_adaptive_omni_diffusion_model/und_attn.png" alt="注意力 mask 设计"></a><figcaption>注意力 mask 设计</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2601-19657">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2601.19657</span><span class="badge">detailed</span></div>
+    <h2>One Token Is Enough: Improving Diffusion Language Models with a Sink Token</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2601.19657" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2601.19657.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/skywalker0523/OneTokenIsEnough" target="_blank" rel="noopener">https://github.com/skywalker0523/OneTokenIsEnough</a> | <a href="../diffusion_llm/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token_v2.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Zihou Zhang, Zheyong Xie, Li Zhong, Haifeng Liu, Yao Hu, Shaosheng Cao</p><p><strong>机构</strong>：Xiaohongshu.inc</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>这篇论文指出 DLM 中的 moving attention sink 本质上是一种低范数 token 吸收冗余 attention、缓解 information over-mixing 的保护机制，但其位置随 diffusion step 移动会带来不稳定；作者通过加入一个全局可见但只能 attend to itself 的额外 <code>[SINK]</code> token，把 moving sink 固定成 stable sink，在多个 DLM 训练设置和 benchmark 上获得稳定提升，并证明一个 token 基本就足够承担这个结构性 attention anchor 角色。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>Diffusion Language Models (DLMs) 通过 bidirectional attention 和 iterative denoising 进行并行文本生成，是 autoregressive language models (ARLMs) 之外的一类重要语言建模范式。近期 LLaDA、Dream 等 DLM 已经在复杂生成任务上展现出竞争力，但 DLM 的 Transformer backbone 里存在一个被本文认为很关键的稳定性问题：moving attention sink。</p>
+<p>Attention sink 指一些语义信息很弱的 token 吸收了不成比例的 attention mass。在 ARLM 中，causal mask 往往让初始 token 或 BOS token 成为稳定 sink，因此很多冗余 attention 可以被固定位置“吸收”。这在一些分析中被解释为一种防止深层 Transformer 过度信息混合的机制。</p>
+<p>DLM 的问题在于：它没有 ARLM 中固定的 causal first token 结构，生成时又会不断改变被 mask 的位置。结果是 sink token 的位置会随 diffusion step 和 layer 变化，常常落在 <code>[MASK]</code> 或空白等低语义 token 上。这种 moving sink 虽然仍能作为“低信息吸收点”缓解 over-mixing，但它的位置不稳定，可能破坏推理鲁棒性和模型表现。</p>
+<p>本文的核心问题是：能否给 DLM 显式加入一个固定、低信息、专门吸收冗余 attention 的 sink token，从而把 moving sink 变成 stable sink？</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>论文先从 value space 角度分析 DLM 中的 sink token。对 Transformer 某层某 head 来说，token 的 value vector 是：</p>
+<p>attention output 是多个 value vectors 的加权和。如果某个 token 的 value vector L2 norm 很小，那么大量 attention 指向它时，对 residual stream 的语义扰动也较小。因此，低范数 token 可以近似扮演 “no-op” attention target，让一些 head 在没有强语义匹配时把冗余 attention 分配出去，避免 token 表示被过度混合。</p>
+<p>图中展示了 LLaDA-Instruct 和 Dream-Instruct 在不同 denoising steps 下的 attention map。亮色竖线表示大量 attention 被集中到某些 token 上，而且 sink 位置会在 step 间移动。右侧散点图显示，sink tokens 的 value-space L2 norm 显著低于 normal tokens：论文图注给出的均值是 LLaDA 中 <code>2.36 vs. 7.60</code>，Dream 中 <code>3.15 vs. 7.79</code>。这支持了作者的解释：DLM 会倾向选择低范数 token 作为临时 sink。</p>
+<p>本文的方法非常直接：在 DLM 输入序列中额外加入一个 <code>[SINK]</code> token，并通过 attention mask 让它成为稳定 attention sink。</p>
+<p>图中左侧是 vanilla DLM 的 moving sink：模型在不同 diffusion step 中把 attention 集中到不同 <code>[MASK]</code> token 上。右侧是本文方法：在序列中加入一个 position-stable <code>[SINK]</code> token，让其他 token 可以 attend to it，从而把原本移动的 sink 固定下来。</p>
+<p>具体做法：</p>
+<ul><li>给输入序列 prepend 一个 learnable sink token embedding <code>s</code>：</li></ul>
+<ul><li>对 attention mask 加入约束：</li></ul>
+<p>其中 <code>k=0</code> 是 sink token 的位置。这意味着：</p>
+<ul><li>sink token 只能 attend to itself，不能从其他 token 聚合语义信息；</li><li>其他所有 token 都可以 attend to sink token；</li><li>sink token 因而保持语义中性，只作为冗余 attention 的吸收目标。</li></ul>
+<p>这个设计有两个关键点：</p>
+<ul><li>它不是新增复杂模块，只多一个 token，计算开销可以忽略。</li><li>它不是让 sink token 携带任务语义，而是强制其成为结构性 attention anchor。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文覆盖两类训练设置：</p>
+<ul><li>从 autoregressive LLM 初始化 DLM：</li><li>初始化模型: <code>Qwen2.5-0.5B</code> 和 <code>Qwen2.5-1.5B</code></li><li>数据: FineWeb</li><li>0.5B: 训练 <code>30B</code> tokens，batch size <code>512</code></li><li>1.5B: 训练 <code>100B</code> tokens，batch size <code>4096</code></li><li>optimizer: AdamW, <code>beta1=0.9</code>, <code>beta2=0.95</code>, weight decay <code>0.1</code></li><li>learning rate: cosine schedule, peak <code>1e-4</code>, min <code>1e-5</code>, warmup <code>1%</code></li></ul>
+<ul><li>从 scratch 训练 DLM：</li><li>架构: SMDM setting</li><li>参数量: <code>0.5B</code></li><li>数据: SlimPajama</li><li>训练 <code>100B</code> tokens，batch size <code>256</code></li><li>peak LR <code>2e-4</code>, min LR <code>2e-5</code>, warmup <code>1%</code></li></ul>
+<p>评测任务包括 commonsense reasoning、reading comprehension 和 math reasoning：</p>
+<ul><li>ARC-e, ARC-c</li><li>HellaSwag</li><li>PIQA</li><li>RACE</li><li>SIQA</li><li>LAMBADA</li><li>GSM8K after SFT</li></ul>
+<p>GSM8K SFT 设置：在 augmented training data 上 fine-tune 10 epochs，context length 为 <code>2048</code>。</p>
+<p>| Model | Tokens | ARC-e | ARC-c | HellaSwag | PIQA | RACE | SIQA | LAMBADA | GSM8K |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|</p>
+<p>| DLM 0.5B | 30B | 44.70 | 27.13 | 35.21 | 55.28 | 31.29 | 40.28 | 44.09 | 46.92 |</p>
+<p>| DLM + extra token 0.5B | 30B | 55.47 | 32.17 | 48.91 | 63.44 | 33.79 | 37.82 | 45.24 | 49.20 |</p>
+<p>| DLM + GA 0.5B | 30B | 47.85 | 29.27 | 41.95 | 61.92 | 34.07 | 36.08 | 45.10 | 47.01 |</p>
+<p>| DLM 1.5B | 100B | 65.49 | 41.47 | 59.50 | 66.49 | 37.80 | 36.18 | 66.58 | 57.77 |</p>
+<p>| DLM + extra token 1.5B | 100B | 68.18 | 43.43 | 61.31 | 68.17 | 37.61 | 39.97 | 66.41 | 58.45 |</p>
+<p>| DLM + GA 1.5B | 100B | 53.03 | 32.27 | 52.90 | 60.33 | 37.42 | 38.26 | 51.10 | 52.35 |</p>
+<p>结果显示：</p>
+<ul><li>0.5B 上，extra token 在 ARC-e、ARC-c、HellaSwag、PIQA、RACE、LAMBADA、GSM8K 上普遍提升，但 SIQA 降低。</li><li>1.5B 上，extra token 仍然提升多数任务，特别是 ARC、HellaSwag、PIQA、SIQA、GSM8K。...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>方法极简：只增加一个 token 和一个 attention mask 约束，不需要复杂 architecture 改造。</li><li>机制解释清楚：从 value-space L2 norm 解释为什么 sink token 能近似 no-op，并缓解 information over-mixing。</li><li>实验覆盖两种初始化方式：从 Qwen2.5 初始化转换 DLM，以及从 scratch 训练 DLM。</li><li>对比了 gated attention，说明 extra sink token 在更大模型上比增加 gate 参数更稳定。</li><li>消融实验比较完整：位置、数量、zero-value、attention allocation 都支持作者假设。</li></ul>
+<p>论文自己指出，实验只覆盖 <code>0.5B</code> 和 <code>1.5B</code> 规模，没有扩展到更大的 DLM。除此之外，还有几个需要注意的问题：</p>
+<ul><li>主要是 pretraining/training-time 方法：需要在训练和推理时都加入 sink token，不能保证对已训练 DLM 直接 inference-only patch 就有效。</li><li>虽然 benchmark 多，但都是小到中等规模模型，缺少 7B/8B 以上 DLM 的系统验证。</li><li>ARC-c、SIQA 等任务上存在局部下降，说明 stable sink 不是所有任务都无条件增益。</li><li>sink token 与不同 noise schedule、不同 sampling strategy、KV cache 优化之间的交互没有深入展开。</li><li>论文没有充分分析为什么某些任务下降，也没有报告更细的训练稳定性曲线或方差。</li></ul>
+<ul><li>DLM 的 attention sink 可能不是简单 pathology，而是模型防止 over-mixing 的必要机制；优化 DLM 时应区分“消除 sink”和“稳定 sink”。</li><li>对 diffusion LLM 推理优化而言，stable low-norm anchor 可能能配合 sparse attention、KV cache、block diffusion 等方法，作为结构性稳定器。</li><li>可以尝试 inference-time sink token 注入实验：即便没重新训练，也可以测试在 prompt/attention mask 层面插入一个特殊低范数 token 是否有短期收益。</li><li>对 long-context DLM，stable sink token 可能与 attention pruning、token pruning、dynamic remasking 结合，降低 attention pattern 的不稳定性。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/main.png" alt="Stable sink token overview"></a><figcaption>Stable sink token overview</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/figure1_normand_attn.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/figure1_normand_attn.png" alt="Moving attention sinks and low-norm property"></a><figcaption>Moving attention sinks and low-norm property</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/bbb.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_one_token_is_enough_improving_diffusion_language_models_with_a_sink_token/bbb.png" alt="Sink token attention in 0.5B model"></a><figcaption>Sink token attention in 0.5B model</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2601-04205">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2601.04205</span><span class="badge">detailed</span></div>
+    <h2>STaRR: Spatial-Temporal Token-Dynamics-Aware Responsive Remasking for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2601.04205" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2601.04205.pdf" target="_blank" rel="noopener">pdf</a> | <a href="未提供" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2601_starr_spatial_temporal_token_dynamics_aware_responsive_remasking_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># STaRR: Spatial-Temporal Token-Dynamics-Aware Responsive Remasking for Diffusion Language Models</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2601.04205</li><li>URL (abs/pdf): <a href="https://arxiv.org/abs/2601.04205" target="_blank" rel="noopener">abs</a> / <a href="https://arxiv.org/pdf/2601.04205.pdf" target="_blank" rel="noopener">pdf</a></li><li>主题目录: diffusion_llm</li><li>总结粒度: detailed</li><li>发表会议: ICML 2026</li><li>作者团队: Xinhao Sun, Huaijin Zhao, Zihao Zheng, Jiayu Chen, Maoliang Li, Yun Liang, Xiang Chen</li><li>方法名: <strong>STaRR (Spatial-Temporal Token-Dynamics-Aware Responsive Remasking)</strong></li><li>代码: 未提供</li><li>模型架构: LLaDA-Instruct-8B, Dream-7B</li></ul>
+<p>---</p>
+<p>##...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p><strong>类型一：静态置信度阈值</strong>。LLaDA-8B和Dream-7B采用固定阈值，仅解码置信度超过预定义阈值的token。缺点是完全忽略token置信度的时间演化与空间关联。</p>
+<p><strong>类型二：仅考虑时间维度的策略</strong>。TSE、Rainbow、Saber等方法根据解码步数动态调整阈值，但忽略了token间的空间关联。</p>
+<p><strong>类型三：仅考虑空间维度的策略</strong>。DUS将序列位置划分为非相邻膨胀组并行unmask；Block Diffusion和SlowFast Sampling在每步限制解码区域，对其他位置按预定义规则remask。它们虽然捕获了空间结构，但忽略了token信心的时序演化。</p>
+<p><strong>根本问题</strong>：现有方法本质上是静态的、非自适应的——它们要么只使用瞬时置信度信息，要么在时间/空间维度上作粗粒度调整，无法捕捉每个token独特的时空动态特性。</p>
+  </section>
+  
+</article>
+
+<article class="paper-card" id="arxiv-2601-03199">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2601.03199</span><span class="badge">detailed</span></div>
+    <h2>DIP: Dynamic In-Context Planner For Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2601.03199" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2601.03199.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2601_dip_dynamic_in_context_planner_for_diffusion_language_models_v2.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Yang Li, Han Meng, Chenan Wang, Haipeng Chen</p><p><strong>机构</strong>：College of William &amp; Mary</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>DIP 的核心贡献是把 DLM 的非自回归迭代生成特性转化为一个动态上下文调度机会：不再把所有 ICL examples 从一开始固定进 prompt，而是在 Fast-dLLM 的 block-wise decoding 过程中按 MMR 排序和 confidence-aware policy 逐步插入 examples，从而在基本保持 GSM8k accuracy 的同时，在 Fast-dLLM 之上获得约 <code>1.17x</code> 的额外 throughput 提升。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>这篇工作的核心问题是：Diffusion Language Models (DLMs) 在 In-Context Learning (ICL) 场景下可以受益于示例 prompt，但 DLMs 的 bidirectional attention 会让上下文长度带来显著推理开销。传统做法沿用 ARLM 的习惯，把所有 in-context examples 一次性放进 prompt，并在整个生成过程中保持不变。这对 ARLM 是自然的，因为 left-to-right generation 依赖固定 prefix 和 KV states；但对 masked diffusion generation 来说，这个静态 prompt 约束并不是必要的。</p>
+<p>论文的关键观察是：DLMs 的非自回归、迭代去噪生成过程允许在生成中途动态调整 context。换句话说，模型不必从一开始就带着全部 examples 完成所有 block 的 decoding；可以先用较少 examples 开始，等生成状态显示需要更多上下文时，再逐步插入新的 examples。这样能降低平均上下文长度，从而提升 throughput。</p>
+<p>论文还强调，现有 Fast-dLLM 这类 KV cache + block-wise decoding 方法虽然已经能加速 DLM 推理，但仍会在上下文较长时承担较高 attention 成本。DIP 的定位不是替代 Fast-dLLM，而是在 Fast-dLLM 的 block-level KV cache update 时机上，动态更新 prompt，把“什么时候插入 example”和“插入哪个 example”变成一个推理时策略问题。</p>
+<p>图中显示，在 Fast-dLLM 下，LLaDA-8B-Instruct 和 Dream-7B-Instruct 的 throughput 都会随着 prompt 中 in-context examples 数量增加而下降。这是 DIP 的直接动机：如果不是每个 decoding block 都需要完整 5-shot context，就可以通过延迟或减少 example 使用来节省计算。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>DIP (Dynamic In-Context Planner) 是一个 training-free 的 context optimization 方法，由两个阶段组成：</p>
+<ul><li>Example ranking: 先对候选 examples 排序，决定优先插入哪些 examples。</li><li>Example insertion policy: 在 block-wise diffusion decoding 过程中，根据生成阶段和 confidence 决定是否插入下一个 example。</li></ul>
+<p>这个框架图很好地说明了 DIP 的执行方式：左侧先用 MMR 对 examples 排序；右侧在 DLM 的 block-wise decoding 中，prompt 初始只包含 query 和少量 examples，后续 block 根据 policy 选择 <code>insert</code> 或 <code>keep</code>。蓝色表示 example tokens，橙色表示 query tokens，灰色是 mask tokens，绿色是 decoded tokens，浅黄色是 cached tokens。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文实验相对集中，主要验证 DIP 在一个代表性 DLM 和一个数学推理 benchmark 上是否能保持质量并提升速度。</p>
+<ul><li>Model: <code>LLaDA-8B-Instruct</code></li><li>Dataset/task: <code>5-shot GSM8k</code></li><li>Generation length: <code>256</code></li><li>Block size: <code>32</code></li><li>Ranking embedding: <code>Qwen3-Embedding-0.6B</code></li><li>Evaluation: <code>lm-eval</code></li><li>Accuracy metric: flexible match accuracy</li><li>Throughput metric: average output tokens per second</li><li>Baselines: LLaDA standard decoding, Fast-dLLM</li><li>Hardware: single NVIDIA 5090 GPU</li></ul>
+<p>| Method | Throughput | Relative speedup | Acc |</p>
+<p>|---|---:|---:|---:|</p>
+<p>| LLaDA | 6.94 | 1.0x | 78.2 |</p>
+<p>| Fast-dLLM | 75.87 | 10.9x | 77.7 |</p>
+<p>| DIP (<code>lambda=0.1</code>, <code>epsilon=0.2</code>) | 86.54 | 12.5x | 77.8 |</p>
+<p>| DIP (<code>lambda=0.1</code>, <code>epsilon=1.0</code>) | 89.47 | 12.9x | 76.7 |</p>
+<p>主表说明 DIP 相比原始 LLaDA decoding 有非常大的 speedup，但这主要包含 Fast-dLLM 本身带来的 KV cache/block-wise acceleration。更关键的比较是相对 Fast-dLLM：DIP 从 <code>75.87</code> tokens/sec 提升到最高 <code>89.47</code> tokens/sec，约 <code>1.17x</code>，同时 accuracy 从 <code>77.7</code> 附近保持到 <code>77.8</code> 或略降到 <code>76.7</code>。</p>
+<p>论文最强的配置不是 accuracy 最高配置，而是 speed/quality trade-off：<code>lambda=0.1, epsilon=0.2</code> 达到 <code>86.54</code> throughput 和 <code>77.8</code> accuracy，基本维持 Fast-dLLM 精度并获得额外吞吐提升。</p>
+<p>| Parameters | Throughput | Accuracy |</p>
+<p>|---|---:|---:|</p>
+<p>| <code>epsilon=0.2, lambda=0.0</code> | 87.45 | 76.6 |</p>
+<p>| <code>epsilon=0.2, lambda=0.25</code> | 86.49 | 77.6 |</p>
+<p>| <code>epsilon=0.2, lambda=0.5</code> | 86.44 | 76.3 |</p>
+<p>| <code>epsilon=0.2, lambda=0.75</code> | 86.68 | 76.5 |</p>
+<p>| <code>epsilon=0.2, lambda=1.0</code> | 86.46 | 77.3 |</p>
+<p>| <code>lambda=0.1, epsilon=0.0</code> | 85.54 | 76.9 |</p>
+<p>| <code>lambda=0.1, epsilon=0.25</code> | 86.27 | 77.8 |</p>
+<p>| <code>lambda=0.1, epsilon=0.5</code> | 87.51 | 77.0 |</p>
+<p>| <code>lambda=0.1, epsilon=0.75</code> | 88.81 | 76.0 |</p>
+<p>| <code>lambda=0.1, epsilon=1.0</code> | 89.47 | 76.7 |</p>
+<p>消融结论比较清晰：...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>问题切入点明确：它抓住了 DLM 与 ARLM 的结构差异，即 DLM 不必被静态 prompt 约束。</li><li>方法 training-free，不需要微调模型或训练 scheduler。</li><li>与 Fast-dLLM 这类 KV cache framework 兼容，利用 block transition 的 cache update 时机，工程上比较自然。</li><li>使用 confidence 作为插入信号，额外开销低，因为 confidence 本来就是 DLM sampling/unmasking 会计算的量。</li><li>实验显示在 Fast-dLLM 之上仍有额外 speedup，而不是只重复已有 KV cache 加速。</li></ul>
+<p>论文自己的 limitation 主要有三点：</p>
+<ul><li>实验只覆盖 <code>GSM8k</code> 和 <code>LLaDA-8B-Instruct</code>，任务和模型范围窄。</li><li>DIP 只在 Fast-dLLM 框架上实现和测试；虽然理论上兼容其他 KV cache-enhanced inference framework，但没有实证。</li><li>推理设置沿用 Fast-dLLM，尚未系统探索 generation length、block size、threshold、不同 decoding settings 对 DIP 的影响。</li></ul>
+<p>除此之外，还有几个值得注意的技术风险：</p>
+<ul><li>策略是 heuristic，没有学习到 task-specific 的插入策略；在更复杂任务上，confidence 低未必总表示“需要更多 examples”。</li><li>Example 数量只增不减，无法纠正早期插入的低质量或冗余 example。</li><li>MMR 基于 query embedding 排序，对 reasoning task 中 example 的解法结构、推理模式相似性捕捉有限。</li><li>目前只看 5-shot GSM8k，没有展示不同 shot 数、不同候选池大小、不同 example retrieval 质量下的鲁棒性。</li><li>表中的 accuracy 差异较小，论文没有报告方差或多 seed 统计，是否显著还不清楚。</li></ul>
+<p>这篇工作对 diffusion LLM 推理优化方向有几个可延展点：</p>
+<ul><li>可以把 DIP 看成“context scheduling”问题，而不是单纯 example selection。后续可以研究动态删除、替换、压缩 examples，而不仅是单调插入。</li><li>Confidence signal 可以扩展成更丰富的 uncertainty signal，例如 entropy、mask ratio、block-level consistency、re-masking 频率、或答案关键 token 的局部 confidence。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_dip_dynamic_in_context_planner_for_diffusion_language_models/DIP.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_dip_dynamic_in_context_planner_for_diffusion_language_models/DIP.png" alt="DIP framework"></a><figcaption>DIP framework</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_dip_dynamic_in_context_planner_for_diffusion_language_models/inference_throuput.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2601_dip_dynamic_in_context_planner_for_diffusion_language_models/inference_throuput.png" alt="DLM throughput vs number of examples"></a><figcaption>DLM throughput vs number of examples</figcaption></figure>
+    </div>
+  </section>
+</article>
+
+<article class="paper-card" id="arxiv-2508-10875">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2508.10875</span><span class="badge">detailed</span></div>
+    <h2>A Survey on Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2508.10875" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2508.10875" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2508_a_survey_on_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Tianyi Li, Mingda Chen, Bowei Guo, Zhiqiang Shen</p><p><strong>机构</strong>：VILA Lab, Mohamed bin Zayed University of Artificial Intelligence; Tsinghua University</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>这是一篇面向 Diffusion Language Models (DLMs) 的系统综述，试图把当前扩散语言模型的全景图一次性讲清楚：从连续/离散/混合范式，到预训练、SFT、RL、推理加速、多模态统一建模、下游应用，再到并行性与质量的根本张力、长序列与动态长度、基础设施与可扩展性等核心瓶颈。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>作者的切入点很明确：AR LLM 仍然是主导范式，但它的逐 token 生成天生受制于串行推理路径；而 diffusion 模型在图像/视频里已经证明了“迭代去噪 + 并行生成”的可行性，因此自然会诱导出一个问题: 能不能把这种并行生成范式迁移到语言上。</p>
+<p>论文认为 DLM 的吸引力主要来自五点：</p>
+<ul><li>并行生成: 一次生成多个 token，而不是严格 next-token。</li><li>双向上下文: 每步都能看左右上下文，而不只是左侧前缀。</li><li>迭代修正: 先出粗结果，再逐步修补低置信位置。</li><li>可控性: 天然适合 infilling、结构约束和 guided generation。</li><li>多模态统一建模: 文本和图像都能纳入统一的“去噪-重构”框架。</li></ul>
+<p>但作者也强调，DLM 不是“更快的 AR”这么简单。它引入了新的建模对象、训练目标与推理调度，带来了一整套新的问题：如何定义 token/noise corruption、如何做高效训练、如何在并行性和 coherence 之间平衡、如何把 RL/偏好优化搬到一个不可直接 factorize likelihood 的生成过程上。</p>
+<ul><li>DLM 的“稳定 token / 稳定 block”能否统一为一种 uncertainty 或 information gain 视角？</li><li>dynamic-length generation 能否和 stable prefix / EOS-aware stopping 联合建模，真正减少无效后续更新？</li><li>DLM RL 里是否可以进一步减少 surrogate likelihood 的 bias-variance gap？</li><li>multimodal DLM 的 reasoning traces 是否能比 AR MLLM 更自然地和图像区域、编辑动作对齐？</li><li>能否构建面向 serving 的 DLM runtime，把 cache、block decoding、verification、step scheduling 统一到一个系统里？</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>这是一篇面向 Diffusion Language Models (DLMs) 的系统综述，试图把当前扩散语言模型的全景图一次性讲清楚：从连续/离散/混合范式，到预训练、SFT、RL、推理加速、多模态统一建模、下游应用，再到并行性与质量的根本张力、长序列与动态长度、基础设施与可扩展性等核心瓶颈。</p>
+<ul><li>覆盖面很全，基本把 DLM 领域的主要子方向都系统梳理了一遍。</li><li>taxonomy 很清晰，特别适合拿来当阅读地图。</li><li>不只讲模型，还讲训练、推理、RL、多模态、应用和基础设施瓶颈。</li><li>对 diffusion_llm 当前最活跃的加速线索总结得很完整。</li></ul>
+<ul><li>作为 survey，方法创新不在它自身，而在整理视角。</li><li>大量性能结论依赖不同论文原始报告，横向比较仍有 benchmark / recipe 差异。</li><li>对一些 very recent inference papers 的统一理论解释还偏弱，更多是 taxonomy 式综述。</li><li>对“DLM 在超大规模下能否系统胜过 AR”仍没有决定性结论。</li></ul>
+  </section>
+  
+</article>
+  </main>
+  <footer>Generated from local detailed summaries in <code>diffusion_llm/</code>.</footer>
+</body>
+</html>
