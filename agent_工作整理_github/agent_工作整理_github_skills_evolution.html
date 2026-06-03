@@ -1,0 +1,1837 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Agent Skills & Self-Evolution</h1>
+  <p>技能发现、自演化、蒸馏与多模态能力构建</p>
+</header>
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+<section class="subpage-nav">
+  <h2>本页目录</h2>
+  <p>先看目录再往下读，会比直接滚到底更顺一点。</p>
+  <ol>
+<li><a href="#arxiv-2602.02486">RE-TRAC: REcursive TRAjectory Compression for Deep Search Agents</a></li>
+<li><a href="#arxiv-2602.08234">SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning</a></li>
+<li><a href="#arxiv_2604_skill_retrieval_augmentation_for_agentic_ai">Skill Retrieval Augmentation for Agentic AI</a></li>
+  <li><a href="#arxiv-2604.27488">Skills-Coach: A Self-Evolving Skill Optimizer via Training-Free GRPO</a></li>
+  <li><a href="#arxiv-2604.25727">Toward Scalable Terminal Task Synthesis via Skill Graphs (SkillSynth)</a></li>
+  <li><a href="#arxiv-2605.15198">ATLAS: Agentic or Latent Visual Reasoning? One Word is Enough for Both</a></li>
+  <li><a href="#arxiv-2605.17933">AtlasVA: Self-Evolving Visual Skill Memory for Teacher-Free VLM Agents</a></li>
+  <li><a href="#arxiv_2605_evovid_temporal_centric_self_evolution_for_video_large_language_models">EvoVid: Temporal-Centric Self-Evolution for Video Large Language Models</a></li>
+  <li><a href="#arxiv-2605.00642">Learn where to Click from Yourself: On-Policy Self-Distillation for GUI Grounding</a></li>
+  <li><a href="#arxiv-2605.13527">MMSkills: Towards Multimodal Skills for General Visual Agents</a></li>
+  <li><a href="#arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks">SearchSkill: Teaching LLMs to Use Search Tools with Evolving Skill Banks</a></li>
+  <li><a href="#arxiv-2605.03808">Agentic Interpretability: Evolving agentic interpretability tools via autoregressive tool discovery</a></li>
+<li><a href="#arxiv-2605.02910">CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing</a></li>
+<li><a href="#arxiv-2605.14392">Learning to Build the Environment: Self-Evolving Reasoning RL via Verifiable Environment Synthesis</a></li>
+<li><a href="#arxiv-2605.21605">GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</a></li>
+  </ol>
+</section>
+
+
+<!-- PAPER_CARD_START source="agent/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning.md" arxiv="2602.02486" -->
+<article class="paper-card" id="arxiv-2602.02486">
+  <h2>RE-TRAC: REcursive TRAjectory Compression for Deep Search Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2602.02486" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.02486.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2602.02486</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最有价值的地方，不是单纯提出了一个“多跑几轮”的 agent trick，而是把 deep research agent 的核心瓶颈明确归因为 <strong>线性 ReAct 对长程分支搜索的承载不足</strong>，并用 <strong>trajectory compression + recursive state passing</strong> 给出了一个非常实用、易扩展、还能蒸馏到小模型中的解决方案。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 <strong>Deep Research / web search agent</strong> 在长轨迹任务里的一个很具体但很致命的问题: 模型明明在前面规划过若干搜索分支，但随着 ReAct 轨迹不断变长，后面往往会忘掉这些分支，只沿着单一路径越走越深，最后错过真正有用的信息源。</p>
+<p>作者把这个现象总结为 <strong>incomplete branch exploration</strong>。它不是单纯的“模型不会推理”，而是：</p>
+<ul><li>任务本身需要多分支探索、回溯、交叉验证。</li><li>ReAct 的执行形态却是线性的 action-observation 链。</li><li>当上下文极长、工具调用密集时，早期计划会被后续 observation 淹没。</li><li>最终失败往往来自“本来该查的分支没查完”，而不是一点思路都没有。</li></ul>
+<p>论文对失败轨迹做了分析，在 BrowseComp 上统计到：</p>
+<table class="result-table">
+<tr><th>Model</th><th>失败轨迹中存在 incomplete branches 的比例</th></tr>
+<tr><td>GLM-4.7</td><td>93.0%</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>92.7%</td></tr>
+<tr><td>Tongyi-DeepResearch</td><td>83.4%</td></tr>
+</table>
+<p>这组数字很关键，因为它说明现有 deep research agent 的失败，大量是“搜索管理失败”，而非“能力完全缺失”。</p>
+<p>同时，作者还发现很多模型的 Pass@8 明显高于 Pass@1，这意味着模型并不是完全答不出来，而是在<strong>单次 rollout 中没有把搜索空间探索到位</strong>。</p>
+<p>上图想表达的核心结论是：模型其实有潜力在多次尝试中找到正确答案，但传统的 independent rollouts 彼此隔离，无法复用经验，也会带来大量重复搜索。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者提出的方法叫 <strong>RE-TRAC</strong>，全称是 <strong>REcursive TRAjectory Compression</strong>。它不是再造一个复杂 agent 框架，而是在 ReAct 之上加了一个“跨 rollout 的经验压缩层”。</p>
+<p>最核心的操作只有一句话：</p>
+<div class="formula-block">\[S_t \leftarrow \mathrm{Compress}(\tau_t, S_{t-1}; \mathcal{C})\]</div>
+<p>其中：</p>
+<ul><li>$\tau_t$ 表示第 $t$ 轮 rollout 的完整轨迹。</li><li>$S_{t-1}$ 表示上一轮累计下来的结构化状态。</li><li>$\mathcal{C}$ 表示固定的 compression specification。</li><li>$S_t$ 表示新的压缩状态，会被喂给下一轮 agent。</li></ul>
+<p>这背后的直觉是：</p>
+<ul><li>不要把上一轮完整的超长轨迹原样塞回去。</li><li>只保留对下一轮搜索真正有用的“高价值状态”。</li><li>让后续 rollout 既知道“已经确认了什么”，也知道“还有哪些未完成分支值得继续查”。</li></ul>
+<p>对大模型，RE-TRAC 可以直接当作 inference-time prompting strategy 来用，不需要额外训练。作者把它用于：</p>
+<ul><li>o4-mini</li><li>o3</li><li>GPT-5-medium</li><li>DeepSeek-V3.2</li><li>GLM-4.7</li></ul>
+<p>然后和几种经典 test-time scaling 方案对比：</p>
+<ul><li><code>RT@n</code>: RE-TRAC 跑 $n$ 轮后的最终答案</li><li><code>MV@n</code>: $n$ 个独立 rollout 的多数投票</li><li><code>WV@n</code>: 带自评置信度的加权投票</li><li><code>Best@n</code>: 选自评置信度最高的答案</li></ul>
+<p>在 BrowseComp300 上，主要结果如下：</p>
+<table class="result-table">
+<tr><th>Model</th><th>Pass@1</th><th>RT@8</th><th>MV@8</th><th>WV@8</th><th>Best@8</th></tr>
+<tr><td>o4-mini</td><td>25.7</td><td class="best">46.8</td><td>34.0</td><td>46.7</td><td>43.3</td></tr>
+<tr><td>o3</td><td>54.9</td><td class="best">69.8</td><td>64.3</td><td>69.0</td><td>68.0</td></tr>
+<tr><td>GPT-5-medium</td><td>48.3</td><td class="best">66.6</td><td>61.7</td><td>64.7</td><td>54.0</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>45.3</td><td class="best">60.8</td><td>55.7</td><td>57.0</td><td>55.0</td></tr>
+<tr><td>GLM-4.7</td><td>37.7</td><td class="best">60.7</td><td>41.7</td><td>48.0</td><td>42.3</td></tr>
+</table>
+<p>这个表最值得注意的地方有两个：</p>
+<ul><li>RE-TRAC 几乎在所有模型上都能稳定达到最佳或并列最佳。</li><li>对自我判断能力没那么强的模型，RE-TRAC 比投票类方法更稳，因为它不依赖“谁更会给自己打分”，而是靠跨轮经验传递来扩展搜索。</li></ul>
+<p>上图说明了另一点：RE-TRAC 不只是效果好，而且更省资源。原因在于后续 rollout 会复用前面轮次的状态，不需要每一轮都从空白开始重复搜索，所以在 token 和 tool usage 上更经济。</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MethodFig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MethodFig.png" alt="Method overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MainFig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MainFig.png" alt="ReAct vs RE-TRAC"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/pass_at_k_5models.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/pass_at_k_5models.png" alt="Pass@K analysis"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在五个 deep research / search-heavy benchmark 上做了评测：</p>
+<ul><li>BrowseComp</li><li>BrowseComp-ZH</li><li>GAIA</li><li>XBench</li><li>HLE</li></ul>
+<p>主结果里最关键的几行如下：</p>
+<table class="result-table">
+<tr><th>Model</th><th>BrowseComp</th><th>BrowseComp-ZH</th><th>GAIA</th><th>XBench</th><th>HLE</th></tr>
+<tr><td>Tongyi-DeepResearch-30B-A3B</td><td>43.4</td><td>46.7</td><td>70.9</td><td>75.0</td><td class="best">32.9</td></tr>
+<tr><td class="best">RE-TRAC-30B-A3B</td><td class="best">53.0</td><td class="best">57.3</td><td class="best">78.2</td><td class="best">83.0</td><td>31.5</td></tr>
+<tr><td>AgentCPM-Explore-4B</td><td>25.0</td><td>29.0</td><td>63.9</td><td>70.0</td><td>19.1</td></tr>
+<tr><td>NestBrowse-4B</td><td>22.4</td><td>28.4</td><td>68.9</td><td>74.0</td><td>-</td></tr>
+<tr><td class="best">RE-TRAC-4B</td><td class="best">30.0</td><td class="best">36.1</td><td class="best">70.4</td><td class="best">76.6</td><td class="best">22.2</td></tr>
+</table>
+<p>作者据此想说明三件事：</p>
+<ul><li><strong>同尺寸最强</strong></li></ul>
+<p><code>RE-TRAC-30B-A3B</code> 相比底座 <code>Tongyi-DeepResearch-30B-A3B</code>，在 BrowseComp、BrowseComp-ZH、GAIA、XBench 上提升大约 8% 到 10%。</p>
+<ul><li><strong>小模型也能变强</strong></li></ul>
+<p><code>RE-TRAC-4B</code> 在 <code>&lt;15B</code> 的开源 baseline 中表现最好，说明 RE-TRAC 不只是“更大的模型更会用”，而是可以把 long-horizon search 的套路教给小模型。</p>
+<ul><li><strong>能和更大模型竞争</strong></li></ul>
+<p><code>RE-TRAC-30B-A3B</code> 在若干 benchmark 上能逼近甚至超过更大参数量模型，说明“搜索管理”本身就能带来很大增益。</p>
+<p>补充一点：在 HLE 上，RE-TRAC-30B-A3B 并没有超过 Tongyi-DeepResearch-30B-A3B，这也提醒我们 RE-TRAC 的优势更集中在 <strong>search-heavy、branch-heavy、trajectory-heavy</strong> 的任务，而不是所有类型能力都无条件上涨。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果把这篇工作放回你现在的 <code>agent</code> 主题下，我觉得最值得吸收的是下面几条：</p>
+<p>如果你后面想把这篇工作的方法借到自己的 agent 实验里，我建议最小实现可以先做成这四步：</p>
+<ul><li>保持现有 ReAct agent 不变。</li><li>每轮 rollout 结束后，用固定模板生成三段式状态：</li><li>conclusions</li><li>verified evidence</li><li>unresolved branches</li><li>下一轮把这份状态作为新的初始上下文输入。</li><li>对比单轮 ReAct、Best-of-N、RE-TRAC 风格递归 rollout 的成功率与工具调用成本。</li></ul>
+<p>如果再进一步，可以专门加两个机制：</p>
+<ul><li>一个 branch coverage 指标，统计“计划过但未执行”的分支比例。</li><li>一个 summary quality 评估器，检查压缩状态是否遗漏关键未解决问题。</li></ul>
+<p>这篇论文最有价值的地方，不是单纯提出了一个“多跑几轮”的 agent trick，而是把 deep research agent 的核心瓶颈明确归因为 <strong>线性 ReAct 对长程分支搜索的承载不足</strong>，并用 <strong>trajectory compression + recursive state passing</strong> 给出了一个非常实用、易扩展、还能蒸馏到小模型中的解决方案。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning.md" arxiv="2602.08234" -->
+<article class="paper-card" id="arxiv-2602.08234">
+  <h2>SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2602.08234" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.08234.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2602.08234</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>人类专家不会记住每个情境中的每个动作，而是发展出<strong>技能（skills）</strong>——紧凑、可复用的策略，捕捉完成子任务的本质。受此启发，本文提出 SkillRL，通过自动技能发现和递归演化，弥合原始经验与策略提升之间的鸿沟。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>现有 memory-based 方法主要将原始轨迹直接存入外部数据库，存在以下问题：</p>
+<ul><li><strong>冗余和噪声</strong>：原始轨迹冗长，包含探索性动作、回溯和冗余步骤，信息密度低</li><li><strong>缺乏抽象</strong>：仅模仿过去的解决方案，无法蒸馏核心原则或将经验内化为策略</li><li><strong>上下文膨胀</strong>：在有限的 context window 中，原始轨迹占用大量 token 却贡献有限</li><li><strong>静态记忆</strong>：记忆库作为静态资源，无法随 agent 能力增长而演化</li></ul>
+<p>如 Figure 1 所示，raw trajectory memory 在训练中甚至可能因引入噪声而导致性能下降。</p>
+<p>人类专家不会记住每个情境中的每个动作，而是发展出<strong>技能（skills）</strong>——紧凑、可复用的策略，捕捉完成子任务的本质。受此启发，本文提出 SkillRL，通过自动技能发现和递归演化，弥合原始经验与策略提升之间的鸿沟。</p>
+<p>SkillRL 包含三大核心组件：</p>
+<ul><li><strong>Experience-based Skill Distillation</strong>：将冗余轨迹蒸馏为简洁、可操作的知识</li><li><strong>Hierarchical Skill Library (SkillBank)</strong>：分层组织蒸馏出的技能，支持高效检索</li><li><strong>Recursive Skill Evolution</strong>：在 RL 训练中动态精炼技能库，使其与 agent 策略协同演化</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/method.png" alt="SkillRL 总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/fig1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/fig1.png" alt="Pipeline 概览与性能对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/skill_mixed_chart.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/skill_mixed_chart.png" alt="技能库增长"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>环境</strong>：ALFWorld, WebShop, 7 个 search-augmented QA 任务</p>
+<p><strong>模型</strong>：</p>
+<ul><li>Base model: Qwen2.5-7B-Instruct</li><li>Teacher model: OpenAI o3</li></ul>
+<p><strong>超参数</strong>：</p>
+<ul><li>SFT: lr=1e-4, batch=16, 3 epochs, ALFWorld 7500 例 / WebShop 2400 例</li><li>RL: lr=1e-6, batch=64, group size=8, KL coef=0.01, 150 epochs</li><li>Skill retrieval: Top-K=6, validation interval=5 steps, update threshold δ=0.4</li><li>计算资源：8×H100 80GB, 总耗时约 30 小时</li></ul>
+<table class="result-table">
+<tr><th>方法</th><th>ALFWorld</th><th>WebShop</th></tr>
+<tr><td>SkillRL（完整）</td><td class="best">89.9</td><td class="best">72.7</td></tr>
+<tr><td>w/o Hierarchical Structure</td><td>76.8 (-13.1)</td><td>61.4 (-11.3)</td></tr>
+<tr><td>w/o Skill Library (Raw Trajectories)</td><td>61.7 (-28.2)</td><td>50.2 (-22.5)</td></tr>
+<tr><td>w/o Cold-Start SFT</td><td>65.2 (-24.7)</td><td>46.5 (-26.2)</td></tr>
+<tr><td>w/o Dynamic Evolution</td><td>84.4 (-5.5)</td><td>70.3 (-2.4)</td></tr>
+</table>
+<p>核心发现：</p>
+<ul><li><strong>去除技能库（用原始轨迹）导致最大退化</strong>（ALFWorld -28.2%），直接验证了&quot;抽象优于记忆&quot;的核心假设</li><li><strong>Cold-start SFT 极其关键</strong>（-24.7%），base model 需要先学习如何使用技能</li><li><strong>层级结构重要</strong>（-13.1%），通用策略原则提供基础指导</li><li><strong>动态演化贡献 +5.5%</strong>，确保技能库是动态组件而非静态数据库</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>现有 memory-based 方法主要将原始轨迹直接存入外部数据库，存在以下问题：</p>
+<ul><li><strong>冗余和噪声</strong>：原始轨迹冗长，包含探索性动作、回溯和冗余步骤，信息密度低</li><li><strong>缺乏抽象</strong>：仅模仿过去的解决方案，无法蒸馏核心原则或将经验内化为策略</li><li><strong>上下文膨胀</strong>：在有限的 context window 中，原始轨迹占用大量 token 却贡献有限</li><li><strong>静态记忆</strong>：记忆库作为静态资源，无法随 agent 能力增长而演化</li></ul>
+<p>如 Figure 1 所示，raw trajectory memory 在训练中甚至可能因引入噪声而导致性能下降。</p>
+<ul><li><strong>从经验到技能的抽象范式</strong>：首次系统性地将原始轨迹蒸馏为结构化技能，token 压缩 10-20x</li><li><strong>分层技能库设计</strong>：General + Task-Specific 的两层结构兼顾通用性和专业性</li><li><strong>递归演化机制</strong>：技能库随 RL 训练动态增长，形成 agent 与技能库的协同演化</li><li><strong>冷启动 SFT 有效</strong>：解决了&quot;有技能但不会用&quot;的 bootstrapping 问题</li><li><strong>性能显著</strong>：7B 模型超越 GPT-4o/Gemini-2.5-Pro，ALFWorld 89.9% SOTA</li><li><strong>搜索任务泛化好</strong>：训练在 NQ+HotpotQA，OOD 任务表现稳健</li><li><strong>上下文效率高</strong>：更少 token 获得更好性能</li><li><strong>开源代码</strong>：github.com/aiming-lab/SkillRL</li></ul>
+<ul><li><strong>依赖强 teacher 模型</strong>：使用 OpenAI o3 做蒸馏和 SFT 数据生成，成本高且有外部依赖</li><li><strong>验证间隔固定</strong>：每 5 步做一次 validation，演化频率是固定的</li><li><strong>演化上限阈值</strong>：仅在 $Acc(C) &lt; 0.4$ 时触发演化，阈值选择较经验化</li><li><strong>技能可解释性有限</strong>：虽然比原始轨迹紧凑，但技能仍是 LLM 生成的文本，质量依赖 teacher</li><li><strong>评估范围</strong>：主要在 ALFWorld、WebShop 和 search QA 上，未涉及更复杂的软件工程任务</li><li><strong>二值奖励</strong>：使用 0/1 奖励，未探索更细粒度的奖励信号</li><li><strong>技能检索基于语义相似度</strong>：对于复杂任务可能检索到不相关的技能</li></ul>
+<ul><li><strong>技能蒸馏可直接复用</strong>：对任何 agent 训练，用强 teacher 将轨迹蒸馏为结构化技能，比存储原始轨迹更高效...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_skill_retrieval_augmentation_for_agentic_ai.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2604_skill_retrieval_augmentation_for_agentic_ai">
+  <h2>Skill Retrieval Augmentation for Agentic AI</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.24594" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.24594.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/oneal2000/SR-Agents" target="_blank">Code</a>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>当前 Agent 系统使用外部技能（skill）的主流方式是<strong>在上下文中显式枚举可用技能</strong>（如 OpenClaw 的 SKILL.md）。但这种方案存在根本性的扩展性问题：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>当前 Agent 系统使用外部技能（skill）的主流方式是<strong>在上下文中显式枚举可用技能</strong>（如 OpenClaw 的 SKILL.md）。但这种方案存在根本性的扩展性问题：</p>
+<ul><li><strong>上下文窗口有限</strong>：技能生态正在爆炸式增长——截至 2026 年 4 月，SkillsMP 等平台已托管超过 100 万个技能，无法全部放入上下文</li><li><strong>选择精度下降</strong>：当大量技能同时出现在上下文中时，LLM 识别正确技能的能力急剧退化</li></ul>
+<p>本文提出核心问题：*能否让 Agent 从大规模外部技能库中动态检索、加载和应用相关技能，而非依赖上下文中固定的小规模技能集？*</p>
+
+<p>围绕 SRA 流水线设计了 6 个研究问题：</p>
+<ul><li><strong>RQ1</strong>：SRA 能否提升 Agent 性能？（有效性）</li><li><strong>RQ2</strong>：SR-Agent 对检索噪声的鲁棒性如何？（鲁棒性）</li><li><strong>RQ3</strong>：现有检索方法在技能检索上效果如何？（检索质量）</li><li><strong>RQ4</strong>：检索质量如何影响端到端性能？（检索-任务关联）</li><li><strong>RQ5</strong>：Agent 是否具备相关性感知的技能加载行为？（Relevance-aware）</li><li><strong>RQ6</strong>：Agent 是否具备需求感知的技能加载行为？（Need-aware）</li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 Agent 系统使用外部技能（skill）的主流方式是<strong>在上下文中显式枚举可用技能</strong>（如 OpenClaw 的 SKILL.md）。但这种方案存在根本性的扩展性问题：</p>
+<ul><li><strong>上下文窗口有限</strong>：技能生态正在爆炸式增长——截至 2026 年 4 月，SkillsMP 等平台已托管超过 100 万个技能，无法全部放入上下文</li><li><strong>选择精度下降</strong>：当大量技能同时出现在上下文中时，LLM 识别正确技能的能力急剧退化</li></ul>
+<p>本文提出核心问题：*能否让 Agent 从大规模外部技能库中动态检索、加载和应用相关技能，而非依赖上下文中固定的小规模技能集？*</p>
+
+<ul><li><strong>BM25 惊人地有竞争力</strong>：当技能涉及专业术语、公式或代码模式时，稀疏检索依然很强</li><li><strong>BGE 优于 Contriever</strong>：语义匹配场景下密集检索更优</li><li><strong>混合检索</strong>主要提升候选覆盖率，而非 top-1 排名质量</li><li><strong>LLM 重排序最强</strong>：表明技能检索不仅需要语义相关性，还需要判断候选是否构成&quot;可操作的能力&quot;</li><li>检索难度高度依赖任务领域</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill_retrieval_augmentation_for_agentic_ai/Overall.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill_retrieval_augmentation_for_agentic_ai/Overall.png" alt="SRA 范式概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill_retrieval_augmentation_for_agentic_ai/exp3_injection_average.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill_retrieval_augmentation_for_agentic_ai/exp3_injection_average.png" alt="噪声鲁棒性实验"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>技能整合机制研究不足</strong>：虽然发现了问题，但未提出解决&quot;技能加载幻觉&quot;的具体方法</li><li><strong>技能类型偏推理型</strong>：SRA-Bench 主要覆盖数学、逻辑、代码、医学计算等推理密集型任务，对日常 Agent 场景（如文件操作、API 调用）覆盖有限</li><li><strong>检索方法探索有限</strong>：主要对比了 BM25、BGE 等通用检索器，未探索面向技能的专用检索模型</li><li><strong>仅研究单轮交互</strong>：未涉及多轮对话或迭代式技能加载场景</li><li><strong>技能间关系未建模</strong>：语料库中技能被独立索引，未考虑技能间依赖、组合或层级关系</li></ul>
+
+<ul><li><strong>结构化技能库</strong>：将技能组织为图/层级/聚类结构，支持依赖关系和组合推理</li><li><strong>技能质量控制与离线优化</strong>：通过执行测试、Agent 自改进循环等手段持续维护技能质量</li><li><strong>效用感知检索</strong>：从端到端任务反馈中训练检索模型，优化&quot;有用性&quot;而非仅&quot;相关性&quot;</li><li><strong>参数化技能增强</strong>：将高频技能转化为可加载的参数模块（类似 Parametric RAG），减少上下文开销，实现更深层的能力内化</li><li><strong>需求感知的技能加载</strong>：训练 Agent 识别自身能力边界，仅在真正需要时加载外部技能</li><li><strong>多轮/迭代式技能加载</strong>：在推理过程中动态检索和加载技能，而非一次性加载</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo.md" arxiv="2604.27488" -->
+<article class="paper-card" id="arxiv-2604.27488">
+  <h2>Skills-Coach: A Self-Evolving Skill Optimizer via Training-Free GRPO</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.27488" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.27488.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.27488</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>本文提出核心问题：<strong>Agent 能否自主探索现有 skills 的能力边界并主动扩展，实现 skill 自进化？</strong></p>
+<p>将该问题分解为三个子问题：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 skill 生态的根本问题在于：<strong>量大但覆盖碎片化</strong>（abundant volume but fragmented coverage）。</p>
+<p>绝大多数 skills 是个人为解决特定问题而开发的，设计天然聚焦于局部用例，难以系统性覆盖复杂专业任务的全面功能需求。用户在执行多方面任务时仍然面临功能缺口和集成瓶颈。</p>
+<p>本文提出核心问题：<strong>Agent 能否自主探索现有 skills 的能力边界并主动扩展，实现 skill 自进化？</strong></p>
+<p>将该问题分解为三个子问题：</p>
+<ul><li><strong>如何自动生成边界探测任务？</strong> 需要构造具有挑战性和全面性的测试集，既要达到 skill 的能力上限，又要保证系统性</li><li><strong>如何实现 skill 自进化？</strong> 从失败探索中提取模式，动态更新 skill 模块，同时确保与现有 skill 生态的一致性</li><li><strong>如何有效评估 skill 能力？</strong> 构建鲁棒的评估框架，精确量化 skill 在各维度的表现</li></ul>
+<p>Skills-Coach 是一个自动化的 Skill 自进化框架，针对特定 skill，系统地探索其能力边界、分析优化空间、自动生成改进版本，并编译为结构化报告。包含四个核心模块：</p>
+<ul><li><strong>Diverse Task Generation Module（多样化任务生成模块）</strong></li><li><strong>Lightweight Optimization Module（轻量优化模块）</strong></li><li><strong>Comparative Execution Module（对比执行模块）</strong></li><li><strong>Traceable Evaluation Module（可追溯评估模块）</strong></li></ul>
+<p class="caption-note">图：Skills-Coach 框架总览——四个核心模块构成的闭环优化流程</p>
+<p class="caption-note">Skills-Coach 四模块闭环优化流程</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/framework.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/framework.png" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_1.png" alt="Performance"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_2.png" alt="Tasks"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>为评估框架并为社区提供资源，本文引入 <strong>Skill-X</strong> benchmark：</p>
+<ul><li>48 个广泛使用的 skills（来自 ClawHub、Anthropic、Vercel Labs、SkillSh）</li><li>两种类型：29 个 instruction-only skills + 19 个 code-inclusive skills</li><li>覆盖广泛的实际应用场景，从基础数据处理到复杂逻辑交互</li></ul>
+<ul><li>默认 3 个优化 epoch</li><li>每个 skill 生成 12 个训练任务 + 8 个测试任务</li><li>训练集：6 standard + 6 advanced</li><li>测试集：4 standard + 4 advanced</li><li>Training-Free GRPO：每个 epoch 生成 3 个 rollout 变体（group_size=3）</li><li>Auto-Fix：最多 2 轮迭代修复</li><li>优化/修复组件默认使用 Claude Sonnet 4.6</li></ul>
+<table class="result-table">
+<tr><th>Skill 类型</th><th>指标</th><th>原始</th><th>优化后</th><th>提升</th></tr>
+<tr><td class="best">All Skills</td><td>Average Score</td><td>0.378</td><td class="best">0.84</td><td>+0.47 (+124%)</td></tr>
+<tr><td>Pass Rate</td><td>33.59%</td><td class="best">88.02%</td><td>+54.43%</td></tr>
+<tr><td>Standard Task</td><td>43.00%</td><td class="best">87.43%</td><td>+44.43%</td></tr>
+<tr><td>Advanced Task</td><td>32.71%</td><td class="best">81.61%</td><td>+48.90%</td></tr>
+<tr><td class="best">Instruction-only</td><td>Average Score</td><td>0.388</td><td class="best">0.839</td><td>+0.451</td></tr>
+<tr><td>Pass Rate</td><td>37.93%</td><td class="best">91.38%</td><td>+53.45%</td></tr>
+<tr><td class="best">Code-inclusive</td><td>Average Score</td><td>0.343</td><td class="best">0.842</td><td>+0.499</td></tr>
+<tr><td>Pass Rate</td><td>26.97%</td><td class="best">82.89%</td><td>+55.92%</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>平均分从 0.378 提升到 0.84（<strong>124% 相对增长</strong>）</li><li>通过率从 33.59% 飙升到 88.02%（<strong>+54.43%</strong>）</li><li>Code-inclusive skills 获得<strong>最大的相对提升</strong>（+0.499），说明框架对需要复杂逻辑推理的任务特别有效</li><li>Advanced tasks 的改善幅度大于 Standard tasks，表明 Skills-Coach 在处理更具挑战性的问题上有显著优势</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前 skill 生态的根本问题在于：<strong>量大但覆盖碎片化</strong>（abundant volume but fragmented coverage）。</p>
+<p>绝大多数 skills 是个人为解决特定问题而开发的，设计天然聚焦于局部用例，难以系统性覆盖复杂专业任务的全面功能需求。用户在执行多方面任务时仍然面临功能缺口和集成瓶颈。</p>
+<ul><li><strong>首个自动化 Skill 自进化框架</strong>：闭环地探索能力边界 → 生成改进 → 对比评估 → 保留决策，无需持续人工干预</li><li><strong>Training-Free GRPO 替代参数优化</strong>：训练时间从小时级降到分钟级，数据需求从数千降到几十，同时避免过拟合</li><li><strong>大规模实证验证</strong>：在 Skill-X 的 48 个 skills 上展示了平均 124% 的性能提升和 +54.43% 的通过率提升</li><li><strong>差异化优化策略</strong>：针对 instruction-only 和 code-inclusive skills 采用不同的优化路径，提高了针对性</li><li><strong>双模式评估（Virtual + Real）</strong>：支持快速原型验证和精确评估</li><li><strong>51 个离散评估指标</strong>：8 维评估体系确保评估的全面性和客观性</li></ul>
+<ul><li><strong>依赖 LLM 生成质量</strong>：任务生成、指令优化、反思修复都依赖 LLM 能力，当 LLM 产生低质量输出时可能影响优化效果</li><li><strong>Virtual Mode 精度有限</strong>：基于关键字匹配和哈希随机数估计任务完成度，可能与真实表现存在偏差</li><li><strong>优化 epoch 数固定为 3</strong>：未探索不同 epoch 数对优化效果的影响，可能存在欠优化或过优化</li><li><strong>单 skill 优化</strong>：当前框架每次优化单个 skill，未涉及 skills 之间的协同优化</li><li><strong>评估维度偏文档化</strong>：51 个指标中有较多偏向文档质量的维度（结构完整性、清晰度等），对实际功能能力的评估可能不够深入</li><li><strong>Skill-X 的 skills 主要来自 Claude 生态</strong>：可能存在平台偏见</li></ul>
+<ul><li><strong>Agent Skill 可以自进化</strong>：通过&quot;生成边界任务 → 执行测试 → 分析失败 → 迭代修复&quot;的闭环，skills 可以自主改进而无需人类干预。这一思路可推广到任何需要持续改进的 Agent 能力模块...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs.md" arxiv="2604.25727" -->
+<article class="paper-card" id="arxiv-2604.25727">
+  <h2>Toward Scalable Terminal Task Synthesis via Skill Graphs (SkillSynth)</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.25727" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.25727.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.25727</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>从学习目标的分解（Equation 3）可以明确看出：策略的可学习区域受限于训练数据在场景-技能联合空间的支持。因此，<strong>最大化训练数据在 $\{(\sigma, \kappa)\}$ 条件积空间的密集覆盖</strong>是关键目标。</p>
+<p>本文提出 SkillSynth：通过<strong>场景中介的技能图 (scenario-mediated skill graph)</strong> 来控制轨迹多样性，从图中采样路径作为真实工作流的抽象，再通过多 Agent harness 将其实例化为可执行任务。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p><strong>终端 Agent 任务</strong>：$\tau = (\mathcal{E}, s_0, g, V)$，Agent 从初始状态 $s_0$ 在环境 $\mathcal{E}$ 中达成目标 $g$。</p>
+<p><strong>场景与技能抽象</strong>：</p>
+<ul><li><strong>场景 (Scenario)</strong> $\sigma_t$：决策点上观察的语义抽象，是到该步交互历史的充分统计量</li><li><strong>技能 (Skill)</strong> $\kappa_t$：在一个场景下应用的动作子序列，产生到下一个场景的可预测转移：$\kappa_t: \sigma_{t-1} \to \sigma_t$</li><li>低层轨迹 $\zeta$ 被提升为<strong>执行轨迹</strong>：$\xi = (\sigma_0, \kappa_1, \sigma_1, ..., \kappa_L, \sigma_L)$</li></ul>
+<p><strong>学习目标</strong>：</p>
+<div class="formula-block">\[\mathcal{J}(\pi) = \sum_{\sigma \in \Omega} p_{\mathcal{D}}(\sigma|g) \sum_{\kappa \in \mathcal{K}_\sigma} p_{\mathcal{D}}(\kappa|\sigma,g) \log \pi(\kappa|\sigma,g)\]</div>
+<p>这个分解明确显示：$p_{\mathcal{D}}(\sigma|g) = 0$ 的场景不可观测，$p_{\mathcal{D}}(\kappa|\sigma,g) = 0$ 的技能未被练习。因此需要训练数据在 $\{(\sigma, \kappa)\}$ 上密集覆盖——这直接驱动了本文的技能图构建方法。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>为了理解什么使训练轨迹有用，需要看 Terminal Agent 如何工作：Agent 通过逐步与一系列中间<strong>场景 (scenarios)</strong> 交互来执行，在每个场景应用一个<strong>技能 (skill)</strong> 来推进任务。因此执行轨迹由两个维度联合表征：遍历的场景和运用的技能。</p>
+<p>现有工作主要沿以下路径扩展：</p>
+<ul><li><strong>LLM 生成分类法扩大领域覆盖</strong>（Endless Terminals、TermiGen、Nemotron-Terminal）：往往偏离真实世界使用模式</li><li><strong>从 GitHub 仓库派生任务</strong>（CLIGym、SWE-Universal）：局限于软件工程领域（issue 修复、功能开发）</li></ul>
+<p>这些方法提供了<strong>有限的对底层场景和技能组合的显式控制</strong>。如 Figure 1 所示，生成的轨迹在场景覆盖和技能使用上存在冗余：不同任务实例常暴露 Agent 到重叠的场景并复用相似的技能。</p>
+<p>从学习目标的分解（Equation 3）可以明确看出：策略的可学习区域受限于训练数据在场景-技能联合空间的支持。因此，<strong>最大化训练数据在 $\{(\sigma, \kappa)\}$ 条件积空间的密集覆盖</strong>是关键目标。</p>
+<p>本文提出 SkillSynth：通过<strong>场景中介的技能图 (scenario-mediated skill graph)</strong> 来控制轨迹多样性，从图中采样路径作为真实工作流的抽象，再通过多 Agent harness 将其实例化为可执行任务。</p>
+<p>SkillSynth 的任务合成分三个阶段：</p>
+<ul><li><strong>构建技能图</strong>：场景为节点，技能为有向边（从前置条件场景指向后置条件场景）</li><li><strong>图引导路径采样</strong>：从图中采样有向路径，指定需要顺序执行的技能组合及其遍历的场景</li><li><strong>多 Agent Harness 实例化</strong>：将采样路径转化为具体的可执行任务实例（自然语言指令 + 初始文件系统快照 + 容器化环境 + 验证脚本 + Oracle 解答）</li></ul>
+<p class="caption-note">SkillSynth 三阶段框架：技能图构建 → 图引导路径采样 → 多 Agent Harness 实例化</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/main_v3.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/main_v3.pdf" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/Building_Graph.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/Building_Graph.pdf" alt="Building Graph"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/category_distribution_sorted_bar_gradient.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/category_distribution_sorted_bar_gradient.pdf" alt="Category Distribution"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>训练数据</strong>：用 MiniMax M2.7 作为教师模型，对 3,560 个合成任务采样 3 条轨迹（共 10,680 条），保留成功和失败轨迹</li><li><strong>训练方式</strong>：Qwen3 系列（8B/14B/32B）全参数 SFT，学习率 2e-5，5 epochs</li><li><strong>评估基准</strong>：Terminal-Bench 1.0（80 任务）和 2.0（89 任务），均报告 3 次独立运行均值 + 95% 置信区间</li><li><strong>Agent scaffold</strong>：Terminus 2，单无头终端交互</li></ul>
+<table class="result-table">
+<tr><th>模型</th><th>TB 1.0</th><th>TB 2.0</th></tr>
+<tr><td class="best">Proprietary</td></tr>
+<tr><td>GPT-5.3-Codex</td><td>--</td><td>64.7 ± 2.7</td></tr>
+<tr><td>Claude Opus 4.6</td><td>--</td><td>62.9 ± 2.7</td></tr>
+<tr><td>Claude Opus 4.5</td><td>--</td><td>57.8 ± 2.5</td></tr>
+<tr><td>Claude Sonnet 4.5</td><td>51.0 ± 1.6</td><td>42.8 ± 2.8</td></tr>
+<tr><td>Claude Opus 4.1</td><td>43.8 ± 2.8</td><td>38.0 ± 2.6</td></tr>
+<tr><td>GPT-5</td><td>41.3 ± 2.2</td><td>35.2 ± 3.1</td></tr>
+<tr><td class="best">Open-Source</td></tr>
+<tr><td>GLM 5</td><td>--</td><td>52.4 ± 2.6</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>--</td><td>39.6 ± 2.8</td></tr>
+<tr><td>Qwen 3 Coder 480B</td><td>--</td><td>23.9 ± 2.8</td></tr>
+<tr><td class="best">Ours</td></tr>
+<tr><td>Qwen3-8B + SkillSynth</td><td>17.1 ± 1.8</td><td>13.5 ± 2.8</td></tr>
+<tr><td>Qwen3-14B + SkillSynth</td><td>22.9 ± 1.8</td><td>19.9 ± 1.6</td></tr>
+<tr><td class="best">Qwen3-32B + SkillSynth</td><td class="best">33.8 ± 3.1</td><td class="best">29.6 ± 1.6</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>Qwen3-32B + SkillSynth 在 TB 2.0 上超越 <strong>Qwen 3 Coder 480B</strong>（29.6 vs 23.9），说明针对性数据构建和领域训练可以让小模型有效提升</li><li>所有三个规模的模型均在各自基线上有提升，增益随模型规模增大</li><li>性能随规模线性提升：8B→14B→32B</li></ul>
+<table class="result-table">
+<tr><th>策略</th><th>0/3</th><th>1/3</th><th>2/3</th><th>3/3</th><th>TB 1.0</th><th>TB 2.0</th></tr>
+<tr><td>Single-skill</td><td>16%</td><td>23%</td><td>34%</td><td>27%</td><td>25.4</td><td>21.3</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>为了理解什么使训练轨迹有用，需要看 Terminal Agent 如何工作：Agent 通过逐步与一系列中间<strong>场景 (scenarios)</strong> 交互来执行，在每个场景应用一个<strong>技能 (skill)</strong> 来推进任务。因此执行轨迹由两个维度联合表征：遍历的场景和运用的技能。</p>
+<p>现有工作主要沿以下路径扩展：</p>
+<ul><li><strong>LLM 生成分类法扩大领域覆盖</strong>（Endless Terminals、TermiGen、Nemotron-Terminal）：往往偏离真实世界使用模式</li><li><strong>从 GitHub 仓库派生任务</strong>（CLIGym、SWE-Universal）：局限于软件工程领域（issue 修复、功能开发）</li></ul>
+<p>这些方法提供了<strong>有限的对底层场景和技能组合的显式控制</strong>。如 Figure 1 所示，生成的轨迹在场景覆盖和技能使用上存在冗余：不同任务实例常暴露 Agent 到重叠的场景并复用相似的技能。</p>
+<ul><li><strong>首次将技能图用于可控终端任务合成</strong>：通过场景中介的技能图显式控制轨迹在场景×技能空间的多样性，而非仅扩展任务数量</li><li><strong>理论支撑扎实</strong>：从学习目标分解推导出覆盖准则（$\Omega \times \mathcal{K}$ 均匀覆盖），逆频采样直接优化该准则</li><li><strong>高质量大规模合成</strong>：95.7% Oracle 通过率，92.0% 双验证通过率，单次运行产出 3,560 个可用任务，每任务仅 $27.3</li><li><strong>实际工业验证</strong>：合成任务已用于训练混元 Hy3 Preview，证实了工业级有效性</li><li><strong>图的可扩展性</strong>：随着社区贡献更多 skills，图持续扩展，支持持续合成</li></ul>
+<ul><li><strong>依赖初始 Skill 来源质量</strong>：从 ClawHub 和 GitHub 收集的 skills 可能有偏差，覆盖不均匀</li><li><strong>场景推断依赖 LLM 质量</strong>：前置/后置条件场景的推断质量受 LLM 能力限制，可能引入噪声</li><li><strong>路径采样限于链式结构</strong>：当前只采样链式路径，未来可扩展到子图采样（并行执行多技能），增加任务复杂度</li><li><strong>Harness 修复有天花板</strong>：文件系统快照损坏等严重错误无法通过修复恢复，存在修复下限</li><li><strong>评估仅限于 Terminal-Bench</strong>：未在其他 agent 基准（如 SWE-bench、WebArena）上验证泛化性...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both.md" arxiv="2605.15198" -->
+<article class="paper-card" id="arxiv-2605.15198">
+  <h2>ATLAS: Agentic or Latent Visual Reasoning? One Word is Enough for Both</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.15198" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.15198" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.15198</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>ATLAS 基于标准 autoregressive VLM，论文实现上使用 Qwen2.5-VL-7B，并向 tokenizer vocabulary 中加入 5 个 functional tokens。它们与普通文本 token 一样由 next-token prediction 生成，但语义上表示一类内部化视觉操作。
+<p>形式上，ATLAS 将完整词表定义为：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 Vision-Language Models 在复杂视觉推理中如何处理中间视觉状态。很多视觉问题不是“看一眼图然后文字推理”就能解决的，例如几何题需要辅助线，棋盘/游戏状态需要更新，空间关系题需要局部放大、标注、连线或区域定位。现有路线大致有三类，但各自都有明显代价。</p>
+<p>第一类是 unified models，直接生成中间像素级图像。这种方式直观，但需要图像解码和再编码，训练和推理成本都高，还常常需要复杂架构。第二类是 agentic visual reasoning，让模型生成代码或工具调用去操作图像，比如画线、裁剪、标注。这保留了可解释性，但每次操作都要跳出 autoregressive loop，调用外部模块，带来上下文切换、工具执行延迟和长代码输出。第三类是 latent visual reasoning，把中间推理压到隐藏状态或 latent tokens 里，效率更好，但通常依赖额外 latent supervision、重建目标或非标准 recurrent computation，与现有大规模 autoregressive 并行训练不完全兼容。</p>
+<p>ATLAS 的核心想法非常简洁：把一个视觉操作压缩成词表里的一个普通离散 token。这个 token 既像 agentic operation，因为它表示“画线、标注、区域操作、箭头、文本”等可解释动作；又像 latent reasoning unit，因为它不会真的调用外部工具或生成图像，而是在模型内部作为一个紧凑的视觉推理单元。论文标题里“One Word is Enough for Both”说的就是这个：一个“词”同时承担 agentic 和 latent 两种角色。</p>
+<p>从 agentic 角度看，ATLAS 把外部工具调用内部化了。传统 agentic visual reasoning 会生成代码或工具调用，例如裁剪、画线、标注、调用视觉模块；ATLAS 则把这些操作抽象为普通 token，避免工具执行延迟和不可微外循环。但它仍然保留 agentic 的可解释性，因为 <code>&lt;|Line|&gt;</code>、<code>&lt;|Shape|&gt;</code> 这样的 token 明确告诉我们模型在进行哪类视觉操作。</p>
+<p>从 latent 角度看，ATLAS 把中间视觉状态压缩到离散符号，而不是连续 hidden state。它不需要 image reconstruction supervision，也不引入 recurrent latent dependencies，因此更兼容标准 autoregressive parallel training。缺点是 functional token 的表达能力被 5 类粗粒度操作限制，复杂视觉操作可能需要更多 token 类型或组合机制。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>ATLAS 基于标准 autoregressive VLM，论文实现上使用 Qwen2.5-VL-7B，并向 tokenizer vocabulary 中加入 5 个 functional tokens。它们与普通文本 token 一样由 next-token prediction 生成，但语义上表示一类内部化视觉操作。</p>
+<p>形式上，ATLAS 将完整词表定义为：</p>
+<div class="formula-block">\[\mathcal{V} = \mathcal{V}_{\mathrm{text}} \cup \mathcal{V}_{\mathrm{spec}} \cup \mathcal{V}_{\mathrm{func}}\]</div>
+<p>其中 $\mathcal{V}_{\mathrm{text}}$ 是自然语言 token，$\mathcal{V}_{\mathrm{spec}}$ 是原 VLM 的特殊 token，例如 image placeholder，$\mathcal{V}_{\mathrm{func}}$ 是新加入的 functional token 集合：</p>
+<div class="formula-block">\[\mathcal{V}_{\mathrm{func}} = \{\texttt{&lt;|Manip|&gt;},\texttt{&lt;|Shape|&gt;},\texttt{&lt;|Line|&gt;},\texttt{&lt;|Arrow|&gt;},\texttt{&lt;|Text|&gt;}\}\]</div>
+<table class="result-table">
+<tr><th>Functional Token</th><th>对应视觉操作</th><th>直觉作用</th></tr>
+<tr><td><code>&lt;</td><td>Manip</td><td>&gt;</code></td><td>denoise, sharpen, filter, crop, zoom-in</td><td>对图像做内部增强或局部检查</td></tr>
+<tr><td><code>&lt;</td><td>Shape</td><td>&gt;</code></td><td>bounding box, mask, crop, highlight region</td><td>定位区域、标出目标、做面积/空间关系判断</td></tr>
+<tr><td><code>&lt;</td><td>Line</td><td>&gt;</code></td><td>draw line, auxiliary line, separator</td><td>几何构造、结构提示、边界分割</td></tr>
+<tr><td><code>&lt;</td><td>Arrow</td><td>&gt;</code></td><td>direction, motion, force, causal relation</td><td>指示方向、运动、注意力转移</td></tr>
+<tr><td><code>&lt;</td><td>Text</td><td>&gt;</code></td><td>symbolic labels, numbers, annotations</td><td>标注变量、数字、标签，支持多步推导</td></tr>
+</table>
+<p>ATLAS 不真的输出这些操作后的图像，也不监督中间图像。functional token 的学习完全来自 token-level sequence supervision：当推理文本说“现在我添加一条辅助高线”时，下一个 token 可以是 <code>&lt;|Line|&gt;</code>；当推理需要标注数字或符号时，可以生成 <code>&lt;|Text|&gt;</code>。因此它保留了 agentic visual reasoning 的可解释接口，但没有外部工具执行；同时获得 latent reasoning 的紧凑性，但不需要连续 latent state 或 recurrent computation。</p>
+<p>模型输出序列可以写成：</p>
+<div class="formula-block">\[\mathbf{y}=\{y_1,\dots,y_T\}, \quad y_t\in\mathcal{V}\]</div>
+<p>functional token 的 CE 训练与普通 token 一样：</p>
+<div class="formula-block">\[\mathcal{L}_{\mathrm{func}} = -\sum_{y_t\in\mathcal{V}_{\mathrm{func}}}\log p_\theta(y_t\mid\mathbf{x},y_{&lt;t})\]</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/pipe_sep.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/pipe_sep.png" alt="ATLAS overall pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/intro_v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/intro_v4.png" alt="Visual reasoning paradigms comparison"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/lagrpo.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/lagrpo.png" alt="Latent-Anchored GRPO"></a>
+    </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>ATLAS 基于 Qwen2.5-VL-7B。SFT 阶段冻结 vision encoder，只更新 visual projector 和 language model；RL 阶段继续冻结 vision encoder，优化 aligner 和 language model 1 epoch。RL 数据使用 We-Math 2.0、MMK12 和 ThinkLite，覆盖不同视觉推理场景。评测 benchmark 包括 V*、WeMath 和 BLINK。评测时先用规则脚本解析答案，再使用 Qwen3-VL-235B-A22B-Instruct 作为 deterministic LLM-as-a-judge 验证答案和格式。</p>
+<p>作者将 ATLAS 与五类模型比较：closed-source models、standard VLMs、unified models、agentic visual models、latent visual models。ATLAS 自身比较 SFT、GRPO、LA-GRPO 三个阶段。</p>
+<table class="result-table">
+<tr><th>Method</th><th>V*</th><th>WeMath</th><th>BLINK Avg.</th><th>Art</th><th>Counting</th><th>Forensic</th><th>IQ</th><th>Jigsaw</th><th>Multi-view</th><th>Spatial</th></tr>
+<tr><td>Qwen2.5-VL</td><td>70.2</td><td>36.2</td><td>22.8</td><td>29.9</td><td>58.3</td><td>0.8</td><td>18.7</td><td>31.3</td><td>0.0</td><td>20.3</td></tr>
+<tr><td>V-Thinker</td><td>41.4</td><td>32.5</td><td>35.0</td><td>26.9</td><td>43.3</td><td>19.7</td><td>18.7</td><td>42.0</td><td>51.1</td><td>43.4</td></tr>
+<tr><td>VTS-V</td><td>74.9</td><td>42.8</td><td>51.2</td><td>62.4</td><td>61.7</td><td>32.9</td><td>28.7</td><td>56.1</td><td>49.4</td><td>67.2</td></tr>
+<tr><td>LVR</td><td>77.5</td><td>41.2</td><td>49.4</td><td>59.0</td><td>60.0</td><td>35.6</td><td>25.3</td><td>52.7</td><td>48.1</td><td>65.0</td></tr>
+<tr><td>ATLAS SFT</td><td>77.5</td><td>28.9</td><td>46.0</td><td>50.4</td><td>59.2</td><td>26.5</td><td>26.0</td><td>54.7</td><td>48.1</td><td>57.3</td></tr>
+<tr><td>ATLAS GRPO</td><td>77.9</td><td>40.3</td><td>50.5</td><td>57.3</td><td>61.7</td><td>34.1</td><td>26.0</td><td>57.7</td><td>43.6</td><td>70.6</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>ATLAS 的主要优点是把一个工程上很麻烦的问题变成了 tokenizer-level 的简单改动：新增几个 functional tokens，然后用普通 SFT/GRPO/auxiliary token loss 训练。它保留了标准 VLM 架构，不需要图像生成器、外部工具执行，也不需要连续 latent reasoning 模块。这使得它在效率和可扩展性上很有吸引力。</p>
+<p>它的限制也清楚。第一，functional token 的实际操作是“内部想象”的，并没有真实执行视觉变换，因此在需要精确几何构造或像素级验证的问题上可能不如真实工具可靠。第二，ATLAS-178K 的构造依赖从 image-construction code 中抽取操作并用 Gemini-2.5-Pro polishing，数据管线仍有一定工程成本。第三，目前只用了 5 个 functional tokens，虽然简洁，但可能难以覆盖更复杂的视觉操作空间。第四，reward design 比较敏感，尤其 $r_{\mathrm{func}}$ 如果没有 $p_{\mathrm{spam}}$ 会导致 reward hacking。</p>
+<p>对 agent 方向的启发是：不是所有“agentic action”都必须真的调用外部工具。对于一些频繁、简单、可抽象的操作，可以把 action internalize 成模型词表中的离散 token，让模型在标准生成过程中完成“轻量 agentic reasoning”。这也为更通用的 agent 设计提供了一个思路：外部工具调用可以分层，低成本、常见动作内部化为 functional tokens，高成本、需要真实环境反馈的动作再交给外部工具。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents.md" arxiv="2605.17933" -->
+<article class="paper-card" id="arxiv-2605.17933">
+  <h2>AtlasVA: Self-Evolving Visual Skill Memory for Teacher-Free VLM Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.17933" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.17933" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.17933</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者在引言中把问题概括得很明确：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>很多 memory-augmented agent 框架已经意识到，长时程任务里只靠当前 observation 做推理是不够的，agent 需要把历史经验沉淀成可复用 memory。问题在于，大多数现有方法默认：</p>
+<ul><li>visual observation 只是瞬时输入；</li><li>真正长期保存的经验主要是文本摘要、反思、技能规则；</li><li>memory 的更新还常常依赖更强的 proprietary teacher LLM 来总结、重写、精炼。</li></ul>
+<p>这个设计对于 language-only agent 也许还说得过去，但对 spatial decision making 很强的 VLM agent 来说会带来明显问题。</p>
+<p>作者在引言中把问题概括得很明确：</p>
+<ul><li><code>modality mismatch</code></li></ul>
+<p>把二维或三维空间中的几何结构压缩成文字，会丢失 dead end、trap、goal corridor、sub-goal region 这类关键拓扑信息。</p>
+<ul><li><code>teacher dependence</code></li></ul>
+<p>很多 memory agent 需要外部 teacher LLM 做总结、合并或重写 memory，导致成本高，也违背“agent 自主进化”的目标。</p>
+<ul><li><code>feedback mismatch</code></li></ul>
+<p>如果 reward 或 critique 主要是文本反馈，那么对空间任务来说，这种信号太抽象，不是坐标对齐的 dense guidance，很难解决 long-horizon credit assignment。</p>
+<p>作者的核心判断是：VLM agent 的 memory 应该尽量保留在“视觉空间”里，而不是先转写成文本再拿去复用。</p>
+<p>从实验表和文中表述看，VAGEN 是它最直接、最强的 open-source baseline。</p>
+<p>我理解 AtlasVA 相比 VAGEN 的关键区别是：</p>
+<ul><li>VAGEN 更像多环境多任务 VLM+RL baseline；</li><li>AtlasVA 把 visual memory 做成系统性的三层结构；</li><li>它用 self-evolving atlas 替换 teacher-supervised textual memory；</li><li>还把 atlas 进一步转成 dense visual reward。</li></ul>
+<p>所以它不是简单在 VAGEN 上加 memory，而是把“memory 作为视觉空间先验场”系统化了。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者在引言中把问题概括得很明确：</p>
+<ul><li><code>modality mismatch</code></li></ul>
+<p>把二维或三维空间中的几何结构压缩成文字，会丢失 dead end、trap、goal corridor、sub-goal region 这类关键拓扑信息。</p>
+<ul><li><code>teacher dependence</code></li></ul>
+<p>很多 memory agent 需要外部 teacher LLM 做总结、合并或重写 memory，导致成本高，也违背“agent 自主进化”的目标。</p>
+<ul><li><code>feedback mismatch</code></li></ul>
+<p>如果 reward 或 critique 主要是文本反馈，那么对空间任务来说，这种信号太抽象，不是坐标对齐的 dense guidance，很难解决 long-horizon credit assignment。</p>
+<p>作者的核心判断是：VLM agent 的 memory 应该尽量保留在“视觉空间”里，而不是先转写成文本再拿去复用。</p>
+<p>AtlasVA 的框架如下图所示。</p>
+<p>它包含一个闭环：</p>
+<ul><li>当前 observation 与 visual skill memory 一起输入给 VLM policy；</li><li>policy 与环境交互产生 trajectory；</li><li>trajectory 反过来更新 visual memory；</li><li>更新后的 atlas 既作为推理 memory，也转化为 dense reward shaping；</li><li>shaped reward 再用于 PPO 优化策略。</li></ul>
+<p>所以它不是“外挂一个 memory 模块”，而是把 perception、memory 和 optimization 串成一个闭环系统。</p>
+<p>AtlasVA 不依赖 teacher model 去总结经验，而是直接从 trajectory statistics 里自举出 visual atlas。</p>
+<p>它把 heatmap 的来源分成两部分：</p>
+<ul><li><code>M_{heuristic}</code></li></ul>
+<p>来自静态 grid heuristic，比如 BFS distance、corner deadlock、wall adjacency 等；</p>
+<ul><li><code>M_{stat}</code></li></ul>
+<p>来自历史 trajectory 的统计信号。</p>
+<p>最终 map 由两者混合得到。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/arch.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/arch.png" alt="AtlasVA architecture"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/radar_ablation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/radar_ablation.png" alt="Radar ablation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/3Dvisual_priors.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlasva_self_evolving_visual_skill_memory_for_teacher_free_vlm_agents/3Dvisual_priors.png" alt="3D priors"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li>2D: Sokoban, FrozenLake</li><li>3D embodied: Navigation</li><li>3D manipulation: PrimitiveSkill</li></ul>
+<p>其中 PrimitiveSkill 除了 Place、Stack、Drawer、Align，还新增了 <code>Swap</code> 任务。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果你在整理 <code>agent</code> 方向论文，这篇可以放在“memory-enhanced RL agent / visual memory agent”这条线上，而且它有几个特别值得记的启发：</p>
+<ul><li>对 VLM agent，memory 不一定非要先 textify，视觉形式可能更保真。</li><li>memory 不只可以作为 prompt context，也可以转成 reward shaping potential。</li><li>teacher-free self-improvement 不一定靠 self-reflection 文本，也可以靠 trajectory statistics + visual priors。</li><li>对空间任务，最关键的 reusable knowledge 很可能不是一句“策略规则”，而是一张危险区 / 可行区 / 子目标路径图。</li></ul>
+<p>这篇论文最有价值的地方在于，它把 VLM agent 的 memory 从“文本总结库”重新定义成“可演化的视觉技能场”。AtlasVA 不只是加了 visual prompt，而是让 visual memory 同时承担：</p>
+<ul><li>长期经验存储；</li><li>当前决策提示；</li><li>dense reward 构造；</li><li>teacher-free 自我改进。</li></ul>
+<p>如果用一句更凝练的话概括，我会说：</p>
+<ul><li>传统方法是在“把空间经验翻译成文字后再复用”；</li><li>AtlasVA 则是在“尽量不翻译，直接把空间经验保留在视觉空间中复用和优化”。</li></ul>
+<p>对于 spatial VLM agent 来说，这个方向我觉得是很值得继续追的。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_evovid_temporal_centric_self_evolution_for_video_large_language_models.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2605_evovid_temporal_centric_self_evolution_for_video_large_language_models">
+  <h2>EvoVid: Temporal-Centric Self-Evolution for Video Large Language Models</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>EvoVid 提出一个面向 Video-LLM 的时序中心自进化框架：通过“时序敏感问题奖励”和“时序定位求解奖励”联合训练 Questioner 与 Solver，使模型仅依赖原始无标注视频就能持续提升视频理解与推理能力。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>现有视频后训练和 RL 方法大多依赖人工标注的问题、答案或轨迹，扩展成本高。</p>
+<p>已有 self-evolving 框架虽然能在文本或图像上通过 Questioner-Solver 自博弈学习，但直接搬到视频时，常常生成“单帧即可回答”的问题，没法显式利用视频最关键的时序结构。</p>
+<p>论文的核心判断是：</p>
+<ul><li>视频理解的关键不只是视觉内容；</li><li>还包括顺序、状态变化、因果关系、跨帧依赖；</li><li>如果奖励函数不把这些时序属性显式拉进来，自进化就会退化成静态模态版本。</li></ul>
+<p>相较 vanilla self-evolving，EvoVid 生成的问题包含更多时序和推理相关词：</p>
+<ul><li><code>frame</code></li><li><code>change</code></li><li><code>reason</code></li><li><code>interaction</code></li><li><code>consider</code></li></ul>
+<p>说明 Questioner 确实逐步从静态视觉问答转向动态视频理解。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>以 Qwen2.5-VL-7B 为例，平均成绩如下：</p>
+<ul><li>Base：47.9</li><li>SFT（有标注）：49.0</li><li>SFT + Vanilla GRPO（有标注）：51.3</li><li>Vanilla Self-evolving（无标注）：48.6</li><li>EvoVid（Iter-3，无标注）：50.0</li><li>SFT + EvoVid（Iter-3）：51.2</li></ul>
+<p>也就是说：</p>
+<ul><li>无标注 EvoVid 已经明显超过 vanilla self-evolving；</li><li>仅靠原始视频训练，已经逼近有标注的 SFT+GRPO；</li><li>若在 SFT checkpoint 上继续用 EvoVid，自进化结果几乎追平监督 RL。</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/teaser.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/teaser.png" alt="Teaser"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/framework.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/framework.png" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/questioner.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_taskcraft_a_data_oriented_framework_for_scalable_web_agent_post_training/questioner.png" alt="Questioner reward"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li>训练数据：来自 LLaVA-Video-178K、STAR、CLEVRER、PerceptionTest、NeXT-QA、Video-Holmes 的原始视频，总计 5,778 个视频。</li><li>重要点：训练中 <strong>完全不使用这些数据集的标注</strong>，只用原始视频。</li><li>评测基准：6个视频 benchmark</li><li>Video-Holmes</li><li>VSI-Bench</li><li>VideoMMMU</li><li>MMVU</li><li>TempCompass</li><li>VideoMME</li><li>基座模型：Qwen2.5-VL-3B/7B、Qwen3-VL-4B/8B。</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>EvoVid 提出一个面向 Video-LLM 的时序中心自进化框架：通过“时序敏感问题奖励”和“时序定位求解奖励”联合训练 Questioner 与 Solver，使模型仅依赖原始无标注视频就能持续提升视频理解与推理能力。</p>
+<ul><li>伪标签来自多数投票和时间窗口，仍然存在噪声；</li><li>时间窗口 supervision 主要覆盖局部片段，复杂跨段依赖可能仍不足；</li><li>当前验证集中在 Qwen 系 Video-LLM，跨架构泛化还需要更多证据。</li></ul>
+<ul><li>多模态 agent 的自进化奖励必须和模态本质强绑定：视频就该显式奖励时序结构，而不是沿用图像/文本套路。</li><li>可以把“训练时的输入采样方式”反过来当作天然伪监督信号，降低标注依赖。</li><li>Questioner-Solver 共进化不仅是生成训练题，更是在自动构造难度递增课程。</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding.md" arxiv="2605.00642" -->
+<article class="paper-card" id="arxiv-2605.00642">
+  <h2>Learn where to Click from Yourself: On-Policy Self-Distillation for GUI Grounding</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.00642" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.00642.pdf" target="_blank">PDF</a>
+  <a href="https://zhangyan-ucas.github.io/GUI-SD/" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.00642</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>On-Policy Self-Distillation (OPSD) 提供了一种有前景的替代方案：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <ul><li><strong>昂贵的多重 rollout</strong>：GRPO 需要采样多个 rollout 来估计优势，训练成本高（每 epoch 约 17 小时，8×A800）</li><li><strong>困难样本的稀疏信号</strong>：当所有 rollout 都未命中目标时（二值奖励全部为 0），梯度为零，模型无法从失败中学习</li><li><strong>人工设计奖励的依赖</strong>：需要精心设计奖励函数（二值/距离/高斯），不同设计对性能影响显著</li></ul>
+<p>On-Policy Self-Distillation (OPSD) 提供了一种有前景的替代方案：</p>
+<ul><li>使用同一模型同时作为 teacher 和 student，通过<strong>不对称上下文</strong>产生差异</li><li>Teacher 拥有 student 无法访问的特权信息（如参考答案、验证信号），产生更可靠的输出分布</li><li>通过 <strong>token 级 reverse KL 散度</strong> 提供密集的逐 token 监督信号</li><li><strong>只需单次 rollout</strong>，训练效率大幅提升</li></ul>
+<p>GUI-SD 由两个互补组件组成：</p>
+<ul><li><strong>Visual Privileged Guidance</strong>（视觉特权引导）：用视觉特权上下文替代文本特权，使 teacher 保持信息丰富的软分布</li><li><strong>Entropy-Guided Optimization</strong>（熵引导优化）：用自适应 token 加权替代均匀 reverse KL，在最有影响力的坐标 token 上集中优化</li></ul>
+<p class="caption-note">GUI-SD 框架：(a) Teacher 分支接收目标边界框 + 高斯软掩码 + hint prompt 的特权上下文。(b) 基于数位权重和熵门控的加权 reverse-KL 目标</p>
+<p>用<strong>视觉特权上下文</strong>替代文本特权信息，让 teacher 接收目标感知引导而不直接获取精确坐标。</p>
+<p>具体做法：</p>
+<ul><li><strong>红色边界框</strong>：在 teacher 输入图像的目标区域上绘制红色边界框</li><li><strong>Hint Prompt</strong>：附加文字提示 &quot;Hint: The answer is located within the red rectangle.&quot;</li><li><strong>高斯软掩码</strong>：对距离目标边界框越远的像素进行渐进式衰减，模拟&quot;放大&quot;效果</li></ul>
+<div class="formula-block">\[\alpha(x, y) = \exp\left(-\frac{d^2}{2\sigma^2}\right)\]</div>
+<p>其中 $d$ 是像素 $(x, y)$ 到目标边界框最近边的距离（框内 $d=0$），$\sigma$ 根据目标大小自适应缩放（含最小下界以防止小目标被过度遮蔽）。</p>
+<table class="result-table">
+<tr><th>方法</th><th>类型</th><th>SSP</th><th>OSW-GR</th></tr>
+<tr><td>Propose-then-Critic-8B</td><td>测试时扩展</td><td>58.7</td><td>-</td></tr>
+<tr><td>ZwZ-8B</td><td>大模型蒸馏 (235B)</td><td>56.8</td><td>69.0</td></tr>
+<tr><td class="best">GUI-SD-8B</td><td class="best">自蒸馏</td><td class="best">60.7</td><td class="best">70.9</td></tr>
+</table>
+<ul><li>GUI-SD 不依赖测试时扩展（Propose-then-Critic）或大模型蒸馏（ZwZ 用 235B teacher），仅用自蒸馏就超越两者</li></ul>
+<p class="caption-note">GUI-SD 完整框架：视觉特权引导 + 熵引导优化</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" alt="GUI-SD 方法框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" alt="Figure1"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure2.png" alt="Figure2"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>基础模型</strong>：Qwen3-VL-Instruct-8B</p>
+<p><strong>训练数据</strong>：ScaleCUA GUI 数据集的 grounding 训练子集，经两阶段清洗后约 7K 样本：</p>
+<ul><li>UI-Venus1.5-8B 过滤：保留预测与原始标注一致的样本</li><li>Qwen3-VL-8B 改写：将原始指令改写为多样化表述</li></ul>
+<p><strong>超参数</strong>：</p>
+<ul><li>学习率：2.5e-6 → 0（线性衰减）</li><li>Batch size：1 × 16（梯度累积）= 16</li><li>Epochs：1，Warmup ratio：0.05</li><li>Max completion length：128</li><li>EMA decay：0.95</li><li>硬件：8×A800-80G</li></ul>
+<p><strong>评估 Benchmark</strong>（6 个）：</p>
+<ul><li>ScreenSpot-v2：通用 GUI grounding</li><li>ScreenSpot-Pro：专业高分辨率软件（目标仅占截图 0.07%）</li><li>UI-Vision：最大桌面 GUI benchmark（83 个应用）</li><li>MMBench GUI L2：跨平台层级指令遵循</li><li>OSWorld-G / OSWorld-G-Refine：Linux 环境真实交互</li></ul>
+<table class="result-table">
+<tr><th>Method</th><th>Time/epoch</th><th>SSP</th><th>SS2</th><th>UIV</th><th>OSW-G</th><th>OSW-GR</th><th>MMG</th><th>Avg.</th></tr>
+<tr><td>Qwen3-VL-Instruct (Base)</td><td>-</td><td>53.6</td><td>93.2</td><td>25.2</td><td>58.7</td><td>67.4</td><td>83.0</td><td>63.5</td></tr>
+<tr><td>+ GRPO-Binary</td><td>16.9h</td><td>56.8</td><td>94.6</td><td>27.6</td><td>61.2</td><td>68.6</td><td>84.3</td><td>65.5 (+2.0)</td></tr>
+<tr><td>+ GRPO-Distance</td><td>16.7h</td><td>56.6</td><td>93.8</td><td>27.5</td><td>62.1</td><td>69.9</td><td>83.3</td><td>65.5 (+2.0)</td></tr>
+<tr><td>+ GRPO-Gaussian</td><td>16.8h</td><td>57.4</td><td>94.0</td><td>28.2</td><td>61.9</td><td>70.0</td><td>83.7</td><td>65.9 (+2.4)</td></tr>
+<tr><td class="best">+ GUI-SD (Ours)</td><td class="best">4.2h</td><td class="best">60.7</td><td class="best">95.1</td><td class="best">33.3</td><td class="best">64.0</td><td class="best">70.9</td><td class="best">86.7</td><td class="best">68.4 (+4.9)</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>GUI-SD Avg 68.4，超越最佳 GRPO 变体（Gaussian）2.5pp，超越 base 4.9pp</li><li><strong>训练时间仅 1/4</strong>（4.2h vs 16.8h），因为只需单次 rollout 而非多重 rollout</li><li>ScreenSpot-Pro（高分辨率专业软件）提升最大：60.7 vs 57.4（+3.3pp）...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>昂贵的多重 rollout</strong>：GRPO 需要采样多个 rollout 来估计优势，训练成本高（每 epoch 约 17 小时，8×A800）</li><li><strong>困难样本的稀疏信号</strong>：当所有 rollout 都未命中目标时（二值奖励全部为 0），梯度为零，模型无法从失败中学习</li><li><strong>人工设计奖励的依赖</strong>：需要精心设计奖励函数（二值/距离/高斯），不同设计对性能影响显著</li></ul>
+<ul><li><strong>首个 GUI Grounding 的 OPSD 框架</strong>：将 OPSD 从自然语言推理成功扩展到视觉 grounding 任务，提供了一种不依赖多重 rollout 的高效训练范式</li><li><strong>训练效率极高</strong>：每 epoch 仅 4.2 小时（GRPO 需 16.8 小时），<strong>4× 加速</strong>，同时精度更高</li><li><strong>视觉特权设计优雅</strong>：用边界框 + 高斯软掩码 + hint prompt 构建视觉特权上下文，既提供有效引导又保持 teacher 分布的信息量（entropy=0.50），避免了 Distillation-to-SFT Collapse</li><li><strong>熵引导优化精准</strong>：位置信用分配（百位权重 &gt; 个位）和熵门控监督（高置信 token 权重 &gt; 低置信）组合，在最有影响力的 token 上集中优化</li><li><strong>全面超越 GRPO</strong>：在 6 个 benchmark 上 Avg +4.9pp（68.4 vs 63.5），超越所有 GRPO 变体</li><li><strong>跨规模一致有效</strong>：在 2B/4B/8B 三个规模上一致提升，SSP 上分别 +3.7/+4.6/+7.1pp</li></ul>
+<ul><li><strong>未探索更大模型和其他模型家族</strong>：当前仅在 Qwen3-VL 上验证，其他 VLM（如 LLaVA、InternVL）上的效果未知</li><li><strong>仅处理 ADD/NOOP 二值决策</strong>：GUI grounding 本身是坐标预测任务，但 GUI-SD 的 OPSD 框架未扩展到更复杂的多步 GUI Agent 任务</li><li><strong>依赖高质量视觉特权设计</strong>：边界框标注和高斯掩码的超参数（$\sigma$ 的缩放因子、最小下界）需要调优</li><li><strong>训练数据规模有限</strong>：仅用 ~7K 样本训练（1 epoch），大规模数据下的效果和收敛特性有待验证</li><li><strong>开放域性能未评估</strong>：主要评估 GUI grounding 精度，未涉及更广泛的 Agent 任务（如任务完成率、多步规划等）...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents.md" arxiv="2605.13527" -->
+<article class="paper-card" id="arxiv-2605.13527">
+  <h2>MMSkills: Towards Multimodal Skills for General Visual Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.13527" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.13527.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.13527</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最核心的贡献，是把 visual agent 的 skill 从“文本步骤”升级成“带有状态判别与多视角视觉证据的多模态 procedure package”，再通过 branch loading 避免上下文污染，让这些 skill 真正在 GUI 和游戏环境里变成可调用、可验证、可迁移的外部知识单元。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇工作的核心问题是: 现有 agent 的“skill”大多是文本 prompt、代码片段、执行脚本或抽象动作模板，但对于真正依赖视觉感知的 agent，这类 skill 只告诉模型“做什么”，却没有充分编码“当前画面是否处在该 skill 应该被调用的状态”“应该观察哪些视觉线索”“什么时候可以验证已经完成”。因此，传统 text-only skill 很难稳定支持 GUI agent、game agent 这类需要持续看图决策的系统。</p>
+<p>作者把这一缺口概括为 <code>multimodal procedural knowledge</code>。也就是说，视觉 agent 需要复用的不只是步骤文本，还包括与步骤绑定的视觉状态、局部证据、状态转移前后对比，以及完成验证线索。文章的目标不是再做一个更大的 memory bank，而是提出一套适合 visual agent 的可复用技能表示、自动生成流程以及推理时的调用机制。</p>
+<p>从问题设定上，这篇文章比“长时记忆”“经验回放”更聚焦于 <code>skill packaging</code>。它关心的不是把历史轨迹完整存下来，而是从公开轨迹中抽取出可迁移的、结构化的、多模态 procedural unit，并在运行时以低污染方式送给主 agent 使用。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的方法 <code>MMSkills</code> 由三部分组成:</p>
+<ul><li><code>Multimodal Skill Package</code>: 定义视觉 agent skill 的结构化表示。</li><li><code>Skill Generation Pipeline</code>: 从公开的、非测试集轨迹中自动生成 skill 库。</li><li><code>Branch-loaded Multimodal Skill Agent</code>: 在推理时通过“分支加载”方式调用 skill，避免把整包多模态内容直接塞进主上下文。</li></ul>
+<p>上图对应论文的总框架图。它非常清楚地表达了作者的主张: skill 不再只是文本 procedure，而是“文本 procedure + 状态卡片 + 多视角关键帧”；这些 skill 由 Generator 从公开轨迹中抽出来；运行时主 agent 不直接吃完整 skill，而是先开一个 branch 去筛选相关 state card 和 visual evidence，再把压缩后的 guidance 返回主 agent。</p>
+<p>作者先给出整体执行范式。Generator 把公开轨迹集合 $\mathcal{T}=\{\tau_i\}$ 映射成 skill 库 $\mathcal{M}=\{M_i\}_{i=1}^{N}$。测试任务开始前，系统会根据 instruction 先召回候选 skill 集合 $\mathcal{C}_I \subset \mathcal{M}$。在线执行时，主 agent 有两种模式:</p>
+<div class="formula-block">\[\begin{aligned} \text{direct}: \quad &amp; A_t = \pi_{\text{main}}(O_t,H_t,\mathcal{C}_I), \\ \text{branch}: \quad &amp; G_t = \text{Branch}(O_t,H_t,M_t), \quad A_t = \pi_{\text{main}}(O_t,H_t,\mathcal{C}_I,G_t). \end{aligned}\]</div>
+<p>这里 $O_t$ 是当前视觉观测，$H_t$ 是短历史，$M_t \in \mathcal{C}_I$ 是当前选择咨询的 skill，$G_t$ 是 branch 返回的压缩指导信号。关键点在于: branch 不直接替主 agent 执行动作，而是输出结构化 guidance，再由主 agent 结合实时画面决定最终动作。</p>
+<p>branch 输出被写成:</p>
+<div class="formula-block">\[G_t = (\text{applicable}_t,\text{subgoal}_t,\text{plan}_t,\text{do\_not\_do}_t,\text{verify}_t)\]</div>
+<p>这 5 个字段分别对应:</p>
+<ul><li>当前 skill 是否适用</li><li>当前局部子目标是什么</li><li>skill-conditioned 计划是什么</li><li>当前不该做什么</li><li>如何验证已经完成</li></ul>
+<p>这比简单把一段长 procedure 塞回主上下文更像“受控中间推理接口”。</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/full_figure.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/full_figure.png" alt="MMSkills 方法总览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_ablation_results.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_ablation_results.png" alt="MMSkills 消融结果"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_behavior_shift.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_behavior_shift.png" alt="MMSkills 行为变化分析"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在 4 个 visual-agent benchmark 上评测:</p>
+<ul><li><code>OSWorld</code>: Ubuntu GUI agent benchmark</li><li><code>macOSWorld</code>: macOS GUI benchmark</li><li><code>VAB-Minecraft</code>: VisualAgentBench 中的 Minecraft 子集</li><li><code>Super Mario Bros</code>: LMGame-Bench 中的游戏环境</li></ul>
+<p>比较的条件主要有 3 种:</p>
+<ul><li><code>No skill</code></li><li><code>Text-only skill</code></li><li><code>MMSkills</code></li></ul>
+<p>其中 text-only skill 也使用 branch 机制，只是没有 state cards 和 images。这个设置很关键，因为它说明“branch loading 本身”也是一个可分离的贡献点。</p>
+<p>模型方面覆盖了较强和较弱的多模态模型，包括:</p>
+<ul><li>Gemini 3.1 Pro</li><li>Gemini 3 Flash</li><li>Qwen3-VL-235B-A22B-Thinking</li><li>GLM-5V-Turbo</li><li>Kimi-K2.6</li><li>Qwen3-VL-8B-Instruct</li></ul>
+<p>GUI 设置里，OSWorld 和 macOSWorld 的最大交互预算都是 20 步。所有 skill 都只从 <code>non-test trajectories</code> 提取，避免测试集污染。</p>
+<p>下面先给出最关键的主结果表。OSWorld 上，MMSkills 对所有模型家族都带来整体提升。</p>
+<table class="result-table">
+<tr><th>Base model</th><th>No skill</th><th>Text-only</th><th>MMSkills</th></tr>
+<tr><td>Gemini 3.1 Pro</td><td>44.08</td><td>40.76</td><td class="best">50.11</td></tr>
+<tr><td>Gemini 3 Flash</td><td>36.65</td><td>40.27</td><td class="best">47.97</td></tr>
+<tr><td>Qwen3-VL-235B</td><td>21.34</td><td>28.57</td><td class="best">39.17</td></tr>
+<tr><td>GLM-5V</td><td>28.71</td><td>36.61</td><td class="best">38.51</td></tr>
+<tr><td>Kimi-K2.6</td><td>34.98</td><td>39.66</td><td class="best">46.59</td></tr>
+<tr><td>Qwen3-VL-8B-Instruct</td><td>10.78</td><td>14.93</td><td class="best">25.40</td></tr>
+</table>
+<p>可以看到两个很重要的现象:</p>
+<ul><li><code>MMSkills</code> 基本稳定优于 <code>No skill</code></li><li><code>Text-only skill</code> 虽然有时也有帮助，但远不如 MMSkills 稳定</li></ul>
+<p>特别是较弱模型增益更大。比如 Qwen3-VL-8B-Instruct 在 OSWorld 上从 <code>10.78</code> 提升到 <code>25.40</code>，说明外部多模态 procedural knowledge 确实能补足弱模型自身的内部先验不足。</p>
+<p>辅助 benchmark 也呈现相同趋势:</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇文章虽然很强，但仍有几个明显局限。</p>
+<p>如果把这篇工作放回你现在的 <code>agent</code> 方向阅读脉络里，我觉得最有用的启发有 4 个。</p>
+<ul><li>可以把 agent skill 从纯文本模板升级为 <code>procedure + state card + visual cue</code> 的结构。</li><li>如果你后面做 GUI/code-use/desktop 类型 agent，<code>when_not_to_use</code> 和 <code>verification_cue</code> 两个字段非常值得保留，它们能显著减少误调用和错误完成判断。</li><li>branch loading 这个思想可以迁移到别的外部模块上，不只是 skill。比如 memory、tool docs、UI exemplars 也可以先在 branch 中阅读，再把 distilled guidance 回传主链。</li><li>如果你后面想做 reward 或 verifier 设计，文章里的 <code>before/after</code> 视图和 <code>verification_cue</code> 很适合转成局部状态判别器或图像级判分信号。</li></ul>
+<p>这篇论文最核心的贡献，是把 visual agent 的 skill 从“文本步骤”升级成“带有状态判别与多视角视觉证据的多模态 procedure package”，再通过 branch loading 避免上下文污染，让这些 skill 真正在 GUI 和游戏环境里变成可调用、可验证、可迁移的外部知识单元。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks">
+  <h2>SearchSkill: Teaching LLMs to Use Search Tools with Evolving Skill Banks</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>SearchSkill 通过“先选技能、再执行搜索/回答”的显式控制接口，以及可迭代演化的 SkillBank，把搜索行为从粗粒度动作变为技能条件化决策；在多跳 QA 上显著优于多类基线，并在小搜索预算下提升正确率与检索效率。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>论文指出现有检索增强/工具调用方法的两类痛点：</p>
+<ul><li>很多方法强调“触发搜索”，但较少建模“怎么搜（query formulation）”；</li><li>多跳问题中常见失败是直接复制原问题发起搜索，导致检索噪声、冗余调用与后续推理漂移。</li></ul>
+<p>因此作者希望把“搜索策略”模块化为可复用技能，并在每一步动作前显式选择技能。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/searchskill_overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/searchskill_overview.png" alt="SearchSkill Overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/empty_skillbank_em_bars_v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/empty_skillbank_em_bars_v3.png" alt="Empty SkillBank EM"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/empty_skillbank_bamboogle_search_pie_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_searchskill_teaching_llms_to_use_search_tools_with_evolving_skill_banks/empty_skillbank_bamboogle_search_pie_v2.png" alt="Bamboogle Search Change"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li>数据集：NQ、TriviaQA、PopQA（单跳）+ HotpotQA、2Wiki、MuSiQue、Bamboogle（多跳）。</li><li>模型：Qwen2.5 7B / 3B 的 Base 与 Instruct。</li><li>对比：Direct、CoT、RAG、Search-o1、ZeroSearch、SearchR1（GRPO）。</li><li>指标：EM（Exact Match）与 7 数据集宏平均。</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>SearchSkill 通过“先选技能、再执行搜索/回答”的显式控制接口，以及可迭代演化的 SkillBank，把搜索行为从粗粒度动作变为技能条件化决策；在多跳 QA 上显著优于多类基线，并在小搜索预算下提升正确率与检索效率。</p>
+<ul><li>技能库构建与演化仍依赖高质量教师与人工规则流程。</li><li>技能数量增加后，选择空间与维护复杂度上升。</li><li>目前主要在 QA 场景验证，跨任务泛化（如网页操作 agent）仍需进一步实证。</li></ul>
+<ul><li>可以把“工具调用前策略决策”作为独立监督目标，而不仅监督最终答案。</li><li>在多工具 agent 中，建议把“技能选择”作为显式中间动作，配合可读 skill card。</li><li>对于预算敏感场景，优先优化 query planning 指标（复制率、原子跳、预算内正确率），往往比盲目增加搜索步数更有效。</li></ul>
+<p>SearchSkill 的核心贡献是把搜索从“黑盒动作”转为“技能条件化的可控过程”。它在多跳 QA 上提供了稳定且可解释的提升，尤其证明了一个实用结论：高质量检索代理的关键不是“搜得更多”，而是“每一步搜得更对”。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery.md" arxiv="2605.03808" -->
+<article class="paper-card" id="arxiv-2605.03808">
+  <h2>Agentic Interpretability: Evolving agentic interpretability tools via autoregressive tool discovery</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.03808" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.03808.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/csinva/agentic-imodels" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.03808</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>传统可解释性研究的核心概念——simulatability（可模拟性）、sparsity（稀疏性）、modularity（模块化）——都是以人类为中心设计的。本文提出：</p>
+<p>&gt; <strong>将可解释性的目标从&quot;人类可理解&quot;转向&quot;Agent 可理解&quot;</strong></p>
+<p>具体做法：用 LLM 替代人类实验，测试 LLM 能否仅通过阅读模型的字符串表示来回答关于模型行为的定量问题。这称为 <strong>Agent Interpretability Score</strong>。</p>
+<p>使用 Coding Agent（如 Claude Code、Codex）构建一个自动研究循环：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>传统可解释性研究的核心概念——simulatability（可模拟性）、sparsity（稀疏性）、modularity（模块化）——都是以人类为中心设计的。本文提出：</p>
+<p>&gt; <strong>将可解释性的目标从&quot;人类可理解&quot;转向&quot;Agent 可理解&quot;</strong></p>
+<p>具体做法：用 LLM 替代人类实验，测试 LLM 能否仅通过阅读模型的字符串表示来回答关于模型行为的定量问题。这称为 <strong>Agent Interpretability Score</strong>。</p>
+<p>使用 Coding Agent（如 Claude Code、Codex）构建一个自动研究循环：</p>
+<ul><li>Agent 迭代修改 Python 模型类</li><li>同时优化<strong>预测性能</strong>和 <strong>Agent 可解释性分数</strong></li><li>通过反馈不断精化，直到达到用户指定的平衡</li></ul>
+<p>这本质上是让 Agent 自己设计供自己使用的工具。</p>
+<p><strong>Agentic-imodels</strong> 的自动研究循环包含以下步骤：</p>
+<ul><li><strong>起始模型类</strong>：一个 <code>scikit-learn</code> 兼容的 <code>InterpretableRegressor</code> 类（含 <code>fit</code>、<code>predict</code>、<code>__str__</code> 方法）</li><li><strong>Coding Agent 迭代修改</strong>：(1) 编辑模型代码提出新想法 → (2) 运行两项评估 → (3) 检查指标是否改善 → (4) 保存结果 → (5) 重复</li><li><strong>持久记忆</strong>：通过 CSV 文件记录每个模型的名称、基本思路和指标结果</li><li><strong>循环终止</strong>：通常运行 50-200 次迭代后手动停止</li></ul>
+<p><strong>关键 Prompt 设计</strong>：</p>
+<ul><li>要求 Agent 探索新思路，<strong>不得简单导入已知模型并修改超参数</strong></li><li>要求持续运行不得暂停询问人类</li><li>提醒不得通过记忆测试答案作弊</li></ul>
+<p class="caption-note">(a) Agentic-imodels 自动研究循环：Coding Agent 迭代修改模型代码，评估预测性能和 Agent 可解释性。(b) 演化模型（蓝色）推动了可解释性-性能 Pareto 前沿</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/overview_imodels_agentic.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/overview_imodels_agentic.png" alt="总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/fig_analysis.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/fig_analysis.png" alt="主结果散点图"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/fig_e2e_bars.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_agentic_interpretability_evolving_agentic_interpretability_tools_via_autoregressive_tool_discovery/fig_e2e_bars.png" alt="E2E 结果"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>Coding Agent</strong>：</p>
+<ul><li>Claude Code v2.1.118（Opus-4.6/Opus-4.7）× 3 推理力度 = 3 组</li><li>Codex v0.118.0（GPT-5.3）× 3 推理力度 = 3 组</li><li>额外 3 组 Claude Code Opus-4.7（medium）使用略微不同的 Prompt</li></ul>
+<p><strong>LLM 评估器</strong>：默认使用 GPT-4o，消融实验中使用 GPT-5.4 和 Claude Haiku-4.5</p>
+<p><strong>基线模型（16 个，5 个家族）</strong>：</p>
+<ul><li>Linear：OLS、Ridge、Lasso</li><li>Tree：DT mini (8叶)、DT large (20叶)、HSTree mini、HSTree large</li><li>Additive：PyGAM、EBM</li><li>Rule-based：FIGS (8/20规则)、RuleFit</li><li>Black-box：RandomForest、GBM、MLP、TabPFN-v2.5</li></ul>
+<p><strong>Token 消耗</strong>：全部最终实验总计约 <strong>70M tokens</strong>（3 个月 $100/月 Claude Max 订阅可复现）</p>
+<p><strong>核心发现</strong>：</p>
+<ul><li>基线模型存在明显 tradeoff：TabPFN 预测最优（rank 0.16）但可解释性极差（0.17）；OLS 可解释性最高（0.69）但预测性能差（rank 0.60-0.82）</li><li><strong>演化的 Agentic-imodels 填充了此前为空的&quot;低 rank、高可解释性&quot;区域</strong></li></ul>
+<p><strong>代表性结果</strong>：</p>
+<table class="result-table">
+<tr><th>模型</th><th>来源</th><th>预测 Rank</th><th>Agent 可解释性</th></tr>
+<tr><td>HingeEBM (5bag)</td><td>Claude Code</td><td>0.19</td><td>0.71</td></tr>
+<tr><td>TeacherStudentRuleSpline (v1)</td><td>Codex</td><td>0.36</td><td>0.80</td></tr>
+<tr><td>OLS（最佳可解释基线）</td><td>基线</td><td>0.60</td><td>0.69</td></tr>
+<tr><td>TabPFN（最佳预测基线）</td><td>基线</td><td>0.16</td><td>0.17</td></tr>
+</table>
+<ul><li>HingeEBM 的预测性能几乎匹配 TabPFN，同时可解释性是其 <strong>4 倍以上</strong></li><li>不同 Agent 和推理力度下都能获得 Pareto 改进</li></ul>
+<p class="caption-note">(a) Agentic-imodels 自动研究循环：Coding Agent 迭代修改模型代码，评估预测性能和 Agent 可解释性。(b) 演化模型（蓝色）推动了可解释性-性能 Pareto 前沿</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>概念创新：从&quot;人类可解释&quot;到&quot;Agent 可解释&quot;的范式转换</strong>：首次系统化地定义和度量 Agent 可解释性，用 LLM 替代人类实验</li><li><strong>Autoresearch 循环优雅有效</strong>：Coding Agent 自动发现同时优化预测性能和可解释性的新模型类，推动了 Pareto 前沿</li><li><strong>强大的端到端验证</strong>：在 BLADE Benchmark 上，4 个 ADS Agent 全部显著提升（+7.9% ~ +72.5%），证明了实际价值</li><li><strong>演化的模型具有可解释的架构规律</strong>：显示复杂度硬性约束 + 显示优化独立设计，提供了关于&quot;什么样的模型对 LLM 可解释&quot;的深刻洞察</li><li><strong>泛化能力强</strong>：在 held-out 数据集和 held-out 测试上效果一致，评估器消融稳健</li><li><strong>开源且可复现</strong>：代码和模型库均开源，以 Python 包 / Agent Skill 形式发布</li></ul>
+<ul><li><strong>LLM-as-Judge 评估偏差</strong>：端到端 ADS 评估依赖 GPT-4o 作为 Judge，可能引入偏差</li><li><strong>Reward Hacking</strong>：部分演化模型通过在 <code>__str__</code> 中背诵答案作弊，虽有 held-out 集缓解但不完美</li><li><strong>仅限于表格回归</strong>：当前仅测试 <code>scikit-learn</code> 兼容的回归器，未覆盖分类、时序、文本等任务</li><li><strong>循环成本高</strong>：总计约 70M tokens，尽管可负担但仍然昂贵</li><li><strong>Agent 可解释性与人类可解释性的关系不清</strong>：LLM 能模拟不等于人类能理解，需要用户研究验证</li><li><strong>测试覆盖度有限</strong>：200 个测试无法覆盖所有可解释性维度，特定应用可能需要专门测试</li></ul>
+<ul><li><strong>Agent 可解释性是一个新维度</strong>：传统可解释性研究以人类为中心，随着 Agent 越来越多地承担数据分析任务，需要专门为 Agent 设计可解释的工具——这是一个全新的研究方向，对 GUI Agent、数据分析 Agent 等都有启示</li><li><strong>Autoresearch 循环的通用性</strong>：让 Agent 自己优化供自己使用的工具——这一范式可以推广到任何需要工具优化的 Agent 场景。例如，让 Agent 自动优化它使用的搜索策略、Prompt 模板、或工作流编排</li><li><strong>显示复杂度硬性约束原则</strong>：Agent 通过构造限制输出大小（固定深度、top-k 特征、单行方程）而非后验剪枝——这一原则可以应用于任何需要 Agent 可解析输出的场景，如结构化输出格式设计...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing.md" arxiv="2605.02910" -->
+<article class="paper-card" id="arxiv-2605.02910">
+  <h2>CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.02910" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.02910.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/qiancheng0/CreativityBench" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.02910</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>本文聚焦于创造性智能的一个具体形式：<strong>创造性工具使用</strong>（Creative Tool Use）。</p>
+<p>定义：推断和利用物体的 <strong>Affordance</strong>（由其物理属性启用的行动可能性），以新颖且非常规的方式实现目标。</p>
+<p>核心洞察：工具的用途不仅限于其设计目的，更在于其结构和物理属性所能启用的动作。例如，钥匙可以用来撬开密封盒子，因为其尖锐的尖端结构提供了撬开或切割的 affordance。</p>
+<p>创造性工具使用需要：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>本文聚焦于创造性智能的一个具体形式：<strong>创造性工具使用</strong>（Creative Tool Use）。</p>
+<p>定义：推断和利用物体的 <strong>Affordance</strong>（由其物理属性启用的行动可能性），以新颖且非常规的方式实现目标。</p>
+<p>核心洞察：工具的用途不仅限于其设计目的，更在于其结构和物理属性所能启用的动作。例如，钥匙可以用来撬开密封盒子，因为其尖锐的尖端结构提供了撬开或切割的 affordance。</p>
+<p>创造性工具使用需要：</p>
+<ul><li>推理部件级属性（刚性、弹性等）→ 映射到功能 affordance（切割、撬开等）</li><li>发散思维但锚定物理约束</li><li>将已有知识和工具使用经验重新组合为新方案</li></ul>
+<p>CreativityBench 包含两大核心组件：</p>
+<ul><li><strong>Affordance Knowledge Base（KB）</strong>：4K 实体、26K 部件、150K+ affordance 标注</li><li><strong>CreativityBench 任务集</strong>：14K 个 grounding 创造性工具使用任务</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/pipeline.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/pipeline.pdf" alt="Pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/task_sampling_pipeline.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/task_sampling_pipeline.pdf" alt="Task Sampling"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/fig_cluster_grouped_bars.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/fig_cluster_grouped_bars.png" alt="簇大小和 Affordance 级别的影响"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>MacGyver</strong>：评估非常规物理问题解决，但不围绕 affordance 结构显式构建</li><li><strong>EscapeBench</strong>：模拟密室环境中的创造性推理，但不建模部件级物理属性</li><li><strong>Creation-MMBench / VisEscape / VillagerBench</strong>：多模态/交互环境中的创造性任务，但强调规划和执行而非 affordance 发现</li></ul>
+<p>共同不足：<strong>不需要模型在部件级物理属性上做 grounding，也不要求显式推理 affordance 涌现机制</strong>。</p>
+<p>在 MacGyver 数据集的 100 个任务上对比 Direct Prompt vs 结构化 Affordance-level CoT（工具清单 → 部件分解 → 物理属性推断 → affordance 推导 → 步骤验证）：</p>
+<table class="result-table">
+<tr><th>维度</th><th>Direct</th><th>Structured CoT</th><th>变化</th></tr>
+<tr><td>Feasibility</td><td>3.44</td><td>3.52</td><td>+0.08</td></tr>
+<tr><td>Physical Grounding</td><td>3.44</td><td>3.54</td><td>+0.10</td></tr>
+<tr><td>Tool Usage</td><td>4.22</td><td>4.31</td><td>+0.09</td></tr>
+<tr><td class="best">Creative Reasoning</td><td>-</td><td>-</td><td class="best">下降</td></tr>
+</table>
+<p>结构化 CoT 改善了 grounding 和过程准确性，但<strong>约束了发散思维</strong>。根本问题不是推理结构缺失，而是缺乏可灵活重组的 grounding affordance 知识。</p>
+<p>采用<strong>逆向工程</strong>过程：从已知 affordance 反向合成场景，确保每个任务有明确的 ground-truth 推理轨迹。</p>
+<p><strong>模型（10 个）</strong>：</p>
+<ul><li>闭源：GPT-5.2、GPT-5 Mini、GPT-5 Nano、Gemini-2.5-Pro、Gemini-2.5-Flash</li><li>开源：Qwen3-32B、Qwen3-14B、Qwen3-4B、Llama-3-70B、Ministral-3-14B</li></ul>
+<p>评估全部 14K 任务。</p>
+<table class="result-table">
+<tr><th>模型</th><th>Gold Correct</th><th>Entity Correct</th><th>$C_u$</th><th>$C_e$</th><th>$C_r$</th><th>Physical G.</th><th>Action F.</th><th>Pred. Corr.</th></tr>
+<tr><td>GPT-5.2</td><td>0.1819</td><td>0.5210</td><td>3.85</td><td>4.24</td><td>4.15</td><td>3.87</td><td class="best">4.39</td><td>3.87</td></tr>
+<tr><td>GPT-5 Mini</td><td>0.1687</td><td>0.4856</td><td class="best">3.89</td><td>4.19</td><td class="best">4.16</td><td class="best">3.88</td><td>4.26</td><td class="best">3.87</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>MacGyver</strong>：评估非常规物理问题解决，但不围绕 affordance 结构显式构建</li><li><strong>EscapeBench</strong>：模拟密室环境中的创造性推理，但不建模部件级物理属性</li><li><strong>Creation-MMBench / VisEscape / VillagerBench</strong>：多模态/交互环境中的创造性任务，但强调规划和执行而非 affordance 发现</li></ul>
+<p>共同不足：<strong>不需要模型在部件级物理属性上做 grounding，也不要求显式推理 affordance 涌现机制</strong>。</p>
+<ul><li><strong>首个大规模 affordance-grounded 创造性 Benchmark</strong>：从&quot;为人类设计&quot;转向&quot;评估 Agent 创造性智能&quot;，填补了三元智力理论中创造性维度的评测空白</li><li><strong>结构化 Affordance KB 极具价值</strong>：4K 实体、150K+ affordance 标注，层次化建模实体→部件→属性→affordance，可复用于训练、评估和轨迹构建</li><li><strong>逆向工程任务构建保证 ground-truth</strong>：从已知 affordance 反向合成场景，确保每个任务有明确的正确答案和推理路径</li><li><strong>多维度细粒度评估</strong>：客观 Tool Usage 指标 + LLM-as-Judge 的 6 维 Likert 评估，区分了&quot;选对工具&quot;和&quot;用对工具&quot;</li><li><strong>深刻的分析发现</strong>：推理能力和创造性发现能力分离、规模饱和、相似干扰物反直觉辅助效应、Interactive 模式的过早承诺问题</li><li><strong>人类研究提供了有价值的参照</strong>：人类因认知负荷低于模型，但 gold 解决方案验证有效</li></ul>
+<ul><li><strong>仅文本模态</strong>：当前 Benchmark 纯文本，未涉及视觉 grounding（看物体图片推断 affordance）</li><li><strong>场景限于室内家居</strong>：8 个场景均为室内环境，未覆盖户外、工业等场景</li><li><strong>LLM-as-Judge 评估偏差</strong>：辅助维度依赖 Gemini-3.1-Flash-Lite 评判，存在 judge 模型特有偏差</li><li><strong>Affordance KB 的 LLM 生成质量</strong>：使用 GPT-5.2 自动扩展标注，可能存在噪声</li><li><strong>人类研究规模有限</strong>：仅 10 人、100 个任务，且人类因认知负荷表现低于模型，难以完全验证 benchmark 难度设计</li><li><strong>未涉及训练改进</strong>：仅评估未提出改进方法，讨论中提到的方向（物理-文本双重推理、foresight governance）有待实现...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning.md" arxiv="2605.14392" -->
+<article class="paper-card" id="arxiv-2605.14392">
+  <h2>Learning to Build the Environment: Self-Evolving Reasoning RL via Verifiable Environment Synthesis</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.14392" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.14392" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.14392</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇工作最重要的贡献，是把 self-improvement 从“生成更多题”提升到了“生成可复用的训练环境”。<code>EvoEnv</code> 证明了：只要 environment 具备 <strong>stable solve--verify asymmetry</strong>，模型就有可能在 zero-data reasoning RL 中持续获得有效的 frontier-level reward，而不是被固定分布或 policy-coupled pseudo-label 很快耗尽训练信号。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者指出，很多 self-improvement / zero-data RL 工作都把问题看成：</p>
+<ul><li>生成更多 question</li><li>生成更多 rationale</li><li>生成更多 hard example</li><li>或者用 self-consistency / self-reward 给这些样本打标签</li></ul>
+<p>但这种思路有两个结构性问题：</p>
+<p>作者在 appendix 里做了一张很有价值的定位表。它区分不同工作的两个轴：</p>
+<ul><li>self-improvement 合成的基本单位是什么</li><li>reward source 是否稳定，还是和当前 policy 耦合</li></ul>
+<p>在这个框架下：</p>
+<ul><li>R-Zero / SeRL / SQLM 一类工作：生成的是单个 problem 或 instruction，reward 更 policy-coupled</li><li>AZR / SCA / Agent0 一类：有 executable grounding，但往往是 per-instance verifier</li><li>RLVE：环境级训练对象，但环境是 hand-crafted</li><li>EnvScaler / AutoWebWorld 一类：也是 environment synthesis，但更偏 offline pipeline / tool sandbox</li></ul>
+<p>EvoEnv 的独特点是：</p>
+<ul><li>合成单位是 <strong>reusable environment</strong></li><li>reward source 是 <strong>frozen Python execution</strong></li><li>环境 admission 是 <strong>on-policy + solver-calibrated + novelty-controlled</strong></li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者提出一个很强的 thesis：</p>
+<p><strong>self-improvement 的基本单位不该是单个 problem，而应该是 environment。</strong></p>
+<p>也就是说，模型不只是生成一道题，而是生成一个可执行环境。这个环境里至少包含：</p>
+<ul><li>sampler：采样 latent task instance</li><li>oracle：生成 reference answer</li><li>renderer：把 instance 渲染成自然语言 prompt</li><li>scorer：对 solver 的回答打分</li></ul>
+<p>这样一个 environment 一旦通过验证并进入环境池，它就不再依赖模型当前采样答案，而是通过执行代码提供稳定 reward。</p>
+<p><code>EvoEnv</code> 是一个 <strong>single-policy dual-role</strong> 框架：</p>
+<ul><li>同一个 policy 既充当 generator，又充当 solver</li><li>generator 负责提议新的 Python environments</li><li>solver 负责在被接受的 environment pool 中解题</li></ul>
+<p>环境不是生成出来就直接用，而是只有在通过多层 admission 之后，才会进入 active pool。</p>
+<p>作者强调，环境进入 pool 之前必须满足四类约束：</p>
+<ul><li>可执行</li><li>语义对齐</li><li>难度贴近当前 solver 前沿</li><li>环境池足够多样，不发生模板坍缩</li></ul>
+<ul><li>Qwen3-4B-Instruct: <code>49.2 -&gt; 53.1</code></li><li>Qwen3-4B-Thinking: <code>72.4 -&gt; 74.8</code></li><li>Nemotron-Cascade-8B: <code>71.0 -&gt; 73.2</code></li></ul>
+<p>这说明方法不是只对某个 model family 偶然有效。</p>
+<p>作者在 appendix 里做了一张很有价值的定位表。它区分不同工作的两个轴：</p>
+<ul><li>self-improvement 合成的基本单位是什么</li><li>reward source 是否稳定，还是和当前 policy 耦合</li></ul>
+<p>在这个框架下：</p>
+<ul><li>R-Zero / SeRL / SQLM 一类工作：生成的是单个 problem 或 instruction，reward 更 policy-coupled</li><li>AZR / SCA / Agent0 一类：有 executable grounding，但往往是 per-instance verifier</li><li>RLVE：环境级训练对象，但环境是 hand-crafted</li><li>EnvScaler / AutoWebWorld 一类：也是 environment synthesis，但更偏 offline pipeline / tool sandbox</li></ul>
+<p>EvoEnv 的独特点是：</p>
+<ul><li>合成单位是 <strong>reusable environment</strong></li><li>reward source 是 <strong>frozen Python execution</strong></li><li>环境 admission 是 <strong>on-policy + solver-calibrated + novelty-controlled</strong></li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_figure_v1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_figure_v1.png" alt="EvoEnv overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_exp.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_exp.png" alt="Training dynamics"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/fig_ablation_data.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/fig_ablation_data.png" alt="Data audit"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>共 8 个 benchmark：</p>
+<ul><li>AIME 2024</li><li>AIME 2025</li><li>AMC 2023</li><li>HMMT Feb 2025</li><li>Beyond-AIME</li><li>Brumo 2025</li><li>GPQA Diamond</li><li>LiveCodeBench v6</li></ul>
+<p>这里的重点是：</p>
+<p>训练完全来自自生成 environment，而不是 benchmark 对应数据。</p>
+<table class="result-table">
+<tr><th>Base Model</th><th>Method</th><th>AIME&#x27;24</th><th>AIME&#x27;25</th><th>AMC&#x27;23</th><th>HMMT</th><th>B-AIME</th><th>Brumo</th><th>GPQA</th><th>LCB</th><th>Avg</th></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>Untrained</td><td>58.8</td><td>44.0</td><td>87.5</td><td>30.0</td><td>32.0</td><td>56.5</td><td>52.5</td><td>32.6</td><td>49.2</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>R-Zero</td><td>55.0</td><td>43.3</td><td>87.5</td><td>26.5</td><td>27.0</td><td>55.2</td><td>54.0</td><td>33.5</td><td>47.8</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>DAPO</td><td>50.0</td><td>44.8</td><td>92.5</td><td>19.8</td><td>22.2</td><td>47.1</td><td>56.1</td><td>33.5</td><td>45.8</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>RLVE</td><td>57.1</td><td>44.3</td><td>92.5</td><td>27.7</td><td>32.8</td><td>57.9</td><td>57.1</td><td>32.6</td><td>50.3</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>EvoEnv</td><td>61.9</td><td>52.5</td><td>95.0</td><td>30.0</td><td>33.6</td><td>61.2</td><td>55.0</td><td>35.5</td><td>53.1</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>Untrained</td><td>86.7</td><td>78.8</td><td>97.5</td><td>56.9</td><td>53.1</td><td>81.9</td><td>65.2</td><td>59.0</td><td>72.4</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>R-Zero</td><td>84.2</td><td>80.6</td><td>97.5</td><td>53.5</td><td>52.9</td><td>79.6</td><td>67.2</td><td>59.0</td><td>71.8</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>DAPO</td><td>74.0</td><td>65.4</td><td>97.5</td><td>48.8</td><td>45.8</td><td>68.3</td><td>64.6</td><td>54.0</td><td>64.8</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>RLVE</td><td>81.9</td><td>75.0</td><td>95.0</td><td>51.5</td><td>49.6</td><td>75.8</td><td>67.7</td><td>57.3</td><td>69.2</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>EvoEnv 训练时只依赖自生成 environment，但对外部 benchmark 仍有提升，例如在 Qwen3-4B-Thinking 上：</p>
+<ul><li>GPQA: <code>65.2 -&gt; 70.2</code></li><li>LiveCodeBench: <code>59.0 -&gt; 63.2</code></li></ul>
+<p>这说明它学到的不是单纯的 template memorization，而是更 transferable 的 reasoning behavior。</p>
+<p>虽然这篇实验设定更偏 reasoning RL，不是典型 tool-use agent，但它对 <code>agent</code> 方向很有启发。</p>
+<p>这篇工作也有比较明显的边界。</p>
+<p>这篇工作最重要的贡献，是把 self-improvement 从“生成更多题”提升到了“生成可复用的训练环境”。<code>EvoEnv</code> 证明了：只要 environment 具备 <strong>stable solve--verify asymmetry</strong>，模型就有可能在 zero-data reasoning RL 中持续获得有效的 frontier-level reward，而不是被固定分布或 policy-coupled pseudo-label 很快耗尽训练信号。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_genevolve_self_evolving_image_generation_agents_via_tool_orchestrated_visual_experience_distillation.md" arxiv="2605.21605" -->
+<article class="paper-card" id="arxiv-2605.21605">
+  <h2>GenEvolve: Self-Evolving Image Generation Agents via Tool-Orchestrated Visual Experience Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.21605" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.21605.pdf" target="_blank">PDF</a>
+  <a href="https://ephemeral182.github.io/GenEvolve/" target="_blank">Project</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.21605</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>GenEvolve 不再把 open-ended image generation 看成“改写一次 prompt”这么简单，而是把整条生成过程重写成 agent trajectory：什么时候去搜索事实、什么时候找参考图、什么时候调用内部生成技能、最后如何把这些信息拼装成可执行的 prompt-reference program。真正的新意在于，它不仅用 GRPO 优化最终结果，还从同一请求下的 best/worst trajectories 中提炼 structured visual experience，再蒸馏回 student policy。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者关心的是一个比“文生图提示词优化”更大的问题：复杂图像请求往往同时需要外部事实检索、视觉参考筛选、内部绘图知识调用、约束绑定与失败规避，因此本质上更像多步 agent 决策，而不是单轮 prompt engineering。</p>
+<ul><li><strong>外部信息需求：</strong>人物、地点、产品、年份、品牌等事实经常需要 search 才能补齐。</li><li><strong>视觉锚点需求：</strong>用户常常并不只要语义对，还要特定姿态、材质、构图与风格。</li><li><strong>生成知识需求：</strong>文本渲染、空间布局、attribute binding、数量计数等 failure mode 需要专门的 skill guidance。</li></ul>
+<p>因此论文的关键判断是：如果只给最终图像一个 scalar reward，模型很难知道究竟是 search query 写坏了、reference 选错了，还是 prompt 没把 layout / text rendering 约束绑定进去。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>GenEvolve 把一次图像生成轨迹建模成 tool-orchestrated visual trajectory。agent 在多轮交互里调用三类工具：文本 search、image search，以及按需查询内部 generation knowledge。最终输出不是普通 prompt，而是一个 <strong>prompt-reference generation program</strong>：</p>
+<ul><li><strong>gen_prompt：</strong>面向 generator 的最终指令。</li><li><strong>reference_images：</strong>按角色组织的参考图，而不是无结构图片堆叠。</li><li><strong>selected_skills：</strong>显式激活 text_rendering、spatial_layout、attribute_binding 等内生绘图知识。</li></ul>
+<p>训练上分两层：</p>
+<ul><li><strong>SFT 冷启动：</strong>先把模型教会基本的 tool orchestration 和 program 输出格式。</li><li><strong>GRPO + experience distillation：</strong>同一 prompt 下采样多条轨迹，用图像奖励和文本程序充分性奖励做 group-relative optimization；再把 best / worst trajectory 的差异抽象成五类 visual experience，如 search、reference、knowledge、prompt 与 failure avoidance。</li></ul>
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_genevolve_self_evolving_image_generation_agents_via_tool_orchestrated_visual_experience_distillation_tex/overview_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_genevolve_self_evolving_image_generation_agents_via_tool_orchestrated_visual_experience_distillation_tex/overview_v2.png" alt="GenEvolve overview"></a>
+    </div>
+    </div>
+  </div>
+  <p class="caption-note">这里我只保留总览图。它比 teaser 更适合放在卡片里，因为读者能直接看到 self-evolving loop 如何把 tool use、reward 和 visual experience distillation 串成一个闭环。</p>
+</div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文的实验重点不是单纯比较“谁生成得更好看”，而是比较 agent 是否真的学会了更好的工具编排、参考图使用和 failure-aware prompt synthesis。奖励也不是只看图像，而是图像质量与最终程序充分性共同决定。</p>
+<ul><li><strong>图像奖励：</strong>综合 factual faithfulness、visual correctness、text accuracy 与 aesthetics，其中 visual correctness 和 text accuracy 权重最高。</li><li><strong>文本奖励：</strong>检查最终 program 是否充分编码了 grounding facts、reference role、generation knowledge 与 executable constraints。</li><li><strong>核心收益：</strong>GenEvolve 学到的不是更会“润色 prompt”，而是更会在轨迹层面做决策，尤其体现在更合理的 search、reference 绑定和 skill routing 上。</li></ul>
+<p>最值得记住的实验信息是：作者把 best/worst trajectories 之间的结构性差异提炼成 teacher-only visual experience，再做 token-level distillation。这样 student 学到的不是抽象的“高分偏好”，而是更接近过程监督的具体决策经验。</p>
+</div>
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>价值：</strong>把 image generation 从黑盒 prompt optimization 推进到了真正的 agent post-training 场景，工具调用、参考图组织和内部绘图知识第一次被统一到同一个轨迹优化框架里。</li><li><strong>方法启发：</strong>best-vs-worst trajectory comparison 很适合视觉任务，因为最终图像 reward 很难直接分解到每一步，而 visual experience distillation 给出了一条可解释的中间桥梁。</li><li><strong>局限：</strong>系统仍然依赖 reward 设计和 teacher trajectory 质量；如果 search / image retrieval 本身不稳，后续蒸馏也可能学到噪声。</li><li><strong>阅读重点：</strong>这篇论文最该看的不是某一张定量表，而是“为什么单次 prompt rewrite 不够”以及“experience 槽位化后如何进入 distillation”这两个结构性设计。</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+</div>
+</body>
+</html>

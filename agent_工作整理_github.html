@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 工作整理</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .group-card,
+  .work-list {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .work-list {
+    padding: 24px 26px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .group-card,
+    .work-list { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <h1>Agent 工作整理</h1>
+    <p>聚焦 LLM Agent 的训练优化、记忆系统、技能演化与环境评测。当前已将 42 篇精读总结拆成 4 个专题子页，便于按研究动机快速浏览。</p>
+    <div class="stats">
+      <span class="stat">详细总结 42 篇</span>
+      <span class="stat">专题子页 4 个</span>
+      <span class="stat">更新日期 2026-06-03</span>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="group-grid">
+      <a class="group-card" href="agent_工作整理_github/agent_工作整理_github_rl_training.html">
+        <div class="badge-row"><span class="badge">9 篇</span><span class="badge">训练方法</span></div>
+        <h2>Agent RL Training</h2>
+        <p>聚焦 agent 的 RL 后训练、rollout 设计、探索策略、信用分配与 on-policy 数据利用，适合从“怎么把 agent 训起来”这个视角切入。</p>
+        <div class="group-meta"><span class="badge">进入子页</span></div>
+      </a>
+      <a class="group-card" href="agent_工作整理_github/agent_工作整理_github_memory.html">
+        <div class="badge-row"><span class="badge">6 篇</span><span class="badge">记忆系统</span></div>
+        <h2>Agent Memory</h2>
+        <p>围绕长期记忆的构建、检索、路由和评测，关注 agent 如何记住过去、何时调用记忆、以及记忆是否真的提升长期任务表现。</p>
+        <div class="group-meta"><span class="badge">进入子页</span></div>
+      </a>
+      <a class="group-card" href="agent_工作整理_github/agent_工作整理_github_skills_evolution.html">
+        <div class="badge-row"><span class="badge">15 篇</span><span class="badge">技能演化</span></div>
+        <h2>Agent Skills &amp; Self-Evolution</h2>
+        <p>汇总技能发现、技能图、工具使用、自蒸馏与多模态能力生长，适合从“agent 如何自我增强和积累技能”这一主线阅读。</p>
+        <div class="group-meta"><span class="badge">进入子页</span></div>
+      </a>
+      <a class="group-card" href="agent_工作整理_github/agent_工作整理_github_env_benchmark.html">
+        <div class="badge-row"><span class="badge">12 篇</span><span class="badge">环境与评测</span></div>
+        <h2>Agent Environments &amp; Benchmarks</h2>
+        <p>覆盖训练环境合成、任务平台、workspace/web/terminal benchmark 与真实场景评测，适合梳理 agent 能力到底是如何被验证的。</p>
+        <div class="group-meta"><span class="badge">进入子页</span></div>
+      </a>
+    </section>
+
+    <nav class="work-list" aria-label="Agent 专题导航">
+      <h2>专题导航</h2>
+      <p>如果你想先把 agent 研究版图快速过一遍，可以从这里跳到各专题子页。每个子页内部再按论文卡片展开。</p>
+      <ol>
+        <li><a href="agent_工作整理_github/agent_工作整理_github_rl_training.html">Agent RL Training</a><span class="work-meta">9 篇 | RL 优化、探索、信用分配、rollout 设计</span></li>
+        <li><a href="agent_工作整理_github/agent_工作整理_github_memory.html">Agent Memory</a><span class="work-meta">6 篇 | 长期记忆构建、检索、路由与 benchmark</span></li>
+        <li><a href="agent_工作整理_github/agent_工作整理_github_skills_evolution.html">Agent Skills &amp; Self-Evolution</a><span class="work-meta">15 篇 | 技能图、自蒸馏、工具能力与自演化</span></li>
+        <li><a href="agent_工作整理_github/agent_工作整理_github_env_benchmark.html">Agent Environments &amp; Benchmarks</a><span class="work-meta">12 篇 | 环境合成、评测平台与真实任务 benchmark</span></li>
+      </ol>
+    </nav>
+  </main>
+  <footer>Generated from local detailed summaries in <code>agent/</code>.</footer>
+</body>
+</html>

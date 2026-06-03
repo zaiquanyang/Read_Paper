@@ -1,0 +1,1368 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent RL Training — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Agent RL Training</h1>
+  <p>Agent 训练方法论：RL 优化、rollout 策略、探索与信用分配</p>
+</header>
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+<section class="subpage-nav">
+  <h2>本页目录</h2>
+  <p>先看目录再往下读，会比直接滚到底更顺一点。</p>
+  <ol>
+  <li><a href="#arxiv-2509.21240">Tree Search for LLM Agent Reinforcement Learning</a></li>
+  <li><a href="#arxiv-2510.08558">Agent Learning via Early Experience</a></li>
+  <li><a href="#arxiv-2603.17621">Complementary Reinforcement Learning</a></li>
+  <li><a href="#arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents">DPEPO: Diverse Parallel Exploration Policy Optimization for LLM-based Agents</a></li>
+  <li><a href="#arxiv-2604.02268">SKILL0: In-Context Agentic Reinforcement Learning for Skill Internalization</a></li>
+  <li><a href="#arxiv-2605.10663">Evolving-RL: End-to-End Optimization of Experience-Driven Self-Evolving Capability within Agents</a></li>
+  <li><a href="#arxiv_2605_learning_agentic_policy_from_action_guidance">Learning Agentic Policy from Action Guidance</a></li>
+  <li><a href="#arxiv-2605.08083">LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling</a></li>
+  <li><a href="#arxiv-2603.08561">RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</a></li>
+  </ol>
+</section>
+
+
+<!-- PAPER_CARD_START source="agent/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning.md" arxiv="2509.21240" -->
+<article class="paper-card" id="arxiv-2509.21240">
+  <h2>Tree Search for LLM Agent Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2509.21240" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2509.21240" target="_blank">PDF</a>
+  <a href="https://github.com/AMAP-ML/Tree-GRPO" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2509.21240</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>Tree-GRPO 的核心贡献是把 <strong>agent RL 的 rollout 结构从链改成树</strong>，并把树结构同时用于 <strong>节省 rollout 预算</strong> 和 <strong>从 outcome reward 中恢复 step-level process supervision</strong>。它特别适合低预算、长程、多轮的 agent 训练场景，本质上是在 agent RL 中把“采样效率”和“过程信用分配”一起做了结构化改造。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者讨论的是典型 ReAct 风格 agent。一个完整 episode 由多个 Thought-Action-Observation step 构成：</p>
+<div class="formula-block">\[\mathcal{H}=\{(\tau_0,\alpha_0,o_0),(\tau_1,\alpha_1,o_1),\ldots,(\tau_{T-1},\alpha_{T-1},o_{T-1})\}.\]</div>
+<p>其中：</p>
+<ul><li>$\tau_t$ 是第 $t$ 步 thought</li><li>$\alpha_t$ 是第 $t$ 步 action，通常是 tool call</li><li>$o_t$ 是环境返回的 observation</li></ul>
+<p>agent RL 的目标仍然是最大化完整轨迹的期望回报：</p>
+<div class="formula-block">\[J(\theta)=\mathbb{E}_{\mathcal{H}\sim p_\theta}\!\left[R(\mathcal{H})\right].\]</div>
+<p>问题在于，多轮 agent 任务相比单轮数学/代码 RL 有两个更突出的困难。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>Tree-GRPO 的核心是：<strong>把 rollout 从“多条独立链”变成“若干棵共享前缀的树”</strong>。</p>
+<p>论文给出的示意图非常直观：</p>
+<p>这张图要表达的重点是：</p>
+<ul><li>chain-based sampling：每条轨迹都从头独立走完整条链</li><li>tree-based sampling：共享 prefix，只在部分节点继续展开新分支</li></ul>
+<p>作者强调，agent 场景下树节点的最佳粒度不是 token/sentence，而是 <strong>完整 agent step</strong>。也就是每个节点对应一个完整的 $(\tau,\alpha,o)$。这一点很重要，因为：</p>
+<ul><li>token 级分叉没有明确决策语义</li><li>sentence 级分叉也会打断 action-observation 的结构完整性</li><li>agent step 级才真正对应“一个可解释的决策单元”</li></ul>
+<p>下面这张图展示了 chain、token/sentence-level tree、agent-step-level tree 的区别：</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/tree_search_comp_plot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/tree_search_comp_plot.png" alt="tree level ablation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/teaser.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/teaser.png" alt="teaser"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/tree_search_comp.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2509_tree_search_for_llm_agent_reinforcement_learning/tree_search_comp.png" alt="tree search comparison"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li>当前主要围绕 search-based agent，工具类型较单一，泛化到 code execution / browser / GUI / embodied tool-use 还需验证。</li><li>tree expansion 仍然需要串行迭代，虽然比纯 MCTS 更适合并行推理，但不等于没有系统工程成本。</li><li>理论分析使用了较强的 binary preference 假设，更像解释性框架，不是严格覆盖真实复杂 agent 环境的完整理论。</li><li>Web-Agent QA 上提升有限，说明在极难开放环境中，训练数据质量仍是瓶颈。</li></ul>
+<p>如果从你关心的 <code>agent</code> 方向来看，这篇 paper 有几个很实用的启发：</p>
+<ul><li>可以把“共享前缀 rollout”看成 agent RL 的一类基础采样优化，不只是 Tree-GRPO 独有技巧。</li></ul>
+<p>对任何多轮、前缀重复率高的 agent 任务，都值得考虑。</p>
+<ul><li>过程监督不一定非要显式 PRM。</li></ul>
+<p>只要轨迹结构本身有层级，很多时候可以从 outcome reward + branching structure 里反推出局部 preference。</p>
+<ul><li>credit granularity 要和 agent 原生 step 对齐。</li></ul>
+<p>这点对 browser agent、tool agent、code agent 都很重要。过细到 token，反而可能破坏 action semantics。</p>
+<ul><li>如果后续你想做更细粒度 reward / advantage 设计，这篇 paper 很适合作为“agent 版的 process supervision 基线”。</li></ul>
+<p>一个自然延伸方向是：</p>
+<ul><li>树上不是只做 sibling reward backprop</li><li>而是再叠加 step-type aware weighting</li><li>比如对 search step、read step、answer step 分别做不同 credit 估计</li></ul>
+<p>Tree-GRPO 的核心贡献是把 <strong>agent RL 的 rollout 结构从链改成树</strong>，并把树结构同时用于 <strong>节省 rollout 预算</strong> 和 <strong>从 outcome reward 中恢复 step-level process supervision</strong>。它特别适合低预算、长程、多轮的 agent 训练场景，本质上是在 agent RL 中把“采样效率”和“过程信用分配”一起做了结构化改造。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2510_agent_learning_via_early_experience.md" arxiv="2510.08558" -->
+<article class="paper-card" id="arxiv-2510.08558">
+  <h2>Agent Learning via Early Experience</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2510.08558" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2510.08558.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2510.08558</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最值得记住的点是：<strong>在 agent 训练里，即使没有 reward，模型自己的动作所引发的 future states 也已经构成了高价值 supervision。</strong> IWM 利用它学习环境动态，SR 利用它学习决策理由，两者共同把 imitation learning 推向更接近真实 experience-driven agent 的阶段。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>语言 agent 的一个长期目标，是像 AlphaGo 一样通过自身经验不断变强，而不是永远停留在“模仿人类演示”的阶段。但现实里的很多 agent 环境并不满足标准 RL 的前提：</p>
+<ul><li>一类环境根本没有可验证 reward，比如真实网页、复杂网站工作流。</li><li>另一类环境即使有 reward，也往往需要很长的交互链条才能得到，rollout 成本太高，比如多轮工具调用。</li></ul>
+<p>因此，当前很多 agent 训练依赖 expert demonstrations 和 imitation learning / SFT。问题在于，expert data 的覆盖面很窄，只展示“正确轨迹”，几乎不展示“做错之后环境会怎样”。这会带来两个直接后果：</p>
+<ul><li>模型容易受到 distribution shift 影响，一旦部署时偏离 expert 轨迹，就可能进入训练中没见过的状态。</li><li>模型不知道错误动作的后果，因此恢复能力、纠错能力和泛化能力都有限。</li></ul>
+<p>这篇论文提出的核心观点是：在“完全依赖 expert 数据”和“完全依赖 reward-driven RL”之间，其实存在一个中间地带，即 <strong>early experience</strong>。它指的是：</p>
+<p>&gt; 由 agent 自己提出动作、与环境交互后得到的未来状态，这些未来状态本身就能成为 supervision，即使没有显式 reward。</p>
+<p>这个 framing 很重要。论文不是单纯提出某个 trick，而是在 agent 训练范式上提出一个桥接层：</p>
+<ul><li>从 human data era 走向 experience era；</li><li>从 imitation learning 逐步过渡到 reinforcement learning；</li><li>在 reward 不可用或很贵时，先用“未来状态”替代 reward 提供训练信号。</li></ul>
+<p>上图给出的直觉很清楚：传统 imitation learning 只看 expert action；early experience 则额外观察 agent 自己尝试其他动作后环境发生了什么变化，因此学习信号更丰富。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+<table class="result-table">
+<tr><th>Environment</th><th>类型</th><th>简述</th><th>Expert Traj.</th><th>$\# \mathcal{D}_{\text{expert}}$</th></tr>
+<tr><td>ALFWorld</td><td>Embodied simulation</td><td>家居环境中的文本化高层动作控制</td><td>3,553</td><td>21,031</td></tr>
+<tr><td>ScienceWorld</td><td>Scientific simulation</td><td>自然语言科学实验环境</td><td>1,000</td><td>14,506</td></tr>
+<tr><td>TravelPlanner</td><td>Long-horizon planning</td><td>多日旅行规划与工具调用</td><td>45</td><td>1,395</td></tr>
+<tr><td>BFCLv3</td><td>Tool use</td><td>多轮 function calling / API 环境</td><td>125</td><td>1,264</td></tr>
+<tr><td>Tau-Bench</td><td>Tool use</td><td>客服场景、多轮 API 使用</td><td>452</td><td>5,239</td></tr>
+<tr><td>SearchQA</td><td>Search agent</td><td>多跳搜索问答</td><td>2,082</td><td>7,691</td></tr>
+<tr><td>WebShop</td><td>Web navigation</td><td>电商网站购物任务</td><td>1,571</td><td>15,464</td></tr>
+<tr><td>WebArena-Lite</td><td>Web navigation</td><td>多域网站导航</td><td>554</td><td>7,044</td></tr>
+</table>
+<p>从这个表可以看出，作者并不是只在单一 agent setting 上做验证，而是试图证明 early experience 是一个跨环境范式。</p>
+<p>在这个统一范式下，作者展示了两种可实例化方法：</p>
+<ul><li>IWM: 将 future-state prediction 作为环境 grounding 的 warm-up。</li><li>SR: 将 expert outcome 与 alternative outcome 的差异转化成反思式监督。</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/teaser_v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/teaser_v4.png" alt="Early Experience Motivation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/method_v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/method_v3.png" alt="Early Experience Methods"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Environment</th><th>类型</th><th>简述</th><th>Expert Traj.</th><th>$\# \mathcal{D}_{\text{expert}}$</th></tr>
+<tr><td>ALFWorld</td><td>Embodied simulation</td><td>家居环境中的文本化高层动作控制</td><td>3,553</td><td>21,031</td></tr>
+<tr><td>ScienceWorld</td><td>Scientific simulation</td><td>自然语言科学实验环境</td><td>1,000</td><td>14,506</td></tr>
+<tr><td>TravelPlanner</td><td>Long-horizon planning</td><td>多日旅行规划与工具调用</td><td>45</td><td>1,395</td></tr>
+<tr><td>BFCLv3</td><td>Tool use</td><td>多轮 function calling / API 环境</td><td>125</td><td>1,264</td></tr>
+<tr><td>Tau-Bench</td><td>Tool use</td><td>客服场景、多轮 API 使用</td><td>452</td><td>5,239</td></tr>
+<tr><td>SearchQA</td><td>Search agent</td><td>多跳搜索问答</td><td>2,082</td><td>7,691</td></tr>
+<tr><td>WebShop</td><td>Web navigation</td><td>电商网站购物任务</td><td>1,571</td><td>15,464</td></tr>
+<tr><td>WebArena-Lite</td><td>Web navigation</td><td>多域网站导航</td><td>554</td><td>7,044</td></tr>
+</table>
+<p>从这个表可以看出，作者并不是只在单一 agent setting 上做验证，而是试图证明 early experience 是一个跨环境范式。</p>
+<table class="result-table">
+<tr><th>Benchmark</th><th>Model</th><th>Prompt</th><th>IL</th><th>IWM</th><th>SR</th></tr>
+<tr><td>ALFWorld</td><td>Llama-3.2-3B</td><td>8.6</td><td>78.1</td><td>83.6</td><td class="best">85.9</td></tr>
+<tr><td>ALFWorld</td><td>Qwen-2.5-7B</td><td>20.3</td><td>78.1</td><td class="best">82.8</td><td>82.0</td></tr>
+<tr><td>ALFWorld</td><td>Llama-3.1-8B</td><td>25.0</td><td>80.5</td><td class="best">85.9</td><td>85.2</td></tr>
+<tr><td>ScienceWorld</td><td>Llama-3.2-3B</td><td>2.3</td><td>51.6</td><td>55.5</td><td class="best">56.2</td></tr>
+<tr><td>ScienceWorld</td><td>Qwen-2.5-7B</td><td>3.9</td><td>53.9</td><td class="best">59.4</td><td>57.8</td></tr>
+<tr><td>ScienceWorld</td><td>Llama-3.1-8B</td><td>3.1</td><td>54.7</td><td>57.0</td><td class="best">68.0</td></tr>
+<tr><td>TravelPlanner</td><td>Llama-3.2-3B</td><td>0.0</td><td>19.4</td><td>28.3</td><td class="best">32.2</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+<table class="result-table">
+<tr><th>维度</th><th>IWM</th><th>SR</th></tr>
+<tr><td>训练目标</td><td>预测 future state</td><td>生成反思并输出 expert action</td></tr>
+<tr><td>监督来源</td><td>$(s, a, s&#x27;)$ 三元组</td><td>expert outcome 与 alternative outcome 的对比</td></tr>
+<tr><td>更偏向学习什么</td><td>环境 dynamics、动作后果、错误反馈</td><td>约束理解、决策理由、错误分析</td></tr>
+<tr><td>更适合什么任务</td><td>状态转移稳定、环境规律强</td><td>逻辑推理强、约束满足、多步规划</td></tr>
+<tr><td>训练流程</td><td>先 IWM warm-up，再 IL</td><td>SR 数据与 expert 数据联合训练</td></tr>
+</table>
+<ul><li><strong>仍依赖环境交互成本</strong>：虽然不需要 reward，但要拿到 $s_i^j$ 仍然得执行 alternative actions。</li><li><strong>目前主要是短视角 early experience</strong>：论文自己也承认，仍未真正解决 long-horizon credit assignment。</li><li><strong>SR 依赖额外反思生成质量</strong>：如果生成的 reflection 本身噪声大，可能影响训练。</li><li><strong>更偏 offline / pre-collected interaction augmentation</strong>：离真正在线 continual improvement 还有距离。</li><li><strong>开放网页环境提升有限</strong>：像 WebArena-Lite 这类超复杂场景，提升仍然比较 modest。</li></ul>
+<p>如果从你当前 <code>agent</code> 方向的阅读与实验积累来看，这篇论文有几条特别值得落地：</p>
+<p>论文的核心不是 reward，而是“环境状态变化本身带信息”。如果你在做 agent evaluator / reward model，可以考虑把打分从只看最终 answer，扩展为同时看：</p>
+<ul><li>动作是否触发了合理状态变化；</li><li>状态变化是否暴露了错误约束；</li><li>是否出现了 recoverable error signal；</li><li>是否推进了子目标。</li></ul>
+<p>这和只看最终 success/fail 相比，会更细粒度。</p>
+<p>这篇论文最值得记住的点是：<strong>在 agent 训练里，即使没有 reward，模型自己的动作所引发的 future states 也已经构成了高价值 supervision。</strong> IWM 利用它学习环境动态，SR 利用它学习决策理由，两者共同把 imitation learning 推向更接近真实 experience-driven agent 的阶段。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2603_complementary_reinforcement_learning.md" arxiv="2603.17621" -->
+<article class="paper-card" id="arxiv-2603.17621">
+  <h2>Complementary Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">llm</span>
+  <a href="https://arxiv.org/abs/2603.17621" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.17621.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.17621</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>现有利用经验的方法存在一个根本问题：<strong>将经验视为静态资源</strong>。</p>
+<ul><li><strong>离线经验</strong>：预先从历史轨迹构建经验库，训练中保持不变。初始有优势，但随着 actor 能力增长，经验逐渐过时（stale），收益衰减。</li><li><strong>静态在线经验</strong>：训练过程中由固定提取器动态维护经验库，但提取器不更新。无法适应 actor 的演化，导致分布错位（distributional misalignment），经验与 actor 当前能力脱节。</li><li><strong>自反思方法</strong>：依赖模型自身生成反思，但弱模型容易产生幻觉，不可靠。</li><li><strong>复杂启发式方法</strong>：多阶段检索、专门数据结构等，增加了工程复杂度。</li></ul>
+<p>关键洞察：经验提取和 agent 学习应该<strong>协同演化（co-evolve）</strong>，而非各自独立处理。</p>
+<ul><li><strong>Actor-Extractor Co-Evolution</strong>：actor 和 extractor 必须在训练中互相适应，持续塑造彼此</li><li><strong>Experience Consolidation</strong>：经验库必须自动构建和维护，蒸馏可迁移经验，解决冲突和冗余</li><li><strong>Training-Distillation Coordination</strong>：actor 训练和经验蒸馏必须高效协调，不能引入阻塞延迟</li></ul>
+<p>Complementary RL 包含两个互补模型：</p>
+<ul><li><strong>Actor</strong> $\pi_{\theta}$：与环境交互，通过 outcome-based reward 优化，受检索到的经验指导</li><li><strong>Experience Extractor</strong> $\pi_{\phi}$：从轨迹中蒸馏经验，维护持续演化的经验库 $\mathcal{M}$</li></ul>
+<p>两者都通过 RL 优化：actor 用结果奖励，extractor 用其蒸馏经验对 actor 成功的效用作为奖励。</p>
+<p>为了避免 actor 训练被经验蒸馏阻塞，设计了<strong>完全异步</strong>的双轨架构：</p>
+<p><strong>主训练循环（Primary Training Loop）</strong>：</p>
+<ul><li>Actor $\pi_{\theta}$ 持续与环境交互收集 rollout</li><li>通过 outcome-based reward 优化策略</li></ul>
+<p><strong>后台轨道（Background Track）</strong>：</p>
+<ul><li>Experience extractor $\pi_{\phi}$ 处理完成的轨迹</li><li>蒸馏经验并向 $\mathcal{M}$ 发出结构化操作</li></ul>
+<p>两者通过集中式 <strong>ExperienceManager</strong> $\mathcal{H}$ 协调，承担两个角色：</p>
+<p><strong>1. Experience Consolidation（经验巩固）</strong>：</p>
+<ul><li>$\mathcal{H}$ 维护内部队列 $\mathcal{Q}$ 接收蒸馏请求</li><li>后台进程持续出队并转发给 $\pi_{\phi}$ 蒸馏</li><li>$\pi_{\phi}$ 发出三种结构化操作：<strong>Add</strong>（新增）、<strong>Update</strong>（更新）、<strong>Return</strong>（无操作）</li><li>在 writer lock 下应用操作，防止状态冲突</li><li><strong>Periodic Merge</strong>：定期触发合并操作，处理 group-based RL 中同一任务并行产生的冗余经验</li></ul>
+<p><strong>2. Experience Retrieval（经验检索）</strong>：</p>
+<ul><li>查询批处理：$\mathcal{H}$ 将并发查询累积为 micro-batch</li><li>Embedding 缓存：group-based RL 中多个环境共享相同任务描述，缓存命中率高</li><li>并行搜索：$W$ 个并行搜索 worker 在 reader lock 下执行语义相似度搜索...</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/method_ablation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/method_ablation.png" alt="方法消融：不同 advantage 估计设计对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/overview.png" alt="Complementary RL 概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/Figure-Leading.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/Figure-Leading.png" alt="Leading Figure：性能对比与协同演化范式"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>环境</strong>：MiniHack Room, WebShop, ALFWorld, SWE-Bench</p>
+<p><strong>模型配置</strong>：</p>
+<ul><li>Actor $\pi_{\theta}$：Qwen2.5-7B-Instruct（SWE-Bench 用 Qwen3-4B-Instruct-2507）</li><li>Experience Extractor $\pi_{\phi}$：Qwen3-4B-Thinking-2507</li><li>Embedding 模型：Qwen3-Embedding-0.6B</li></ul>
+<p><strong>训练配置</strong>：AdamW, lr=1e-6, 不使用 KL 正则化，4 个并行搜索 worker + 4 个并行 embedding worker</p>
+<p>Complementary RL 在所有四个任务上<strong>一致优于无经验 baseline</strong>：</p>
+<ul><li>MiniHack Room 和 ALFWorld（需策略探索和环境理解）：获得 <strong>1.3x</strong> 性能优势</li><li>SWE-Bench：获得 <strong>+3.0%</strong> 提升</li></ul>
+<p><strong>效率提升</strong>：Complementary RL 不仅成功率更高，而且完成任务需要的动作更少：</p>
+<ul><li>MiniHack Room：<strong>1.5x</strong> 更少动作</li><li>ALFWorld：<strong>2x</strong> 更少动作</li></ul>
+<p><strong>多任务评估性能</strong>：</p>
+<table class="result-table">
+<tr><th>方法</th><th>MiniHack Room</th><th>WebShop</th><th>ALFWorld</th><th>Avg.</th></tr>
+<tr><td>Baseline</td><td>0.68</td><td>0.81</td><td>0.72</td><td>0.75</td></tr>
+<tr><td>Static Online Exp. (w/ exp.)</td><td>0.41</td><td>0.67</td><td>0.69</td><td>0.59</td></tr>
+<tr><td>Static Online Exp. (w/o exp.)</td><td>0.39</td><td>0.59</td><td>0.64</td><td>0.54</td></tr>
+<tr><td>Exp. Only</td><td>0.49</td><td>0.37</td><td>0.13</td><td>0.33</td></tr>
+<tr><td class="best">Comp. RL (w/ exp.)</td><td class="best">0.78</td><td class="best">0.87</td><td class="best">0.82</td><td class="best">0.82</td></tr>
+<tr><td class="best">Comp. RL (w/o exp.)</td><td class="best">0.75</td><td class="best">0.84</td><td class="best">0.74</td><td class="best">0.78</td></tr>
+</table>
+<p>核心发现：</p>
+<ul><li><strong>Static Online Exp. 即使在测试时使用经验也低于 baseline</strong>（差距 &gt;10%），原因是分布错位——固定提取器无法适应演化中的 actor</li><li><strong>Complementary RL 在有/无经验测试时均一致优于 baseline</strong>（平均 +7% 和 +2%），说明协同演化训练将有用经验内化到了 actor 自身</li><li><strong>仅训练 extractor（Exp. Only）效果差</strong>（Avg. 0.33），说明经验质量本身不足以弥补 actor 基础能力的不足...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>现有利用经验的方法存在一个根本问题：<strong>将经验视为静态资源</strong>。</p>
+<ul><li><strong>离线经验</strong>：预先从历史轨迹构建经验库，训练中保持不变。初始有优势，但随着 actor 能力增长，经验逐渐过时（stale），收益衰减。</li><li><strong>静态在线经验</strong>：训练过程中由固定提取器动态维护经验库，但提取器不更新。无法适应 actor 的演化，导致分布错位（distributional misalignment），经验与 actor 当前能力脱节。</li><li><strong>自反思方法</strong>：依赖模型自身生成反思，但弱模型容易产生幻觉，不可靠。</li><li><strong>复杂启发式方法</strong>：多阶段检索、专门数据结构等，增加了工程复杂度。</li></ul>
+<p>关键洞察：经验提取和 agent 学习应该<strong>协同演化（co-evolve）</strong>，而非各自独立处理。</p>
+<ul><li><strong>协同演化范式</strong>：首次在 RL 训练中实现 actor 与经验提取器的联合优化，两者形成闭合的互相增强循环</li><li><strong>子组 advantage 估计</strong>：experience-guided/experience-free 分组 + 组内独立 advantage 计算，有效防止 over-reliance 和 advantage 偏差</li><li><strong>完全异步架构</strong>：actor 训练和经验蒸馏解耦，不引入阻塞延迟</li><li><strong>模块化设计</strong>：ExperienceManager 统一管理经验的增删改查，并发控制清晰</li><li><strong>实用性强</strong>：无 KL 正则化、无额外 SFT 阶段、无复杂启发式，训练配置精简</li><li><strong>任务扩展性好</strong>：3-task 到 6-task 混合，收益从 +6.6% 增长到 +8.1%</li><li><strong>丰富的经验分析</strong>：展示了蒸馏出的结构化经验，具有可解释性</li></ul>
+<ul><li><strong>Self-Distillation 集成失败</strong>：自蒸馏后期训练崩溃，原因未完全调查清楚</li><li><strong>Actor-Critic 增加延迟</strong>：虽然提升早期表现，但引入非平凡延迟开销，不适合默认启用</li><li><strong>提取器 off-policy 问题严重</strong>：蒸馏的经验可能在很久之后才被检索，policy lag 大，需要专门的稳定性技巧</li><li><strong>评估环境有限</strong>：主要在 MiniHack、WebShop、ALFWorld 和 SWE-Bench 上评估，工业级场景验证不足</li><li><strong>辅助奖励探索失败</strong>：困惑度降低奖励的五种归一化策略均未奏效</li><li><strong>Extractor 必须独立参数</strong>：共享参数导致梯度冲突，增加了显存开销...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents">
+  <h2>DPEPO: Diverse Parallel Exploration Policy Optimization for LLM-based Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.24320" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.24320.pdf" target="_blank">PDF</a>
+  <span class="meta-muted">Code: 未公开</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+<ul><li><strong>探索多样性不足</strong>：多次采样的轨迹倾向于收敛到相同动作选择，无法覆盖环境的多样动态</li><li><strong>环境理解片面</strong>：单路径推理使得 Agent 对环境的认知不完整且有偏差，导致复杂任务中的次优决策</li></ul>
+<p><strong>核心问题：</strong>能否让 Agent 同时与多个并行环境交互，共享跨环境经验，从而构建更全面的环境认知？</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+<ul><li><strong>探索多样性不足</strong>：多次采样的轨迹倾向于收敛到相同动作选择，无法覆盖环境的多样动态</li><li><strong>环境理解片面</strong>：单路径推理使得 Agent 对环境的认知不完整且有偏差，导致复杂任务中的次优决策</li></ul>
+<p><strong>核心问题：</strong>能否让 Agent 同时与多个并行环境交互，共享跨环境经验，从而构建更全面的环境认知？</p>
+
+<p>DPEPO 采用两阶段训练范式：</p>
+<ul><li><strong>SFT 冷启动</strong>：用 DeepSeek-V3.2 标注的并行探索轨迹（~500 条 ALFWorld / ~1000 条 ScienceWorld）微调 Agent，使其具备基本的并行推理和动作生成能力</li><li><strong>RL 层次化奖励优化</strong>：基于 GRPO 框架，引入轨迹级 + 步级的层次化奖励信号</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/main_1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/main_1.png" alt="框架概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/ablation_explore_efficiency_new.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/ablation_explore_efficiency_new.png" alt="消融探索动态分析"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/intro.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/intro.png" alt="框架概览"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>方法</th><th>Pick</th><th>Cool</th><th>Heat</th><th>Look</th><th>Pick2</th><th>Clean</th><th>All</th><th>OOD</th><th>Avg.</th><th>L0</th><th>L1</th><th>L2</th><th>Avg.</th></tr>
+<tr><td>*闭源模型*</td></tr>
+<tr><td>GPT-4o</td><td>75.3</td><td>21.6</td><td>56.7</td><td>60.8</td><td>49.8</td><td>31.2</td><td>48.0</td><td>66.0</td><td>57.0</td><td>45.4</td><td>49.2</td><td>41.0</td><td>45.2</td></tr>
+<tr><td>DeepSeek-R1</td><td>80.0</td><td>80.0</td><td>56.3</td><td>46.2</td><td>87.5</td><td>77.8</td><td>75.0</td><td>85.1</td><td>80.1</td><td>22.2</td><td>31.4</td><td>29.1</td><td>27.6</td></tr>
+<tr><td>*Qwen2.5-1.5B*</td></tr>
+<tr><td>GRPO</td><td>85.3</td><td>59.7</td><td>78.2</td><td>53.7</td><td>53.5</td><td>84.5</td><td>72.8</td><td>71.1</td><td>72.0</td><td>21.1</td><td>13.7</td><td>10.9</td><td>15.2</td></tr>
+<tr><td>GiGPO</td><td>94.4</td><td>79.8</td><td>94.4</td><td>67.5</td><td>76.4</td><td>94.8</td><td>86.7</td><td>83.2</td><td>85.0</td><td>25.8</td><td>15.2</td><td>4.7</td><td>15.2</td></tr>
+<tr><td>RLVMR</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>89.1</td><td>87.9</td><td>88.5</td><td>46.9</td><td>34.3</td><td>26.5</td><td>35.9</td></tr>
+<tr><td class="best">DPEPO</td><td class="best">100.0</td><td class="best">96.0</td><td>93.8</td><td class="best">100.0</td><td>87.5</td><td class="best">96.3</td><td class="best">95.7</td><td class="best">92.5</td><td class="best">94.1</td><td class="best">59.8</td><td class="best">58.1</td><td class="best">34.2</td><td class="best">50.7</td></tr>
+<tr><td>*Qwen2.5-7B*</td></tr>
+<tr><td>GRPO</td><td>90.8</td><td>72.5</td><td>74.7</td><td>66.1</td><td>77.6</td><td>89.3</td><td>77.6</td><td>77.3</td><td>77.5</td><td>49.1</td><td>30.1</td><td>26.6</td><td>35.3</td></tr>
+<tr><td>GiGPO</td><td>97.7</td><td>89.3</td><td>83.7</td><td>82.7</td><td>79.2</td><td>98.8</td><td>90.8</td><td>90.2</td><td>90.5</td><td>53.4</td><td>25.2</td><td>25.8</td><td>34.8</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>仅在文本环境中验证</strong>：实验限于 ALFWorld（纯文本）和 ScienceWorld（模拟器），未涉及真实世界或多模态场景</li><li><strong>环境数量固定</strong>：训练时 K=4 个并行环境，动态环境数量选择策略未深入探索</li><li><strong>冷启动依赖强教师模型</strong>：SFT 数据依赖 DeepSeek-V3.2 标注，标注质量受限</li><li><strong>环境间无差异化激励</strong>：所有并行环境同质（共享初始状态），未探索异构环境并行</li><li><strong>未与序列级方法结合</strong>：DPEPO 替代了 ReAct，但未研究与 Reflexion 等反思机制的结合</li></ul>
+
+<ul><li><strong>异构并行探索</strong>：不同并行环境可设置不同的初始条件或难度，增强探索覆盖面</li><li><strong>动态并行度选择</strong>：Agent 自适应决定何时需要并行探索、需要多少并行环境</li><li><strong>与反思机制结合</strong>：将 DPEPO 的并行探索与 Reflexion 式的自我反思结合，形成&quot;探索-反思-再探索&quot;闭环</li><li><strong>扩展到多模态 Agent</strong>：在 Web 导航、GUI 操作等视觉 Agent 场景中验证并行探索的收益</li><li><strong>自适应奖励权重</strong>：根据任务阶段动态调整 DAR 和 DTR 的权重（早期鼓励探索，后期鼓励收敛）</li><li><strong>代码未公开</strong>：建议关注代码是否后续发布，或参考方法自行实现</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization.md" arxiv="2604.02268" -->
+<article class="paper-card" id="arxiv-2604.02268">
+  <h2>SKILL0: In-Context Agentic Reinforcement Learning for Skill Internalization</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.02268" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.02268.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/ZJU-REAL/SkillZero" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.02268</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>受人类技能习得过程的启发（从&quot;看说明书操作&quot;到&quot;肌肉记忆自主执行&quot;），本文提出一个新问题：<strong>能否将 skills 直接内化到模型参数中，使得推理时完全不需要任何 skill 检索？</strong></p>
+<p>RL 已被证明可以将推理能力（reasoning）从 prompt-dependent 行为转化为内在能力（如 DeepSeek-R1）。本文将同样的思路迁移到 agent skills：通过训练课程从&quot;有 skills 指导&quot;渐进过渡到&quot;无 skills 自主执行&quot;，将能力从 context 转移到 parameters。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="caption-note">传统推理时 Skill 增强 vs SKILL0 Skill 内化</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>受人类技能习得过程的启发（从&quot;看说明书操作&quot;到&quot;肌肉记忆自主执行&quot;），本文提出一个新问题：<strong>能否将 skills 直接内化到模型参数中，使得推理时完全不需要任何 skill 检索？</strong></p>
+<p>RL 已被证明可以将推理能力（reasoning）从 prompt-dependent 行为转化为内在能力（如 DeepSeek-R1）。本文将同样的思路迁移到 agent skills：通过训练课程从&quot;有 skills 指导&quot;渐进过渡到&quot;无 skills 自主执行&quot;，将能力从 context 转移到 parameters。</p>
+<p class="caption-note">图：(a) 传统 Skill 增强方法 vs (b) SKILL0 的 Skill 内化方法</p>
+<p>SKILL0 是一个 <strong>In-Context Reinforcement Learning (ICRL)</strong> 框架，核心思想是：训练时提供 skills 作为 in-context 指导，但通过动态课程逐步撤除，最终在推理时实现完全 zero-shot 自主执行。</p>
+<p>框架包含三个核心组件：</p>
+<ul><li><strong>(a) Relevance-Driven Skill Grouping</strong>（离线阶段）</li><li><strong>(b) In-Context Reinforcement Learning</strong>（训练循环）</li><li><strong>(c) Dynamic Curriculum Learning</strong>（自适应课程）</li></ul>
+<p class="caption-note">图：SKILL0 方法总览</p>
+<p>课程设计分为两个层面：</p>
+<p><strong>(a) 离线阶段：Relevance-Driven Skill Grouping</strong></p>
+<ul><li>将验证集按技能需求划分为 $N$ 个子任务 $\{\mathcal{T}_k\}_{k=1}^N$</li><li>每个 $\mathcal{S}_k$ 对应一个专用验证子任务 $\mathcal{T}_k$，用于评估其有用性</li></ul>
+<p><strong>(b) 在线阶段：Helpfulness-Driven Dynamic Curriculum</strong></p>
+<p>将训练分为 $N_S$ 个阶段，每阶段 skill 预算 $M^{(s)}$ 线性衰减：</p>
+<div class="formula-block">\[M^{(s)} = \lceil N \cdot (N_S - s) / (N_S - 1) \rceil\]</div>
+<p>每 $d$ 步执行一次 <strong>Helpfulness 评估</strong>：</p>
+<ul><li>在子任务 $\mathcal{T}_k$ 上分别评估&quot;有 skill $\mathcal{S}_k$&quot;和&quot;无 skill&quot;的准确率</li><li>计算 helpfulness $\Delta_k = \text{Acc}_k^{\text{w/skill}} - \text{Acc}_k^{\text{w/o skill}}$</li><li><strong>Filter</strong>：只保留 $\Delta_k &gt; 0$ 的 skills</li><li><strong>Rank</strong>：按 $\Delta_k$ 降序排列</li><li><strong>Select</strong>：取 top-$M^{(s)}$ 个</li></ul>
+<p>当模型已将某个 skill 内化到参数中后，$\Delta_k$ 趋近于 0，该 skill 被自动过滤掉，形成<strong>自定步调课程</strong>。</p>
+<p class="caption-note">完整算法流程见论文 Algorithm 1</p>
+<p class="caption-note">(a) Relevance-Driven Skill Grouping; (b) In-Context RL Agent Loop; (c) Dynamic Curriculum</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/method.png" alt="Method Overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/ablations.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/ablations.png" alt="Ablations"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/motivation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skill0_in_context_agentic_reinforcement_learning_for_skill_internalization/motivation.png" alt="Motivation"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>基准测试</strong>：</p>
+<ul><li><strong>ALFWorld</strong>：文本环境具身任务（6 类家居活动），3827 个任务实例</li><li><strong>Search-QA</strong>：搜索增强 QA（单跳 + 多跳），包含 NQ、TriviaQA、PopQA、HotpotQA、2Wiki、MuSiQue、Bamboogle</li></ul>
+<p><strong>基线方法</strong>：</p>
+<ul><li>推理时 skill 增强：Few-Shot, EvolveR, SkillRL</li><li>RL 方法：GRPO, AgentOCR</li><li>记忆方法：Mem0, ExpeL, MemP, MemRL, SimpleMem</li><li>搜索方法：Search-R1, ZeroSearch, Search-o1 等</li><li>闭源模型：GPT-4o, Gemini-2.5-Pro</li></ul>
+<p><strong>实现细节</strong>：Qwen2.5-VL 系列，最多 180 步训练，4×H800 GPU，$N_S=3$，SkillBank 从 SkillRL 继承。</p>
+<table class="result-table">
+<tr><th>Method</th><th>ALFWorld Avg↑</th><th>Cost↓ (k)</th><th>Search-QA Avg↑</th><th>Cost↓ (k)</th></tr>
+<tr><td>Zero-Shot</td><td>15.2</td><td>1.21</td><td>15.9</td><td>0.48</td></tr>
+<tr><td>GRPO</td><td>79.9</td><td>1.02</td><td>36.4</td><td>0.61</td></tr>
+<tr><td>AgentOCR</td><td>78.2</td><td>0.38</td><td>34.2</td><td>0.26</td></tr>
+<tr><td>SkillRL</td><td>82.4</td><td>2.21</td><td>38.9</td><td>0.87</td></tr>
+<tr><td class="best">SKILL0 (3B)</td><td class="best">87.9</td><td class="best">0.38</td><td class="best">40.8</td><td class="best">0.18</td></tr>
+<tr><td class="best">SKILL0 (7B)</td><td class="best">89.8</td><td class="best">0.41</td><td class="best">44.4</td><td class="best">0.34</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>SKILL0 (3B) 在 ALFWorld 上超越 AgentOCR <strong>+9.7%</strong>，在 Search-QA 上超越 <strong>+6.6%</strong></li><li>与需要 skill 增强的 SkillRL 竞争甚至更强，但推理时<strong>完全不需要 skills</strong></li><li>Token 成本仅为 SkillRL 的 <strong>1/5</strong> 甚至更低（0.38k vs 2.21k）</li></ul>
+<p><strong>扩展比较</strong>：</p>
+<ul><li>ALFWorld: SKILL0 (89.8) 大幅超越 ExpeL (46.3), Mem0 (54.7), MemRL (21.4)，也超越 GPT-4o (48.0) 和 Gemini-2.5-Pro (60.3)</li><li>Search-QA: SKILL0 (44.4) 超越 Search-R1 (38.5), ZeroSearch (39.1), EvolveR (43.1)</li><li>在域外多跳数据集 Bamboogle 上表现特别突出（63.7%/66.9%）</li></ul>
+<p><strong>Skill Budget M 的消融</strong>：...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前主流范式是 <strong>inference-time skill augmentation</strong>：在每一步从 Skill 库中检索相关 Skills，注入到模型的 context 中作为自然语言引导。这种方式存在三个根本性局限：</p>
+<ul><li><strong>检索噪声污染上下文</strong>：不相关或误导性的 skill 描述会损坏 agent 的决策上下文</li><li><strong>Token 开销过大</strong>：注入的 skill 内容在多轮交互中不断累积，限制了可扩展性</li><li><strong>模型并未真正&quot;学到&quot;</strong>：模型只是在执行 context 中描述的 skills，而非将能力内化到参数中——&quot;competence resides in the context, not in the model&quot;</li></ul>
+<ul><li><strong>首个将 skill 内化作为显式训练目标的 RL 框架</strong>，提出了从&quot;工具增强&quot;到&quot;真正自主&quot;的新范式方向</li><li><strong>Dynamic Curriculum 设计精巧</strong>：基于 on-policy helpfulness 自适应筛选 skills，替代了刚性的预定义课程，实现了自定步调的学习</li><li><strong>Token 效率极高</strong>：视觉上下文渲染 + skill 内化使得每步上下文 &lt; 0.5k tokens，比 SkillRL 低 5 倍以上</li><li><strong>性能全面领先</strong>：在 ALFWorld 和 Search-QA 上均大幅超越 RL baseline，与 skill-augmented 方法持平或更强</li><li><strong>理论支撑</strong>：提供了线性衰减课程下 KL 散度有界性证明，确保阶段间策略分布平滑过渡</li><li><strong>泛化性强</strong>：在域外多跳数据集（如 Bamboogle）上表现突出，证实内化知识可迁移</li></ul>
+<ul><li><strong>依赖初始 SkillBank 质量</strong>：如果初始 skills 质量差，内化效果受限。论文使用 SkillRL 继承的 SkillBank，未探索从零构建</li><li><strong>离线 relevance grouping 需要人工定义</strong>：迁移到新任务领域时需要重新划分验证集子任务</li><li><strong>仅在相对简单的环境验证</strong>：ALFWorld（文本游戏）和 Search-QA 与真实世界的复杂 agent 场景差距较大</li><li><strong>未与最新的 agentic RL 方法（如 DAPO）对比</strong>：基线选择有一定时效性</li><li><strong>视觉渲染的通用性存疑</strong>：context rendering 依赖特定的渲染配置（字体、颜色编码），不同环境需要手动调参...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents.md" arxiv="2605.10663" -->
+<article class="paper-card" id="arxiv-2605.10663">
+  <h2>Evolving-RL: End-to-End Optimization of Experience-Driven Self-Evolving Capability within Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.10663" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.10663.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/Fanzy27/Evolving-RL" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.10663</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong><strong>Evolving-RL 的核心贡献不是又做了一个带 skill 的 agent，而是把“经验提炼”和“经验利用”这两个本来割裂的阶段，真正放进同一个 RL 闭环里共同优化，并且用跨任务迁移效用来定义 skill 的价值。</strong>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇工作讨论的是一个很具体、也很关键的问题：</p>
+<p><strong>experience-driven self-evolving agent 到底该怎么训？</strong></p>
+<p>现在很多 self-evolving agent 都会做类似流程：</p>
+<ul><li>先跑任务</li><li>从轨迹里提炼经验</li><li>把经验注入到后续任务中</li><li>靠这些经验提升 test-time adaptation</li></ul>
+<p>但作者认为，现有工作大多停留在“系统设计层面”：</p>
+<ul><li>经验如何表示</li><li>memory / bank 怎么管理</li><li>retrieval 怎么做</li></ul>
+<p>而真正更底层的问题是：</p>
+<p>&gt; base model 本身有没有足够强的能力去提炼出“可迁移经验”，以及在后续任务里“真正用好这些经验”？</p>
+<p>作者指出一个核心缺陷：</p>
+<ul><li>一些最近的 RL 方法确实开始训练“experience utilization”</li><li>但几乎都没有把 <strong>experience extraction</strong> 和 <strong>experience utilization</strong> 当成一个统一闭环去共同优化</li></ul>
+<p>结果就是：</p>
+<ul><li>extractor 还依赖 heuristic filtering 或更强外部模型</li><li>solver 再去学怎么消费这些 skills</li></ul>
+<p>这种 decoupled 设计的问题在于：</p>
+<ul><li>skill 质量直接决定 downstream RL 的方差和有效性</li><li>skill 如果 noisy，solver 最稳定的策略往往不是“学会用 skill”，而是“学会忽略 skill”</li></ul>
+<p>所以这篇 paper 的目标非常明确：</p>
+<p><strong>把 experience extraction 和 utilization 放进同一个 shared policy 里，用一个 unified RL loop 让它们共同进化。</strong></p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>这篇 paper 最想说明的是：</p>
+<ul><li><strong>skill extraction 和 skill utilization 不是两个独立模块</strong></li><li><strong>skill 的质量必须由其“跨任务迁移价值”来定义</strong></li><li><strong>如果只训练 solver，不训练 extractor，模型最后会倾向于忽略 skill</strong></li><li><strong>co-evolution 不只是 self-evolution 的改进，也是一种 experience-augmented RL</strong></li></ul>
+<p>这一点很重要，因为它把 paper 放到了你关心的 <code>agent / RL</code> 视角里：</p>
+<ul><li>它不是简单 memory engineering</li><li>而是把“经验的生成质量”直接纳入 policy optimization</li></ul>
+<p>Evolving-RL 的框架很清楚，可以概括成一句话：</p>
+<p><strong>先在线生成 skill，再在多个相关下游任务上验证 skill 的迁移效用，然后把这个验证过程同时拿来训练 extractor 和 solver。</strong></p>
+<p>整个系统里有两个角色：</p>
+<ul><li><strong>Extractor</strong></li><li><strong>Solver</strong></li></ul>
+<p>但它们不是两个模型，而是：</p>
+<p><strong>共享同一组 policy 参数的两个角色视角</strong></p>
+<p>这一点跟很多“单独训练 skill generator / 单独训练 executor”的工作不同。</p>
+<p>尤其适合参考的点有：</p>
+<ul><li>extractor / solver shared policy</li><li>downstream-transfer-oriented reward</li><li>skill-conditioned trajectories reused for solver optimization</li><li>co-evolution stability control</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/overview4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/overview4.png" alt="Framework overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/figure1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/figure1.png" alt="Main figure"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/training_stability.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_evolving_rl_end_to_end_optimization_of_experience_driven_self_evolving_capability_within_agents/training_stability.png" alt="Training stability"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>用了两个 benchmark：</p>
+<ul><li><strong>ALFWorld</strong></li><li>text-based embodied household tasks</li><li>按 task type 做 seen / unseen split</li><li>主要看 success rate</li></ul>
+<ul><li><strong>Mind2Web</strong></li><li>grounded web navigation</li><li>cross-task / cross-website / cross-domain 三种 setting</li><li>指标：</li><li>action accuracy</li><li>success rate</li></ul>
+<p>作者做了一个非常关键的消融：</p>
+<table class="result-table">
+<tr><th>Objective</th><th>Eval</th><th>Seen</th><th>Unseen</th><th>Overall</th></tr>
+<tr><td>Base Model</td><td>w/o skills</td><td>51.9</td><td>27.4</td><td>45.5</td></tr>
+<tr><td>Base Model</td><td>w/ skills</td><td>50.9</td><td>26.3</td><td>44.5</td></tr>
+<tr><td>Extractor-only</td><td>w/o skills</td><td>62.6</td><td>28.6</td><td>53.7</td></tr>
+<tr><td>Extractor-only</td><td>w/ skills</td><td>73.7</td><td>27.6</td><td>61.7</td></tr>
+<tr><td>Solver-only</td><td>w/o skills</td><td>98.2</td><td>70.3</td><td>90.9</td></tr>
+<tr><td>Solver-only</td><td>w/ skills</td><td>97.8</td><td>69.7</td><td>90.4</td></tr>
+<tr><td>Co-evolution</td><td>w/o skills</td><td>97.4</td><td>81.1</td><td>93.1</td></tr>
+<tr><td>Co-evolution</td><td>w/ skills</td><td class="best">98.6</td><td class="best">88.6</td><td class="best">96.0</td></tr>
+</table>
+<p>这个表几乎就是整篇 paper 的证据核心。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>solver-only 已经很强：</p>
+<ul><li>unseen <code>70.3</code></li></ul>
+<p>这说明 skill-conditioned RL 确实能把经验模式内化进参数。</p>
+<p>但问题是：</p>
+<ul><li><code>w/ skills</code> 并没有比 <code>w/o skills</code> 更强</li></ul>
+<p>这正印证了作者的论点：</p>
+<p><strong>如果 extractor 不一起进化，solver 会学会忽略 noisy skill。</strong></p>
+<p>extractor-only 在 seen 上涨得很多，但 unseen 几乎没动：</p>
+<ul><li><code>27.6</code></li></ul>
+<p>这说明：</p>
+<ul><li>只训 extractor 会过拟合 seen trajectory</li><li>看起来 skill 更好了，但其实不泛化</li></ul>
+<p>作者自己提了两个主要限制，我也基本同意。</p>
+<p><strong>Evolving-RL 的核心贡献不是又做了一个带 skill 的 agent，而是把“经验提炼”和“经验利用”这两个本来割裂的阶段，真正放进同一个 RL 闭环里共同优化，并且用跨任务迁移效用来定义 skill 的价值。</strong></p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_learning_agentic_policy_from_action_guidance.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2605_learning_agentic_policy_from_action_guidance">
+  <h2>Learning Agentic Policy from Action Guidance</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.12004" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.12004" target="_blank">PDF</a>
+  <a href="https://github.com/AMAP-ML/ActGuide-RL" target="_blank">Code</a>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>ActGuide-RL 的核心贡献是把“动作轨迹引导”系统化为一种最小干预的 agentic RL 训练机制，在不依赖重 cold-start SFT 的前提下，显著提升了弱到中等基座在困难 agent 任务上的可学习性与最终性能。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文讨论的是 agentic RL 的一个核心难点：<strong>可达性屏障（reachability barrier）</strong>。</p>
+<p>作者认为，在长程 agent 任务里，RL 信号只会出现在当前策略“能力可达区间”内；一旦任务奖励状态落在能力边界之外，策略采样不到成功轨迹，group-based advantage 就会塌成零梯度，训练卡死。</p>
+<p>典型做法是 SFT 冷启动再 RL，但这会带来：</p>
+<ul><li>强依赖大规模 warm-start 数据。</li><li>训练流程复杂，难扩到新环境。</li><li>可能牺牲 out-of-domain 泛化。</li></ul>
+<p>论文提出：利用已有的“动作数据”（action trajectories）做训练期引导，而不是再依赖大量高质量 CoT/SFT。由此得到方法 <code>ActGuide-RL</code>。</p>
+
+<p>论文强调一个关键结论：即使不做 cold-start SFT，ActGuide-RL 也能接近 SFT+RL 的 in-domain 表现。</p>
+<p>而在同样有 SFT cold-start 的情况下，继续加 ActGuide 仍有额外收益。</p>
+<p>这意味着 action guidance 可以部分替代重 SFT 依赖，形成更轻量的 agentic RL 路线。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>ActGuide-RL 的核心是把 action data 当作“参考计划”（plan-style guidance）注入训练 rollout：</p>
+<ul><li>先跑一批无引导 rollout。</li><li>若整组都失败（零奖励），再触发 guidance fallback。</li><li>动态选择“最小足够引导强度”。</li><li>把 guided 和 unguided 轨迹一起做 mixed-policy 优化，把引导期学到的探索能力内化回无引导策略。</li></ul>
+<p>框架图如下：</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/pipeline_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/pipeline_v2.png" alt="framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/barrier_sample.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/barrier_sample.png" alt="barrier"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/offpolicy_risk.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_agentic_policy_from_action_guidance/offpolicy_risk.png" alt="risk"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li>场景: search-agent</li><li>In-domain benchmark: GAIA, WebWalkerQA, XBench, BrowseComp-ZH</li><li>Out-of-domain benchmark: GPQA, TruthfulQA, IFEval</li><li>基座: Qwen2.5-3B/7B, Qwen3-4B/8B</li><li>对比: ZeroRL（无 guidance）、SFT+RL、其他公开 agent 模型</li></ul>
+
+<p>去掉任一关键组件都会掉点，尤其：</p>
+<ul><li>去掉 minimal-intervention adaptive 选择会显著退化。</li><li>去掉 fallback 机制会严重退化。</li><li>去掉 mixed-policy optimization 也会大幅退化。</li></ul>
+<p>固定 guidance 强度不如动态 guidance：</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li>提出并实证验证了 reachability barrier 视角，解释了 agentic RL 卡死根因之一。</li><li>用可扩展 action data 替代部分重 SFT 依赖，工程上更轻。</li><li>动态最小干预 + 混合优化设计完整，且跨模型稳定收益。</li></ul>
+<ul><li>当前实验主要在 search-agent 场景，跨 GUI/CLI/embodied 泛化还需更多验证。</li><li>对 action data 质量仍敏感，高噪声下会退化。</li><li>理论单调假设在复杂现实任务中未必总成立。</li></ul>
+
+<ul><li>先判断训练失败是“采样预算不足”还是“可达性屏障导致的结构性失败”。</li><li>如有现成动作轨迹数据，优先尝试训练期 fallback guidance，而非直接堆更重 SFT。</li><li>关键不是 guidance 越强越好，而是“最小足够”并动态匹配任务难度。</li><li>若使用引导数据，必须设计明确的内化机制（如 mixed-policy 优化），否则推理时会失效。</li></ul>
+
+<p>ActGuide-RL 的核心贡献是把“动作轨迹引导”系统化为一种最小干预的 agentic RL 训练机制，在不依赖重 cold-start SFT 的前提下，显著提升了弱到中等基座在困难 agent 任务上的可学习性与最终性能。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling.md" arxiv="2605.08083" -->
+<article class="paper-card" id="arxiv-2605.08083">
+  <h2>LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.08083" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.08083.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/zhengkid/AutoTTS" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.08083</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇工作提出 <strong>AutoTTS</strong>：把 test-time scaling 策略设计从“人手写 branching / pruning / stopping 启发式”改写成“人构造可回放环境，coding agent 自动发现控制器”的问题。具体到 width-depth TTS，它预采样推理轨迹和 probe 信号，让 agent 在离线 replay 环境里低成本搜索控制器；最终用约 39.9 美元和 160 分钟发现的策略，在多数组合上优于手工 TTS baseline 的 accuracy-cost Pareto frontier。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>论文把 adaptive TTS 建模成一个可控推理过程。对每个问题 <code>q</code>，controller 可以管理多个 reasoning branch：</p>
+<ul><li><code>BRANCH</code>: 创建新分支，并生成第一个固定长度 interval。</li><li><code>CONTINUE(i)</code>: 让第 <code>i</code> 个活跃分支继续生成一个 interval。</li><li><code>PROBE(i)</code>: 读取当前分支在当前深度的中间答案信号 <code>omega_{i,k}</code>。</li><li><code>PRUNE(i)</code>: 放弃某个活跃分支。</li><li><code>ANSWER</code>: 终止推理，并通过聚合规则输出最终答案。</li></ul>
+<p>状态定义为：</p>
+<p>```text</p>
+<p>s_t = (q, m_t, I_t, l_t, Z_t, Omega_t)</p>
+<p>```</p>
+<p>含义：</p>
+<ul><li><code>q</code>: 当前问题。</li><li><code>m_t</code>: 已创建分支数。</li><li><code>I_t</code>: 当前仍活跃的分支集合。</li><li><code>l_t</code>: 每个分支当前深度，单位是固定 token interval。</li><li><code>Z_t</code>: 每个分支已经生成的 prefix 序列。</li><li><code>Omega_t</code>: 已 reveal 的 probe feedback。</li></ul>
+<p>计算成本：</p>
+<p>```text</p>
+<p>Cost(s_t) = sum_i l_{t,i} + kappa_probe * |Omega_t|</p>
+<p>```</p>
+<p>如果 probe 成本相对生成可忽略，则 <code>kappa_probe = 0</code>。</p>
+<p>目标是找到一个 code-defined policy：</p>
+<p>```text</p>
+<p>pi(. | s, beta)</p>
+<p>```</p>
+<p>其中 <code>beta</code> 是单一 trade-off 参数，用来控制整个策略的预算倾向。优化目标是准确率与推理成本之间的 trade-off：</p>
+<p>```text</p>
+<p>maximize E[ 1{answer correct} - gamma * cost ]</p>
+<p>```</p>
+<p>这意味着 AutoTTS 搜索的不是一个固定推理算法，而是一族由 <code>beta</code> 控制的策略曲线。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>TTS 的基本想法是在推理时给模型更多计算，例如采样多条 reasoning trajectory、延长推理链、做 self-consistency、早停、剪枝、probe 中间状态等。但论文强调，性能不只取决于总计算量，还取决于计算如何在不同分支和深度之间分配。</p>
+<p>现有方法多是人工设计：</p>
+<ul><li>Self-Consistency 固定采样很多条轨迹，再 majority vote。</li><li>ASC / ESC 做启发式 early stopping。</li><li>Parallel-Probe 利用跨分支 probe 信息决定继续、剪枝或停止。</li><li>ST-BoN / DeepPrune 等方法也本质上是人手写控制策略。</li></ul>
+<p>这些方法都可以看作 width-depth 控制空间中的某条人造轨迹：width 是探索多少分支，depth 是每条分支走多深。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/Auto-tts.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/Auto-tts.png" alt="AutoTTS framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/tts_2d_space_edited.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/tts_2d_space_edited.png" alt="TTS width-depth control space"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/scaling_Qwen3-0.6B_aime25.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/scaling_Qwen3-0.6B_aime25.png" alt="Scaling Qwen3-0.6B AIME25"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Method</th><th>AIME24 Acc.</th><th>AIME24 Tokens</th><th>AIME25 Acc.</th><th>AIME25 Tokens</th><th>HMMT25 Acc.</th><th>HMMT25 Tokens</th><th>Avg Acc.</th><th>Avg Tokens</th><th>Search Cost</th></tr>
+<tr><td>Ours</td><td>65.2</td><td>483.4K</td><td>57.6</td><td>592.5K</td><td>36.5</td><td>650.7K</td><td>53.1</td><td>575.5K</td><td>$39.9</td></tr>
+<tr><td>w/o Beta Parameterization</td><td>60.7</td><td>81.2K</td><td>54.4</td><td>93.9K</td><td>31.9</td><td>104.7K</td><td>49.0</td><td>93.3K</td><td>$46.4</td></tr>
+<tr><td>w/o Execution Traces</td><td>64.0</td><td>703.1K</td><td>56.7</td><td>823.7K</td><td>34.1</td><td>946.1K</td><td>51.6</td><td>824.3K</td><td>$30.9</td></tr>
+</table>
+<p>一个通用 agentic discovery 框架可以拆成：</p>
+<ul><li>定义 state/action/feedback/objective。</li><li>构建 cheap replay environment。</li><li>让 coding agent 提出 controller。</li><li>每轮返回 scalar metrics + execution traces。</li><li>用单一 <code>beta</code> 或 <code>budget</code> 控制整条 policy curve。</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇工作提出 <strong>AutoTTS</strong>：把 test-time scaling 策略设计从“人手写 branching / pruning / stopping 启发式”改写成“人构造可回放环境，coding agent 自动发现控制器”的问题。具体到 width-depth TTS，它预采样推理轨迹和 probe 信号，让 agent 在离线 replay 环境里低成本搜索控制器；最终用约 39.9 美元和 160 分钟发现的策略，在多数组合上优于手工 TTS baseline 的 accuracy-cost Pareto frontier。</p>
+<ul><li><strong>范式贡献清晰</strong>：不是提出又一个手工 TTS 策略，而是把策略设计改成环境驱动的 agentic discovery。</li><li><strong>离线 replay 让搜索可行</strong>：高频评估不再需要反复调用 base LLM。</li><li><strong>beta parameterization 很实用</strong>：让策略天然成为一条 budget curve，并降低过拟合风险。</li><li><strong>trace feedback 符合 agent 工作方式</strong>：coding agent 更擅长从具体执行轨迹中诊断程序，而不是只看标量分数。</li><li><strong>发现的 controller 有可解释机制</strong>：CMC 的 EMA stopping、width-depth coupling、alignment-aware allocation、conservative abandonment 都有明确行为意义。</li><li><strong>实验覆盖较好</strong>：跨 Qwen 模型规模、held-out benchmark、DeepSeek-R1-Distill-Llama-8B、GPQA-Diamond。</li></ul>
+<p>论文自己也指出两个主要限制：</p>
+<ul><li><strong>当前环境只覆盖 width-depth TTS control</strong></li></ul>
+<p>Action set 主要是 branch / continue / probe / prune / answer。更复杂的 tree search、verifier-guided refinement、tool-use reasoning、multi-agent debate 等还没有被统一进来。</p>
+<ul><li><strong>依赖 frontier coding agent</strong></li></ul>
+<p>实验中 explorer 是 Claude Code。是否开源 coding agent 也能稳定发现同等级 controller，是后续问题。</p>
+<p>我额外认为还有几个隐含限制：...</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback.md" arxiv="2603.08561" -->
+<article class="paper-card" id="arxiv-2603.08561">
+  <h2>RetroAgent: From Solving to Evolving via Retrospective Dual Intrinsic Feedback</h2>
+
+<div class="meta-row">
+  <span class="tag">RetroAgent</span>
+  <a href="https://arxiv.org/abs/2603.08561" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.08561.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/zhangxy-2019/RetroAgent" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.08561</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>标准 agent RL 只优化环境外部奖励，agent 容易收敛到次优策略且无法复用过往经验。RetroAgent 在 episode 结束后做 <strong>hindsight self-reflection</strong>，同时产出 <strong>intrinsic numerical feedback</strong>（奖励"虽未成功但有进步"的探索）和 <strong>intrinsic language feedback</strong>（提炼可复用 lesson），通过 <strong>SimUtil-UCB</strong> 检索机制反哺后续训练，让 agent 从"学会做题"进化为"持续成长"。
+  </div>
+
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+  <ul>
+    <li><strong>Exploitation 过度：</strong>标准 RL 只看 extrinsic reward，agent 探索不足，容易收敛到次优策略。</li>
+    <li><strong>经验浪费：</strong>失败轨迹中的有价值探索没有被显式提炼和复用，下次遇到相似任务无法直接借鉴。</li>
+    <li><strong>核心判断：</strong>agent 不仅要"做成一件事"，更要像人一样回顾过去、提炼经验、识别有潜力但尚未成功的探索，并在后续任务中持续进化。</li>
+  </ul>
+</div>
+
+<div class="section-panel">
+  <h3 class="section-title">方法：Retrospective Dual Intrinsic Feedback</h3>
+  <p>每次 episode 结束后，reflection 模块回看整条轨迹，输出 reflection tuple $(\phi, c, l)$：</p>
+  <ul>
+    <li><strong>$\phi$（potential score）：</strong>估计 subtask completion 程度，用于构造 <em>intrinsic numerical feedback</em>——只有比历史最好水平更"有潜力"的轨迹才获额外奖励。</li>
+    <li><strong>$c$（success prediction）：</strong>判断轨迹成功/失败，用于监督反思质量。</li>
+    <li><strong>$l$（retrospective lesson）：</strong>从轨迹中提炼可复用经验，写入 memory buffer，形成 <em>intrinsic language feedback</em>。</li>
+  </ul>
+  <p>Reflection 有两种实现：(1) <strong>In-context variant</strong>——用 pairwise induction，给当前轨迹配一个 outcome 相反的 reference trajectory 做对比反思；(2) <strong>RL-trained variant</strong>——反思能力与决策 policy 联合训练。</p>
+  <p>Memory 检索使用 <strong>SimUtil-UCB</strong>，同时平衡三个维度：semantic relevance（任务相似度）、reflection utility（历史有效性）、exploration coverage（UCB bonus 防止过拟合到少数经验）。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">方法框架</div>
+    <div class="fig-row">
+      <div class="fig-item">
+        <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_retroagent_from_solving_to_evolving_via_retrospective_dual_intrinsic_feedback_tex/retroagent_method.drawio.png" alt="RetroAgent 方法框架"></a>
+      </div>
+    </div>
+  </div>
+
+<div class="section-panel">
+  <h3 class="section-title">实验结果</h3>
+  <p><strong>Qwen-2.5-7B-Instruct 上的主结果：</strong></p>
+  <table class="result-table">
+    <tr><th>Method</th><th>ALFWorld</th><th>WebShop Score</th><th>WebShop SR</th><th>Sokoban</th><th>MineSweeper</th></tr>
+    <tr><td>GRPO</td><td>77.3</td><td>75.5</td><td>66.9</td><td>11.2</td><td>39.3</td></tr>
+    <tr><td>GiGPO</td><td>90.8</td><td>84.4</td><td>72.8</td><td>21.9</td><td>41.1</td></tr>
+    <tr><td>RetroAgent (In-Context)</td><td>91.7</td><td>87.6</td><td>78.9</td><td>32.6</td><td>47.9</td></tr>
+    <tr><td class="best">RetroAgent (RL-Trained)</td><td class="best">95.6</td><td class="best">88.9</td><td class="best">82.3</td><td class="best">38.3</td><td class="best">48.2</td></tr>
+  </table>
+  <p>相对 GRPO baseline：ALFWorld +18.3%，WebShop +15.4%，Sokoban +27.1%。RL-trained reflection 比 in-context reflection 还能进一步涨点。</p>
+  <p><strong>Test-time adaptation：</strong>WebShop Discovery@3 从 82.3% 升至 99.0%；ALFWorld OOD Discovery@3 达 100.0%。去掉 test-time memory augmentation 后仅小幅下降，说明 dual feedback 已"内化"进 policy 参数。</p>
+</div>
+
+<div class="section-panel">
+  <h3 class="section-title">优点与局限</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>优点</h4>
+      <ul>
+        <li>问题定义清晰：从"学会做题"到"持续进化"的视角提升</li>
+        <li>双 intrinsic feedback 设计自然，数值信号与语言信号各司其职</li>
+        <li>SimUtil-UCB 显式处理 relevance/utility/exploration 三者平衡</li>
+        <li>实验覆盖 4 类任务（embodied/web/planning/logic），泛化性强</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>局限</h4>
+      <ul>
+        <li>Memory 仍是 lesson-level text buffer，尚未覆盖更复杂的结构化表示</li>
+        <li>Intrinsic reward 依赖 reflection 产出的 potential score，自评质量影响训练</li>
+        <li>主要在 7B/8B 模型上验证，更大模型或复杂真实 agent system 的扩展待确认</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>agent RL + 经验回放的交叉点。与 Complementary RL（actor-extractor co-evolution）互补——RetroAgent 侧重 hindsight reflection 驱动的 dual intrinsic feedback，Complementary RL 侧重经验提取与策略的异步协同演化。与 Evolving-RL 的 self-evolving capability 也有对比价值。
+</p>
+
+</article>
+<!-- PAPER_CARD_END -->
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1003 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Memory — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Agent Memory</h1>
+  <p>Agent 记忆系统：记忆构建、检索、路由与长期管理</p>
+</header>
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+<section class="subpage-nav">
+  <h2>本页目录</h2>
+  <p>先看目录再往下读，会比直接滚到底更顺一点。</p>
+  <ol>
+  <li><a href="#arxiv-2601.21468">MemOCR: Layout-Aware Visual Memory for Efficient Long-Horizon Reasoning</a></li>
+  <li><a href="#arxiv-2605.00702">Learning How and What to Memorize: Cognition-Inspired Two-Stage Optimization for Evolving Memory</a></li>
+  <li><a href="#arxiv-2605.14906">MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models</a></li>
+  <li><a href="#arxiv-2605.00356">MemRouter: Memory-as-Embedding Routing for Long-Term Conversational Agents</a></li>
+  <li><a href="#arxiv_2605_preping_building_agent_memory_without_tasks">PREPING: Building Agent Memory without Tasks</a></li>
+  <li><a href="#arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents">MeMo: Memory as a Model</a></li>
+  </ol>
+</section>
+
+
+<!-- PAPER_CARD_START source="agent/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning.md" arxiv="2601.21468" -->
+<article class="paper-card" id="arxiv-2601.21468">
+  <h2>MemOCR: Layout-Aware Visual Memory for Efficient Long-Horizon Reasoning</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2601.21468" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2601.21468.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/meituan/MemOCR" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2601.21468</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>文本记忆范式的根本限制：<strong>每个 token 占据相同的预算单元，无论其语义重要性如何</strong>。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>文本记忆范式的根本限制：<strong>每个 token 占据相同的预算单元，无论其语义重要性如何</strong>。</p>
+<ul><li>辅助性细节（背景、解释）与关键证据消耗相同的 token 预算</li><li>保留更多辅助细节必然减少关键证据的空间</li><li>无法选择性地降低次要信息的分辨率</li></ul>
+<p>如 Figure 1(b) 所示：要保留 100 tokens 的关键信息，系统被迫同时保留约 900 tokens 的辅助细节。</p>
+<p>提出从 <strong>1D 文本记忆</strong>到 <strong>2D 视觉记忆</strong>的范式转换——将历史表示为图像而非 token 流。</p>
+<p>核心优势：<strong>自适应信息密度（Adaptive Information Density）</strong></p>
+<ul><li>关键证据：通过标题、加粗、大字号等高视觉显著性布局呈现</li><li>辅助细节：压缩到视觉上更小的文本区域</li><li>总体预算通过分辨率控制（降采样）灵活调节</li></ul>
+<p>MemOCR 包含两阶段记忆生命周期：</p>
+<p><strong>Stage 1: Memory Drafting（文本域）</strong></p>
+<ul><li>Agent 增量编辑持久化的 rich-text 记忆（Markdown）</li><li>分配视觉优先级：结构化格式（标题层级、缩进、加粗、字号）</li><li><strong>与预算无关</strong>：生成单个 rich-text 记忆，内部的显著性结构在渲染后实现非均匀预算分配</li></ul>
+<p><strong>Stage 2: Memory Reading（视觉域）</strong></p>
+<ul><li>轻量级渲染器将 rich-text 转换为 2D 记忆图像</li><li>记忆成本按视觉 patch token 数量而非文本长度衡量</li><li>Agent 读取记忆图像生成答案</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/framework.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/framework.png" alt="MemOCR 框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/teaser.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/teaser.png" alt="Teaser：三种记忆范式对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/data_augmentation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2601_memocr_layout_aware_visual_memory_for_efficient_long_horizon_reasoning/data_augmentation.png" alt="预算感知训练目标设计"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>数据集</strong>：</p>
+<ul><li>训练：HotpotQA（填充至 ~30K tokens）</li><li>评估：HotpotQA, 2WikiMultiHopQA, Natural Questions, TriviaQA</li><li>上下文长度：10K/30K/100K tokens</li></ul>
+<p><strong>模型</strong>：</p>
+<ul><li>MemOCR: Qwen2.5-VL-7B-Instruct</li><li>文本 baseline: Qwen2.5-7B-Instruct</li></ul>
+<p><strong>Memory Budget</strong>：$\mathcal{B} \in \{16, 64, 256, 1024\}$ tokens</p>
+<p><strong>训练超参</strong>：GRPO, lr=1e-6, group size=16, batch=64, KL=1e-3, 64×H800, ~21k GPU-hours</p>
+<table class="result-table">
+<tr><th>方法</th><th>Budget</th><th>HotpotQA 10K</th><th>HotpotQA 30K</th><th>HotpotQA 100K</th><th>NQ 10K</th><th>TriviaQA 10K</th><th>Avg 10K</th></tr>
+<tr><td>Mem0</td><td>1024</td><td>70.3</td><td>66.1</td><td>64.1</td><td>47.7</td><td>69.5</td><td>62.0</td></tr>
+<tr><td>MemAgent</td><td>1024</td><td>82.3</td><td>78.9</td><td>79.4</td><td>53.4</td><td>70.1</td><td>67.8</td></tr>
+<tr><td class="best">MemOCR</td><td class="best">1024</td><td class="best">84.8</td><td class="best">75.1</td><td class="best">78.3</td><td class="best">61.8</td><td class="best">79.6</td><td class="best">74.6</td></tr>
+<tr><td>MemAgent</td><td>16</td><td>24.0</td><td>26.6</td><td>23.2</td><td>24.5</td><td>49.7</td><td>31.6</td></tr>
+<tr><td class="best">MemOCR</td><td class="best">16</td><td class="best">67.2</td><td class="best">57.9</td><td class="best">52.4</td><td class="best">42.8</td><td class="best">80.8</td><td class="best">62.2</td></tr>
+</table>
+<p>核心发现：</p>
+<ul><li><strong>全面最佳性能</strong>：MemOCR 在所有上下文长度上取得最高平均准确率</li><li><strong>低预算下优雅降级</strong>：MemAgent 从 1024→16 tokens 掉 53.3%，MemOCR 仅掉 16.6%</li><li><strong>8x token 效率</strong>：MemOCR 在 8 tokens 时与 baseline 在 64 tokens 时性能相当</li><li><strong>单跳任务的反直觉现象</strong>：TriviaQA 上 MemOCR 在 16 tokens (80.8%) 甚至高于 1024 tokens (79.6%)——低分辨率记忆仍能保留关键线索并过滤噪声</li></ul>
+<table class="result-table">
+<tr><th>方法</th><th>Avg 10K</th><th>Avg 10K @16</th></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p><strong>范式一：Raw History Memory（原始历史记忆）</strong></p>
+<ul><li>检索并注入原始历史片段（如过去的对话）</li><li>问题：检索到的片段可能冗余或有噪声，稀释信息密度</li></ul>
+<p><strong>范式二：Textual Summary Memory（文本摘要记忆）</strong></p>
+<ul><li>将历史交互压缩为紧凑文本摘要，通过增量更新维护</li><li>问题：<strong>线性 token 缩放 + 均匀信息密度</strong></li></ul>
+<ul><li><strong>范式创新</strong>：首次将 agent 记忆从 1D 文本流转换为 2D 视觉画布，实现自适应信息密度</li><li><strong>Budget-agnostic drafting</strong>：生成一次 rich-text 记忆，通过渲染时分辨率控制适配不同预算，无需重新生成</li><li><strong>低预算下优雅降级</strong>：16 tokens 时仍保持 62.2%（vs MemAgent 31.6%），8x token 效率</li><li><strong>三个互补训练目标</strong>：Standard + Augmented Memory + Augmented Question 全面覆盖不同预算和精度需求</li><li><strong>7B+RL 超越 72B</strong>：预算感知训练比单纯 scale 模型更有效</li><li><strong>计算开销可控</strong>：理论复杂度与文本记忆相同，渲染器每 sample 仅 ~0.175s</li><li><strong>开源代码</strong></li></ul>
+<ul><li><strong>依赖视觉/OCR 鲁棒性</strong>：VLM 在极端降采样下可能产生幻觉或遗漏证据</li><li><strong>布局策略可能任务特定</strong>：为 QA 优化的显著性分配可能不直接迁移到规划、工具使用等场景</li><li><strong>额外计算开销</strong>：VLM 引入额外延迟，尤其在较短上下文时</li><li><strong>训练成本高</strong>：64×H800 训练 14 天（~21k GPU-hours/variant）</li><li><strong>仅在 QA 上评估</strong>：未测试规划、工具调用等更广泛 agent 场景</li><li><strong>失败模式</strong>：比较推理和容量溢出场景下仍有问题</li><li><strong>Renderer 依赖</strong>：需要 FastAPI + Playwright + Chromium 的渲染管线</li></ul>
+<ul><li><strong>视觉记忆是 agent 记忆压缩的新范式</strong>：对于长时程 agent，将文本记忆渲染为图像可实现自适应信息密度，比纯文本压缩更高效</li><li><strong>Budget-agnostic + Resolution-adaptive 的解耦设计</strong>：生成时不管预算，使用时通过分辨率适配，这个设计模式可推广到其他需要多粒度信息保留的场景...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory.md" arxiv="2605.00702" -->
+<article class="paper-card" id="arxiv-2605.00702">
+  <h2>Learning How and What to Memorize: Cognition-Inspired Two-Stage Optimization for Evolving Memory</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.00702" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.00702.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/Applied-Machine-Learning-Lab/ACL2026_MemCoE" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.00702</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="caption-note">上：有限上下文窗口下 Agent 无法捕获偏好。下：受前额叶→海马体启发，解耦记忆为 Memory Guideline（组织）→ Agent Memory（更新）</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <ul><li><strong>静态工作流方法</strong>（Mem0、A-Mem、LightMem 等）：依赖手工设计的提取规则和更新模板，无法从交互反馈中学习，难以适应动态用户行为</li><li><strong>RL-based 记忆 Agent</strong>（MemAgent、MEM-α 等）：将记忆操作建模为序列决策问题并用 RL 优化，但：</li><li>仅依赖<strong>稀疏的结果级奖励</strong>（最终答案正确性），缺乏过程级监督</li><li>记忆更新涉及自由形式的编辑（写什么/忘什么），动作空间巨大</li><li>长程优化困难，训练不稳定，数据需求大</li></ul>
+<p>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+<ul><li><strong>前额叶区域（Prefrontal regions）</strong>：根据当前上下文动态选择和配置合适的图式，塑造期望和注意力优先级 → 对应 <strong>How</strong>：记忆应该如何被组织</li><li><strong>海马体区域（Hippocampus regions）</strong>：实例化图式，编码具体的经历细节 → 对应 <strong>What</strong>：应该存储和更新什么信息</li></ul>
+<p>这种分离的优势：维持一个<strong>稳定的图式级组织先验</strong>来引导注意力和结构化，同时允许海马体系统在该框架内灵活编码上下文特定的经历细节。</p>
+<p>核心问题：</p>
+<p>&gt; 能否构建一个基于图式的 Agent 记忆系统，其组织和更新机制以类似于人类大脑的方式演化？</p>
+<p>MemCoE 是一个两阶段优化框架：</p>
+<ul><li><strong>Stage 1: Memory Guideline Induction (MGI)</strong>（模块 ♣）：优化全局自然语言指导方针（模拟前额叶）</li><li><strong>Stage 2: Guideline-Aligned Memory Policy Optimization (GMPO)</strong>（模块 ♠）：在固定指导方针下优化记忆演化策略（模拟海马体）</li></ul>
+<p class="caption-note">图：MemCoE 两阶段优化框架——MGI 迭代精炼自然语言指导方针，GMPO 使用指导方针定义结构化过程奖励并执行多轮 GRPO</p>
+<p class="caption-note">上：有限上下文窗口下 Agent 无法捕获偏好。下：受前额叶→海马体启发，解耦记忆为 Memory Guideline（组织）→ Agent Memory（更新）</p>
+<p class="caption-note">MemCoE 两阶段优化框架</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/method.png" alt="方法框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/efficiency_tradeoff.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/efficiency_tradeoff.png" alt="Efficiency"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/intro.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/intro.png" alt="Intro"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>三个个性化记忆 Benchmark</strong>：</p>
+<table class="result-table">
+<tr><th>Benchmark</th><th>评估维度</th><th>指标</th><th>规模</th></tr>
+<tr><td>PersonaMem</td><td>长期偏好演化（32K/128K）</td><td>Accuracy</td><td>589~2,727 QA pairs</td></tr>
+<tr><td>PrefEval</td><td>显式/隐式偏好（Explicit/Implicit）</td><td>Accuracy</td><td>各 1,000 样本</td></tr>
+<tr><td>PersonaBench</td><td>噪声下的个性化检索 QA</td><td>F1</td><td>6 用户, 263 queries</td></tr>
+</table>
+<p><strong>Baselines</strong>：LongContext、RAG、Mem0、A-Mem、LightMem、MemAgent、MEM-α</p>
+<p><strong>实现细节</strong>：主干 LLM 为 Qwen2.5-7B-Instruct，训练数据从 PersonaMem 采样 300 例，4×A6000 GPU</p>
+<table class="result-table">
+<tr><th>Method</th><th>PersonaMem 32K</th><th>PersonaMem 128K</th><th>PrefEval Explicit</th><th>PrefEval Implicit</th><th>PersonaBench w/o Noise</th><th>Overall</th></tr>
+<tr><td>Long Context</td><td>34.36</td><td>25.05</td><td>31.70</td><td>30.80</td><td>29.00</td><td>26.90</td></tr>
+<tr><td>RAG</td><td>48.67</td><td>38.90</td><td>47.80</td><td>32.40</td><td>29.09</td><td>36.68</td></tr>
+<tr><td>Mem0</td><td>48.53</td><td>39.67</td><td>57.60</td><td>46.40</td><td>17.60</td><td>38.23</td></tr>
+<tr><td>A-Mem</td><td>48.26</td><td>38.22</td><td>62.30</td><td>52.80</td><td>30.32</td><td>42.64</td></tr>
+<tr><td>LightMem</td><td>50.72</td><td>39.93</td><td>64.20</td><td>54.80</td><td>19.08</td><td>41.21</td></tr>
+<tr><td>MemAgent</td><td>53.58</td><td>43.59</td><td>72.30</td><td>63.60</td><td>20.05</td><td>45.00</td></tr>
+<tr><td>MEM-α</td><td>53.37</td><td>42.86</td><td>71.90</td><td>62.50</td><td>19.92</td><td>44.19</td></tr>
+<tr><td class="best">MemCoE (Ours)</td><td class="best">57.06</td><td class="best">47.24</td><td class="best">81.30</td><td class="best">69.90</td><td class="best">32.27</td><td class="best">52.02</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>MemCoE 在所有 8 个评估设置上均取得最佳性能，Overall 得分 52.02 远超第二名 MemAgent（45.00）</li><li>PrefEval Explicit 上提升最大：81.30 vs 72.30（+9.0pp），说明指导方针对偏好保留有显著帮助</li><li>PersonaBench（噪声环境）上 MemCoE 也最强（32.27），展示了对噪声的鲁棒性...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>静态工作流方法</strong>（Mem0、A-Mem、LightMem 等）：依赖手工设计的提取规则和更新模板，无法从交互反馈中学习，难以适应动态用户行为</li><li><strong>RL-based 记忆 Agent</strong>（MemAgent、MEM-α 等）：将记忆操作建模为序列决策问题并用 RL 优化，但：</li><li>仅依赖<strong>稀疏的结果级奖励</strong>（最终答案正确性），缺乏过程级监督</li><li>记忆更新涉及自由形式的编辑（写什么/忘什么），动作空间巨大</li><li>长程优化困难，训练不稳定，数据需求大</li></ul>
+<p>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+<ul><li><strong>前额叶区域（Prefrontal regions）</strong>：根据当前上下文动态选择和配置合适的图式，塑造期望和注意力优先级 → 对应 <strong>How</strong>：记忆应该如何被组织</li><li><strong>海马体区域（Hippocampus regions）</strong>：实例化图式，编码具体的经历细节 → 对应 <strong>What</strong>：应该存储和更新什么信息</li></ul>
+<p>这种分离的优势：维持一个<strong>稳定的图式级组织先验</strong>来引导注意力和结构化，同时允许海马体系统在该框架内灵活编码上下文特定的经历细节。</p>
+<p>核心问题：</p>
+<p>&gt; 能否构建一个基于图式的 Agent 记忆系统，其组织和更新机制以类似于人类大脑的方式演化？</p>
+<ul><li><strong>认知科学启发的优雅解耦</strong>：将记忆机制分解为&quot;如何组织&quot;（MGI）和&quot;存储什么&quot;（GMPO），受前额叶-海马体功能分工启发，设计有理论基础</li><li><strong>文本梯度的创新运用</strong>：将对比反馈解释为文本梯度，批次级聚合产生稳定的全局指导方针，这是一种新颖的 prompt 优化范式</li><li><strong>密集过程级奖励</strong>：指导方针对齐奖励提供了比稀疏结果奖励更丰富的监督信号，有效约束了 GMPO 的动作空间</li><li><strong>指导方针的强迁移性</strong>：在一个 LLM 上优化的指导方针可迁移到其他 LLM（包括 GPT-5），说明捕获了模型无关的记忆更新原则</li><li><strong>全面的实验验证</strong>：在 3 个 benchmark、8 个设置上一致优于所有 baseline，Overall 得分 52.02 vs 第二名 45.00</li><li><strong>效率前沿</strong>：性能最佳的同时推理速度较快，将提取/更新/遗忘内化到演化过程中</li><li><strong>偏好保留的长期优势</strong>：多轮演化后偏好保留率（~74%）远超 MemAgent（~51%），优势随轮次累积...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models.md" arxiv="2605.14906" -->
+<article class="paper-card" id="arxiv-2605.14906">
+  <h2>MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.14906" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.14906.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/xrenaf/MEMLENS" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.14906</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这一部分当前还没有补到更细的整理。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>MemLens 关注的是 agent 场景里非常核心但经常被简化的问题：一个多模态助手经过很多轮、多 session 的交互后，能不能记住过去的图文证据、更新用户状态、跨 session 推理，并在证据缺失时拒答？</p>
+<p>作者认为当前有两条主流路线。第一是 long-context LVLM，把完整图文历史直接塞进模型上下文窗口，让模型通过长上下文 attention 自己找证据。第二是 memory-augmented agent，把历史压缩、索引、存入外部 memory store，查询时检索相关内容再回答。问题是，之前没有一个 benchmark 能在同一多模态、多 session、长度可控的设置下系统比较这两条路线，而且很多所谓多模态记忆 benchmark 存在 text-only shortcut，即不看图也能答对。</p>
+<p>这篇论文的核心贡献就是提出 MemLens：789 个问题，覆盖五类 memory abilities，提供 32K、64K、128K、256K 四档标准上下文长度，并且显式要求很多问题必须依赖视觉证据。作者评估了 27 个 LVLM 和 7 个 memory-augmented agents，最后结论很直接：long-context LVLM 短上下文更强，但上下文变长会退化；memory agent 长度更稳定，但因为存储时压缩图像而丢失视觉细节；两者都没有真正解决多模态长期记忆。</p>
+<p>MemLens 最重要的质量控制是防止 text-only shortcut。作者使用 entity abstraction：先选择一个视觉 anchor，比如 Golden Gate Bridge，然后把文本里的实体名替换为“the bridge shown in <code>&lt;image&gt;</code>”。这样文本保留事实上下文，但实体身份必须从图像识别出来。</p>
+<p>跨模态验证结果很强：</p>
+<table class="result-table">
+<tr><th>Model</th><th>Input</th><th>Overall</th><th>IE</th><th>MSR</th><th>TR</th><th>KU</th><th>Delta</th></tr>
+<tr><td>GPT-5.4</td><td>With evidence image</td><td>93.13</td><td>94.31</td><td>100.00</td><td>96.91</td><td>75.86</td><td>-</td></tr>
+<tr><td>GPT-5.4</td><td>W/o evidence image</td><td>1.74</td><td>0.41</td><td>0.00</td><td>5.15</td><td>0.00</td><td>-91.39</td></tr>
+<tr><td>Gemini-3.1-Pro</td><td>With evidence image</td><td>89.42</td><td>89.02</td><td>90.21</td><td>96.19</td><td>82.24</td><td>-</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/pipeline.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/pipeline.png" alt="MemLens 构造流程"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/composition_donut.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/composition_donut.png" alt="MemLens 与已有 benchmark 的差异和题型分布"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/ie_entity_candidates.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/ie_entity_candidates.png" alt="IE-Entity 示例"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>MemLens 的构造流程分四步：先模拟 topic-grounded 的多模态对话 session；再构造必须依赖视觉内容的问题；然后把 evidence facts 包进自然的 evidence sessions；最后按时间顺序把 evidence、haystack 和 filler sessions 混合，生成不同长度的 conversation history。</p>
+<p>上图展示了代表性 13 个 LVLM 和 6 个 agents 的 per-type accuracy。一个重要现象是：32K 下很多 frontier LVLM 差距很小，但到 128K 后排序明显变化，部分开源强模型掉分超过 13%，而 Gemini-3.1-Pro 更稳。</p>
+<table class="result-table">
+<tr><th>Model</th><th>32K Ov.</th><th>64K Ov.</th><th>128K Ov.</th><th>关键观察</th></tr>
+<tr><td>Qwen3.5-122B-A10B</td><td>58.68</td><td>55.89</td><td>45.50</td><td>32K 最强，但长上下文退化明显</td></tr>
+<tr><td>Qwen3-VL-30B (I)</td><td>55.01</td><td>49.81</td><td>44.23</td><td>短上下文强，AR 和 KU 随长度下滑</td></tr>
+<tr><td>Kimi-K2.5</td><td>54.88</td><td>53.99</td><td>51.99</td><td>MSR 最强之一，长上下文相对稳</td></tr>
+<tr><td>Gemini-3.1-Pro</td><td>54.10</td><td>52.99</td><td>51.99</td><td>128K 保持最好，整体仅降 2.11</td></tr>
+<tr><td>Qwen3-VL-235B (I)</td><td>53.23</td><td>50.82</td><td>47.66</td><td>TR/AR 强，MSR 弱</td></tr>
+<tr><td>GPT-5.4</td><td>52.72</td><td>52.34</td><td>49.56</td><td>per-answer accuracy 高，但较保守</td></tr>
+<tr><td>GLM-4.6V</td><td>52.34</td><td>49.05</td><td>39.04</td><td>TR 强，但 AR 长上下文崩得明显</td></tr>
+<tr><td>Qwen3.5-27B</td><td>52.98</td><td>46.13</td><td>40.68</td><td>长上下文退化明显</td></tr>
+</table>
+<p>论文强调，最强 LVLM 在 32K 也只有 58.68%，说明 MemLens 不是“刷满型”benchmark。MSR 尤其难：32K 上只有 Kimi-K2.5 达到 44.06%，Gemini-3.1-Pro 为 32.17%，多数系统低于 30%。这意味着跨 session 聚合是当前系统的明显上限。</p>
+<table class="result-table">
+<tr><th>Agent</th><th>32K Ov.</th><th>64K Ov.</th><th>128K Ov.</th><th>256K Ov.</th><th>关键观察</th></tr>
+<tr><td>MemAgent-7B</td><td>32.82</td><td>25.64</td><td>28.21</td><td>24.62</td><td>32K 最高，但 AR 很弱</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇工作的局限主要有四类。</p>
+<p>第一，MemLens 是 synthetic multi-session dialogue，虽然 filler 来自 ShareGPT/UltraChat，evidence sessions 经过人工审查，但仍不等同真实用户长期对话分布。</p>
+<p>第二，agent 与 direct LVLM 的输入接口不完全对称。Direct LVLM 看原始图像，而许多 memory agents 只能看 BLIP-2 captions 或 embeddings。因此论文比较的是“当前公开 agent pipeline 的实际表现”，不是 memory-augmented architecture 的理论上限。</p>
+<p>第三，评测依赖 LLM-as-Judge，尽管做了交叉验证，但全量 73,784 次 judge calls 中人工/交叉验证只覆盖一部分。</p>
+<p>第四，数据集使用 4,695 张 public web images。作者有 negative-content filtering、watermark/stock-logo filtering、隐私策略、per-image provenance、takedown mechanism 和 frozen version tags，但这类 web-sourced image benchmark 天然存在版权与分布偏差问题。</p>
+<p>MemLens 给 agent 方向的启发很明确：长期记忆不能只做“文本摘要 + 向量检索”。对于多模态 agent，memory store 必须保留足够的视觉证据，至少要能在查询时回到原图或高保真视觉片段，而不是只保存 caption 或低维 embedding。</p>
+<p>另一个启发是，long-context attention 和 external memory 不是替代关系。Long-context LVLM 能直接 grounding 原图，但会随上下文变长退化；memory agent 长度稳定，但存储压缩导致视觉失真。下一代架构更可能是 hybrid：短期/中期用 long-context attention 保留原始图文，长期用结构化 memory 做索引和筛选，但 retrieval 返回的应该是可重新视觉 grounding 的 evidence package。...</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents.md" arxiv="2605.00356" -->
+<article class="paper-card" id="arxiv-2605.00356">
+  <h2>MemRouter: Memory-as-Embedding Routing for Long-Term Conversational Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.00356" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.00356.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/SongW-SW/MemRouter" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.00356</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>&gt; 决定&quot;是否存储这一轮&quot;是否真的需要一次完整的自回归生成？还是可以在嵌入空间中更廉价地完成？</p>
+<p>MemRouter 的核心思想：<strong>将记忆准入决策从自回归解码解耦为嵌入级分类</strong>——写入端只做轻量级的前向推理，回答端保持独立的 LLM 生成。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前主流方案（Memory-R1、AgeMem、MemGPT 等）使用 LLM 本身作为记忆管理器，存在两个根本问题：</p>
+<ul><li><strong>每轮自回归解码成本过高</strong>：每个对话轮次需要一个或多个完整的 LLM 生成调用来做准入决策。以 Memory-R1 为例，每轮需要两次生成调用（事实提取 + 记忆管理器），一个 600 轮的对话需要约 1,200 次生成调用——<strong>在回答任何问题之前</strong>。对于每天处理数百个对话的系统，写入端开销可能主导总服务预算。</li><li><strong>与回答骨干耦合</strong>：写入端策略通常与下游回答模型联合训练或依赖其奖励定义，导致准入策略与特定回答骨干纠缠。升级到更新/更大的 QA 模型可能需要重新训练记忆管理策略。</li></ul>
+<p>&gt; 决定&quot;是否存储这一轮&quot;是否真的需要一次完整的自回归生成？还是可以在嵌入空间中更廉价地完成？</p>
+<p>MemRouter 的核心思想：<strong>将记忆准入决策从自回归解码解耦为嵌入级分类</strong>——写入端只做轻量级的前向推理，回答端保持独立的 LLM 生成。</p>
+<table class="result-table">
+<tr><th>训练方法</th><th>F1</th><th>失败模式</th></tr>
+<tr><td>GRPO only</td><td>1.1</td><td>冷启动：全部预测 NOOP，空记忆库</td></tr>
+<tr><td>Supervised + GRPO</td><td>28.5</td><td>GRPO 未改善（稀疏奖励信号不足）</td></tr>
+<tr><td>Supervised (ADD/UPDATE/NOOP)</td><td>1.4~12.8</td><td>UPDATE 过度预测，记忆库崩溃</td></tr>
+<tr><td class="best">Supervised (ADD/NOOP)</td><td class="best">52.0</td><td>—</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>纯 RL 会冷启动失败（全部 NOOP → 空记忆 → 无 QA 奖励 → 无学习信号）</li><li>引入 UPDATE 操作会导致模式崩溃（Router 过度预测 UPDATE 而压制 ADD）</li><li>监督训练 + 简化为 ADD/NOOP 二分类是最稳定有效的方案</li></ul>
+<p class="caption-note">MemRouter 三组件架构：写入路径（嵌入级 Router）→ 持久化存储 → 读取路径（混合检索 + 冻结回答 Agent）</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/efficiency_improvements.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/efficiency_improvements.png" alt="Efficiency"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/memrouter.drawio.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/memrouter.drawio.png" alt="MemRouter 系统概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/matched_harness_f1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memrouter_memory_as_embedding_routing_for_long_term_conversational_agents/matched_harness_f1.png" alt="Matched Harness"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>Benchmark</strong>：LoCoMo（10 个多会话对话，每个约 35 个会话、588 轮、16,618 tokens，约 200 QA pairs/对话）</p>
+<p><strong>评估指标</strong>：token-level F1（Porter stemming + 答案标准化），排除 adversarial 问题</p>
+<p><strong>数据分割</strong>：1:1:8（训练:验证:测试），严格会话级分割</p>
+<table class="result-table">
+<tr><th>Method</th><th>Overall</th><th>Single-hop</th><th>Multi-hop</th><th>Temporal</th><th>Open-domain</th></tr>
+<tr><td>LoCoMo (RAG)</td><td>9.0</td><td>9.6</td><td>11.8</td><td>8.4</td><td>8.7</td></tr>
+<tr><td>A-Mem</td><td>26.1</td><td>19.0</td><td>14.7</td><td>23.7</td><td>30.6</td></tr>
+<tr><td>Mem0</td><td>30.6</td><td>25.0</td><td>20.3</td><td>33.2</td><td>32.7</td></tr>
+<tr><td>MemoryOS</td><td>34.6</td><td>29.6</td><td>21.0</td><td>26.3</td><td>40.9</td></tr>
+<tr><td>Memory-R1-GRPO</td><td>43.1</td><td>33.6</td><td>23.6</td><td class="best">47.8</td><td class="best">46.9</td></tr>
+<tr><td class="best">MemRouter (Qwen2.5-7B)</td><td class="best">52.0</td><td class="best">57.5</td><td class="best">52.4</td><td>44.0</td><td>27.1</td></tr>
+<tr><td>MemRouter (Qwen3.5-35B-A3B)</td><td class="best">55.5</td><td class="best">60.9</td><td class="best">56.1</td><td class="best">49.7</td><td>23.8</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>7B 对比下 MemRouter Overall 52.0 vs Memory-R1-GRPO 43.1（+8.9pp），单跳和多跳大幅领先</li><li>35B backbone transfer（不重训 Router）Overall 提升到 55.5，验证了 <strong>backbone 无关的迁移性</strong></li><li>开放域低于 Memory-R1（27.1 vs 46.9），归因于冻结回答 Agent 的推理能力限制而非路由失败</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前主流方案（Memory-R1、AgeMem、MemGPT 等）使用 LLM 本身作为记忆管理器，存在两个根本问题：</p>
+<ul><li><strong>每轮自回归解码成本过高</strong>：每个对话轮次需要一个或多个完整的 LLM 生成调用来做准入决策。以 Memory-R1 为例，每轮需要两次生成调用（事实提取 + 记忆管理器），一个 600 轮的对话需要约 1,200 次生成调用——<strong>在回答任何问题之前</strong>。对于每天处理数百个对话的系统，写入端开销可能主导总服务预算。</li><li><strong>与回答骨干耦合</strong>：写入端策略通常与下游回答模型联合训练或依赖其奖励定义，导致准入策略与特定回答骨干纠缠。升级到更新/更大的 QA 模型可能需要重新训练记忆管理策略。</li></ul>
+<ul><li><strong>极致的写入端效率</strong>：记忆管理 p50 延迟从 970ms 降至 58ms（17×），端到端吞吐量提升 11×，证明嵌入级路由在实际部署中的巨大价值</li><li><strong>Backbone 无关的设计</strong>：Router 仅 12M 可训练参数（0.17%），与回答骨干完全解耦。在 Qwen2.5-7B 上训练的 Router 可直接迁移到 Qwen3.5-35B-A3B 而无需重训</li><li><strong>全面优于 LLM Manager</strong>：在控制变量的 matched harness 下，每个问题类别都优于 LLM-based 准入，95% CI 不重叠</li><li><strong>优雅的监督训练</strong>：不需要 RL，仅用教师模型生成的 ADD/NOOP 标签做监督训练，10 分钟完成。RL 反而因冷启动和稀疏奖励失败</li><li><strong>选择性存储的价值随预算紧缩而增大</strong>：在 45.9% 存储率时差值达 11.4 F1，说明 Router 在资源受限场景下最有价值</li><li><strong>逐字存储的实证优势</strong>：发现存储原始对话文本优于 LLM 提取的结构化事实，因为保留了与 gold answer 匹配的措辞</li></ul>
+<ul><li><strong>开放域性能不足</strong>：MemRouter (7B) 在开放域 F1 (27.1) 远低于 Memory-R1-GRPO (46.9)，归因于冻结回答 Agent 的推理能力</li><li><strong>仅学习 ADD/NOOP</strong>：尝试引入 UPDATE 操作导致模式崩溃，嵌入级的记忆合并/更新仍是开放问题</li><li><strong>依赖教师标注</strong>：需要教师模型生成 28,415 轮次的标签（98 分钟），引入前置标注成本...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_preping_building_agent_memory_without_tasks.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2605_preping_building_agent_memory_without_tasks">
+  <h2>PREPING: Building Agent Memory without Tasks</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>PREPING 提出一种“无任务先验”的预训练式记忆构建框架：先在合成练习中分离地学习“出题策略记忆”和“解题执行记忆”，上线时仅携带 solver memory，即可在多个 agent 基准上显著提升初始性能并降低部署成本。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <ul><li>现有 agent memory 方法大多依赖任务数据（task-informed），而真实部署前往往拿不到目标任务分布。</li><li>直接上线在线探索（如 ACE-Online）成本高、回合长、早期试错重。</li><li>需要一种 pre-task memory 方案：在“还没有正式任务”的阶段，就把工具调用、环境交互、可行性判断等能力沉淀到记忆中。</li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>PREPING 在预部署阶段循环执行三角色：</p>
+<ul><li><strong>Proposer</strong>：基于 proposer memory 生成下一批合成练习任务。</li><li><strong>Solver</strong>：基于 solver memory 执行任务并产出轨迹。</li><li><strong>Validator</strong>：判断任务/解答可行性并给出筛选信号。</li></ul>
+<p>核心是<strong>不对称更新</strong>：</p>
+<ul><li>proposer memory（<code>M_prop</code>）接收所有结果信号，用于改进“练什么”；</li><li>solver memory（<code>M_sol</code>）只用 validator 判定可行的数据更新，用于提升“怎么做”；</li><li>部署时保留 <code>M_sol</code>，<code>M_prop</code> 可丢弃或冻结。</li></ul>
+<p>图中体现了 proposer-solver-validator 闭环与双记忆不对称更新，是全文最关键机制。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/main_preping.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/main_preping.png" alt="PREPING pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/coverage_cold_start_main_figure.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/coverage_cold_start_main_figure.png" alt="Coverage and cold-start"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/cost_bar_plot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_preping_building_agent_memory_without_tasks/cost_bar_plot.png" alt="Cost comparison"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>PREPING 提出一种“无任务先验”的预训练式记忆构建框架：先在合成练习中分离地学习“出题策略记忆”和“解题执行记忆”，上线时仅携带 solver memory，即可在多个 agent 基准上显著提升初始性能并降低部署成本。</p>
+<ul><li>合成任务分布与真实任务仍可能存在偏移；</li><li>validator 质量影响最终记忆纯度；</li><li>多轮预构建会带来额外离线算力与设计复杂度。</li></ul>
+<p>可拓展方向：</p>
+<ul><li>学习型 validator（不只规则过滤）；</li><li>跨环境共享 proposer 先验；</li><li>与在线方法结合（PREPING warm-start + 少量在线自适应）。</li></ul>
+<ul><li>如果我们有奖励模型或评分器，可把 PREPING 思路改成“离线自博弈 + 评分门控写入 memory”；</li><li>memory 不必单体，可拆为“探索记忆（提案）/执行记忆（部署）”两路；</li><li>在成本受限系统中，优先把高风险探索迁移到离线阶段。</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents">
+  <h2>MeMo: Memory as a Model</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>MeMo 把“新知识注入”从“重训主模型”改成“训练一个独立 Memory 模型 + 主模型多轮查询”，在不改主模型参数、可接闭源 API 的前提下，兼顾跨文档知识整合、噪声鲁棒性与可扩展更新。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者关注 LLM 知识更新难题：</p>
+<ul><li>预训练后知识静态，易过时；</li><li>全量重训代价高且有灾难性遗忘风险；</li><li>RAG 检索受上下文窗口、跨文档整合能力和噪声干扰限制；</li><li>一些“潜在记忆”方案又高度绑定特定模型，不易跨模型迁移。</li></ul>
+<p>核心目标是：在不改主模型权重的条件下，让系统获得可更新、可迁移、可抗噪的新知识能力。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>MeMo 包含两个角色：</p>
+<ul><li><strong>Main model</strong> $\mathcal{M}_\theta$：冻结，负责推理和最终回答；</li><li><strong>Memory model</strong> $\mathcal{M}_\phi$：专门训练，参数化编码目标语料知识。</li></ul>
+<p>推理时由 main model 通过结构化多轮协议向 memory model 提问并整合答案。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents/final-diagram-v10.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents/final-diagram-v10.png" alt="MeMo overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents/cost_vs_accuracy.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_verirl_reinforcement_learning_with_verifiable_rewards_for_robust_visual_perception_in_gui_agents/cost_vs_accuracy.png" alt="Cost vs accuracy"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>数据集：BrowseComp-Plus、NarrativeQA、MuSiQue。</p>
+<p>主模型：Qwen2.5-32B-Instruct / Gemini-3-Flash。</p>
+<p>memory：Qwen2.5-14B-Instruct。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>MeMo 把“新知识注入”从“重训主模型”改成“训练一个独立 Memory 模型 + 主模型多轮查询”，在不改主模型参数、可接闭源 API 的前提下，兼顾跨文档知识整合、噪声鲁棒性与可扩展更新。</p>
+<ul><li>强依赖高质量反思数据合成流程，前处理复杂；</li><li>memory 训练本身仍有成本；</li><li>合并更新虽省算力，但当前性能损失还较大。</li></ul>
+<ul><li>可把长期知识维护拆成“专用 memory model + 通用 reasoning model”的双模型架构；</li><li>对生产系统可先部署小 memory 快速迭代，再按收益扩容；</li><li>若场景噪声文档多、上下文超长，多轮 memory 查询协议比一次性大上下文拼接更可控。</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+</div>
+</body>
+</html>

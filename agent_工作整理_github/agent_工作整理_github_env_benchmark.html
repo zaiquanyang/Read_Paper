@@ -1,0 +1,1603 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Agent Environments & Benchmarks</h1>
+  <p>训练环境合成、Benchmark 设计与 Agent 评估</p>
+</header>
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+<section class="subpage-nav">
+  <h2>本页目录</h2>
+  <p>先看目录再往下读，会比直接滚到底更顺一点。</p>
+  <ol>
+  <li><a href="#arxiv-2602.10090">Agent World Model: Infinity Synthetic Environments for Agentic Reinforcement Learning</a></li>
+  <li><a href="#arxiv-2603.28052">Meta-Harness: End-to-End Optimization of Model Harnesses</a></li>
+  <li><a href="#arxiv-2604.27043">CL-bench Life: Can Language Models Learn from Real-Life Context?</a></li>
+  <li><a href="#arxiv-2604.26904">ClawGym: A Scalable Framework for Building Effective Claw Agents</a></li>
+  <li><a href="#arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets">Contexts are Never Long Enough: Structured Reasoning for Scalable Question Answering over Long Document Sets</a></li>
+  <li><a href="#arxiv-2604.26962">DeepTutor: Towards Agentic Personalized Tutoring</a></li>
+  <li><a href="#arxiv-2604.01221">HippoCamp: Benchmarking Contextual Agents on Personal Computers</a></li>
+  <li><a href="#arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks">Odysseys: Benchmarking Web Agents on Realistic Long Horizon Tasks</a></li>
+  <li><a href="#arxiv-2604.28181">Synthetic Computers at Scale for Long-Horizon Productivity Simulation</a></li>
+  <li><a href="#arxiv-2605.20876">Terminal-World: Scaling Terminal-Agent Environments via Agent Skills</a></li>
+  <li><a href="#arxiv-2605.10832">Towards On-Policy Data Evolution for Visual-Native Multimodal Deep Search Agents</a></li>
+  <li><a href="#arxiv-2605.03596">Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies</a></li>
+  </ol>
+</section>
+
+
+<!-- PAPER_CARD_START source="agent/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning.md" arxiv="2602.10090" -->
+<article class="paper-card" id="arxiv-2602.10090">
+  <h2>Agent World Model: Infinity Synthetic Environments for Agentic Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2602.10090" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.10090" target="_blank">PDF</a>
+  <a href="https://github.com/Snowflake-Labs/agent-world-model" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2602.10090</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇工作提出了一个很有分量的 agent 基础设施方向：<strong>用数据库与代码驱动的大规模 synthetic environments 来支撑 agentic RL</strong>。它最有价值的不只是“合成了 1,000 个环境”，而是把 environment synthesis、verification-based reward、history-aware training 和大规模并发 agent RL 串成了一条完整 pipeline，对后续 agent 训练平台的设计很有参考意义。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者提出的问题很明确：</p>
+<ul><li>现有 agent benchmark 数量太少，难以支撑大规模 RL。</li><li>使用真实 API 或真实网站进行训练，成本高且不稳定。</li><li>让 LLM 充当“环境模拟器”虽然灵活，但会在状态转移、工具返回、环境一致性上产生 hallucination。</li><li>大多数 agent synthetic data 工作更偏 task synthesis 或 trajectory synthesis，而不是 <strong>environment synthesis</strong>。</li></ul>
+<p>所以这篇论文试图补的空白是：</p>
+<p><strong>能否从零开始，自动生成大量“可执行、状态一致、支持工具交互、支持 reward 验证”的 agent 环境？</strong></p>
+<p>作者给出的答案是：可以，而且要用更像真实软件系统的方式做，也就是：</p>
+<ul><li>数据库管理状态</li><li>MCP 接口暴露工具</li><li>代码驱动状态转移</li><li>verification code + LLM judge 生成可靠 reward</li></ul>
+<p>论文专门对比了 programming-based environments：</p>
+<table class="result-table">
+<tr><th>Method</th><th>Synthetic</th><th>Reliance</th><th>SQL</th><th># Envs</th><th># Tools</th><th># Code</th></tr>
+<tr><td>$\tau$-bench</td><td>No</td><td>Human</td><td>No</td><td>2</td><td>12.5</td><td>--</td></tr>
+<tr><td>$\tau^2$-bench</td><td>No</td><td>Human</td><td>No</td><td>3</td><td>22.7</td><td>--</td></tr>
+<tr><td>MCP-Universe</td><td>No</td><td>Real APIs</td><td>--</td><td>11</td><td>12.1</td><td>--</td></tr>
+<tr><td>AutoForge</td><td>Yes</td><td>Tool Doc</td><td>No</td><td>10</td><td>--</td><td>--</td></tr>
+<tr><td>EnvScaler</td><td>Yes</td><td>Task Set</td><td>No</td><td>191</td><td>18.6</td><td>662.1</td></tr>
+<tr><td>AWM</td><td>Yes</td><td>Names Only</td><td>Yes</td><td>1000</td><td>35.1</td><td>1984.7</td></tr>
+</table>
+<p>这张表反映出 AWM 的三个核心定位：</p>
+<ul><li>从 scratch 合成，而不是依赖 benchmark task set 或 API 文档</li><li>使用 SQL-backed state consistency</li><li>在公开工作里做到最大规模</li></ul>
+<p>这篇工作也有一些明显局限。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>AWM 的核心思想是：一个 agent 环境本质上都可以拆成三层：</p>
+<ul><li><strong>State backend</strong>：环境状态存在哪里，如何持久化。</li><li><strong>Tool interface layer</strong>：agent 通过什么工具观察和操作环境。</li><li><strong>Task-specific success criteria</strong>：任务完成与否如何判断。</li></ul>
+<p>作者把环境 synthesis 分解成多个可控步骤：</p>
+<ul><li>scenario generation</li><li>task generation</li><li>database synthesis</li><li>sample data synthesis</li><li>toolset schema synthesis</li><li>MCP environment code synthesis</li><li>verification code synthesis</li></ul>
+<p>这样做的好处是，每一步都有明确输入输出，也更容易自动校验和自修复。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/main.png" alt="AWM pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/teaser.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/teaser.png" alt="AWM teaser"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/diversity_analysis_azure_1x2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_world_model_infinity_synthetic_environments_for_agentic_reinforcement_learning/diversity_analysis_azure_1x2.png" alt="Diversity analysis"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者选用 Qwen3 thinking models 的 4B、8B、14B 作为 base agents，在 526 个环境、3,315 个任务上训练。</p>
+<p>关键训练配置包括：</p>
+<ul><li>最多 96 个 optimization steps</li><li>learning rate 为 $7\times 10^{-7}$</li><li>batch size 64</li><li>16 rollouts</li><li>每步并发 1,024 个 isolated environment instances</li><li>sliding window size $w=3$</li><li>最大交互轮数 20</li></ul>
+<p>评测 benchmark 是三套完全 OOD 的 tool-use benchmark：</p>
+<ul><li>verified $\tau^2$-bench</li><li>BFCLv3</li><li>MCP-Universe</li></ul>
+<p>这点很重要，因为作者强调训练环境并不是针对测试 benchmark 定制的。</p>
+<p>在 $\tau^2$-bench 上，EnvScaler 某些设置仍然更强。这说明 environment quantity 不是唯一变量，environment distribution 和 benchmark overlap 也在起作用。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇工作也有一些明显局限。</p>
+<p>如果从 agent 研究视角总结，这篇 paper 最值得带走的经验是：</p>
+<ul><li>想做 agentic RL，训练环境是第一性问题，不能只盯着 policy algorithm。</li><li>可执行 environment 比 LLM-simulated environment 更适合做稳定 RL。</li><li>reward 应尽量 grounded 到 state，而不是只看自然语言 trajectory。</li><li>protocol correctness、history management 这些工程细节，实际上都值得进入训练目标。</li><li>environment synthesis pipeline 本身可以成为 agent 基础设施的一部分，而不是 benchmark 附属物。</li></ul>
+<p>这篇工作提出了一个很有分量的 agent 基础设施方向：<strong>用数据库与代码驱动的大规模 synthetic environments 来支撑 agentic RL</strong>。它最有价值的不只是“合成了 1,000 个环境”，而是把 environment synthesis、verification-based reward、history-aware training 和大规模并发 agent RL 串成了一条完整 pipeline，对后续 agent 训练平台的设计很有参考意义。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses.md" arxiv="2603.28052" -->
+<article class="paper-card" id="arxiv-2603.28052">
+  <h2>Meta-Harness: End-to-End Optimization of Model Harnesses</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2603.28052" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.28052" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.28052</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>附录最后给了不少非常实用的经验，我觉得值得记：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>很多人默认“harness 很重要”，但仍把它当工程经验；这篇则把它形式化成了明确的 outer-loop search problem。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>整体流程如下图所示。</p>
+<p>外层循环非常简单：</p>
+<ul><li>proposer 读取 filesystem 中所有历史候选 harness 的代码、分数和执行日志；</li><li>proposer 写出新的 harness 候选；</li><li>系统评估这个 harness；</li><li>把新代码、得分和执行轨迹再写回 filesystem；</li><li>重复迭代。</li></ul>
+<p>注意这里最关键的点不是“做了 evolution”，而是 proposer 有能力主动浏览一个持续增长的经验库，而不是被动吃一段预先压缩好的 prompt。</p>
+<p>Meta-Harness 和很多 optimizer 最本质的区别不是有没有 Pareto frontier，也不是有没有 population，而是：</p>
+<ul><li>它把完整历史暴露给 proposer；</li><li>proposer 可以跨很多旧候选去看原始代码和 execution trace；</li><li>proposer 不必局限于某个 parent，也不必只看最近一步。</li></ul>
+<p>附录里给了一个很有说服力的统计：</p>
+<ul><li>在 TerminalBench-2 的一次搜索中，proposer 每轮中位数读取 82 个文件；</li><li>其中 41% 是 prior harness source code；</li><li>40% 是 execution traces；</li><li>只有 6% 是 score/summary files。</li></ul>
+<p>这说明 proposer 并不是“装作能看 filesystem，实际上只在本地小修小补”，而是真的大量使用原始历史进行非马尔可夫式诊断。</p>
+<p>作者刻意把 outer loop 设计得非常简洁，只保留：</p>
+<ul><li>population；</li><li>evaluation；</li><li>logging；</li><li>Pareto frontier。</li></ul>
+<p>它没有像很多方法那样手工设计：</p>
+<ul><li>parent selection heuristics；</li><li>mutation operator；</li><li>critique schema；</li><li>reflection template。</li></ul>
+<p>作者的观点是：这类控制结构越多，越像在把“如何诊断和改 harness”重新手工编码一次。Meta-Harness 反而把这些判断交给 proposer agent 自己做。</p>
+<p>这背后的隐含立场很明确：</p>
+<ul><li>如果 coding agent 足够强，外循环应尽量 minimal；</li><li>真正重要的是让 agent 访问足够丰富的 raw experience；</li><li>agent 自己会学会怎样从这些经验里形成因果假设。</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/autoharness_v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/autoharness_v3.png" alt="Meta-Harness loop"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/learning_curves_simple.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/learning_curves_simple.png" alt="Learning curves"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在三个任务域上验证：</p>
+<ul><li>在线文本分类</li><li>检索增强数学推理</li><li>agentic coding（TerminalBench-2）</li></ul>
+<p>这三个域共享的核心不是任务本身，而是都存在“harness 设计空间”：</p>
+<ul><li>文本分类里，harness 决定 memory 如何组织；</li><li>数学推理里，harness 决定 retrieval policy；</li><li>代码 agent 里，harness 决定启动信息、状态流和完成逻辑。</li></ul>
+<table class="result-table">
+<tr><th>Harness</th><th>USPTO</th><th>S2D</th><th>Law</th><th>Avg Acc</th><th>Ctx(k)</th></tr>
+<tr><td>Zero-Shot</td><td>12.0</td><td>63.2</td><td>7.0</td><td>27.4</td><td>0</td></tr>
+<tr><td>Few-Shot (all)</td><td>15.0</td><td>78.3</td><td>29.0</td><td>40.8</td><td>12.3</td></tr>
+<tr><td>MCE</td><td>14.0</td><td>83.0</td><td>23.0</td><td>40.0</td><td>28.5</td></tr>
+<tr><td>ACE</td><td class="best">16.0</td><td>77.8</td><td>29.0</td><td>40.9</td><td>50.8</td></tr>
+<tr><td class="best">Meta-Harness</td><td>14.0</td><td class="best">86.8</td><td class="best">45.0</td><td class="best">48.6</td><td>11.4</td></tr>
+</table>
+<p>最关键的结果是：</p>
+<ul><li>比 ACE 高 <code>+7.7</code> 个点；</li><li>比 MCE 高 <code>+8.6</code> 个点；</li><li>只用了 <code>11.4k</code> context tokens，而 ACE 用了 <code>50.8k</code>。</li></ul>
+<p>也就是说，它不是靠“喂更多上下文”变强，而是靠发现了更有效的 harness。</p>
+<table class="result-table">
+<tr><th>Method</th><th>GPT-5.4n</th><th>GPT-5.4m</th><th>Gem-3.1FL</th><th>Gem-3F</th><th>GPT-20B</th><th>Avg</th></tr>
+<tr><td>No Retriever</td><td>23.0</td><td>28.8</td><td>28.6</td><td>42.6</td><td>47.6</td><td>34.1</td></tr>
+<tr><td>Dense Retrieval (k=5)</td><td>31.1</td><td>28.3</td><td>37.1</td><td>47.2</td><td>46.7</td><td>38.1</td></tr>
+<tr><td>BM25 Retrieval</td><td>30.2</td><td>29.2</td><td>32.8</td><td>46.6</td><td>48.9</td><td>37.5</td></tr>
+<tr><td class="best">Meta-Harness</td><td class="best">31.7</td><td class="best">30.4</td><td class="best">34.9</td><td>46.3</td><td class="best">50.6</td><td class="best">38.8</td></tr>
+</table>
+<p>最重要的结论是：</p>
+<ul><li>相比 no retriever，平均提升 <code>+4.7</code>；</li><li>对全部 5 个 held-out model 都有正增益；</li><li>平均上优于 BM25、dense retrieval、random few-shot。</li></ul>
+<p>也就是说，这里优化的重点不是“加一个更强 retriever”，而是“搜索对数学推理更合适的 retrieval policy / harness”。...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果把这篇放到 <code>agent</code> 主题下，我觉得它最重要的启发是：</p>
+<ul><li>agent 的提升不一定来自更强模型，也可以来自更强 harness；</li><li>harness 自身可以作为一等公民被自动搜索，而不是只能靠人手工写；</li><li>对 agent system 来说，execution traces 往往比 summary 更值钱；</li><li>coding agent 不仅可以 solve task，也可以当 “system optimizer”，去反过来优化自己运行的那套外部程序；</li><li>未来很可能出现“模型权重 + harness 代码 + memory 结构”一起 co-design / co-evolve 的范式。</li></ul>
+<p>附录最后给了不少非常实用的经验，我觉得值得记：</p>
+<ul><li>skill text 非常重要；</li><li>search set 要足够难，不然没东西可优化；</li><li>日志要 machine-readable、便于 grep；</li><li>最好提供小 CLI 帮 proposer 看历史；</li><li>full eval 前要做 lightweight validation。</li></ul>
+<p>这些建议都很 agent engineering，而不是纯理论。</p>
+<p>这篇工作最大的价值，在于它把“代码级 agent harness 本身可以被自动搜索优化”这件事做成了一个可信、可执行、跨任务域的范式。它不是简单把 LLM 用来写 prompt，而是让 coding agent 真正通过 filesystem 访问原始经验，去做程序级别的诊断、归因和改写。</p>
+<p>如果只记三句话，我会记：</p>
+<ul><li><code>harness</code> 和 <code>model weights</code> 一样重要，甚至在某些 benchmark 上更重要；</li><li>对 harness engineering 来说，execution traces 这种原始经验比压缩 summary 更关键；</li><li>足够强的 coding agent，已经可以开始自动做 “system-level agent optimization” 了。</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context.md" arxiv="2604.27043" -->
+<article class="paper-card" id="arxiv-2604.27043">
+  <h2>CL-bench Life: Can Language Models Learn from Real-Life Context?</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.27043" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.27043.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.27043</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>本文提出核心问题：<strong>当前前沿语言模型能否可靠地从现实生活上下文中学习并解决基于这些上下文的任务？</strong></p>
+<p>引入 <strong>CL-bench Life</strong>——首个专注于日常生活场景的 context learning benchmark，包含 405 个人工策划的上下文-任务对和 5,348 个验证标准。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>本文提出核心问题：<strong>当前前沿语言模型能否可靠地从现实生活上下文中学习并解决基于这些上下文的任务？</strong></p>
+<p>引入 <strong>CL-bench Life</strong>——首个专注于日常生活场景的 context learning benchmark，包含 405 个人工策划的上下文-任务对和 5,348 个验证标准。</p>
+<ul><li>每个 rubric 化为二值问题（仅允许 yes/no）</li><li>使用 GPT-5.1（高推理强度）作为默认评估器</li><li><strong>严格标准</strong>：任务被认为成功解决当且仅当所有 rubrics 都通过</li><li>Rubrics 与上下文/任务解耦——评估时仅提供生成的解决方案和 rubrics</li><li>人工验证 100 个样本确认评估准确率 &gt;90%</li><li>不同评估器的一致性：Cohen&#x27;s κ 范围 0.710~0.773（实质性一致）</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/dataset.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/dataset.png" alt="Context Taxonomy"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/reasoning_comparison.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/reasoning_comparison.png" alt="Reasoning"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/token_length_bars.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_cl_bench_life_can_language_models_learn_from_real_life_context/token_length_bars.png" alt="Length"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>当前的 context learning benchmark 主要存在以下差距：</p>
+<ul><li><strong>专业领域偏向</strong>：CL-bench、CL4SE、OctoBench 等聚焦金融、科学、编程等专业场景，无法评估模型在日常生活情境中的上下文学习能力</li><li><strong>上下文过于&quot;干净&quot;</strong>：现有 benchmark 的上下文通常结构良好、逻辑清晰，而真实生活中的上下文往往混乱、碎片化、个性化</li><li><strong>端到端耦合</strong>：Agent benchmark（WebArena、SWE-bench 等）将多种能力耦合在一起，难以隔离评估 context learning 本身</li><li><strong>长上下文不等于好推理</strong>：长上下文 benchmark 主要测试信息检索能力，而非对混乱上下文的深层推理</li></ul>
+<p>每个实例由三部分组成：</p>
+<ul><li><strong>Context（上下文）</strong>：自包含的现实生活场景信息（不需要外部检索）</li><li><strong>Task（任务）</strong>：需要基于上下文推理才能解决的问题（不能仅靠预训练知识解决）</li><li><strong>Rubrics（验证标准）</strong>：每个任务平均 13.2 个二值化验证标准（yes/no）</li></ul>
+<p><strong>关键设计</strong>：</p>
+<ul><li>全部由人工策划（每个实例平均 13 小时专家工作量）</li><li>约 59.8% 的实例是多轮对话形式</li><li>上下文自包含，解决任务不需要外部检索</li></ul>
+<p><strong>评估模型</strong>（10 个前沿 LM，均通过官方 API）：</p>
+<ul><li>GPT-5.4 (OpenAI), Claude-Opus-4.6 (Anthropic), Gemini-3.1-Pro (Google)</li><li>Seed-2.0-Pro (ByteDance), Kimi-K2.5-Thinking (Moonshot), Qwen-3.5-Plus (Alibaba)</li><li>Grok-4.20 (xAI), DeepSeek-V3.2-Thinking (DeepSeek), Hy3-preview (Tencent), MiniMax-M2.5</li></ul>
+<p>所有模型在高推理强度下评估，每个模型运行 3 次独立实验，报告均值±标准差。</p>
+<table class="result-table">
+<tr><th>Model</th><th>Overall</th><th>Comm &amp; Social</th><th>Frag Info &amp; Rev</th><th>Behavioral</th></tr>
+<tr><td class="best">GPT-5.4 (High)</td><td class="best">19.3 ± 0.5</td><td class="best">22.2</td><td>15.8</td><td class="best">20.0</td></tr>
+<tr><td>Claude-Opus-4.6 (High)</td><td>17.0 ± 1.3</td><td>21.7</td><td class="best">16.5</td><td>12.8</td></tr>
+<tr><td>Gemini-3.1-Pro (High)</td><td>16.9 ± 1.2</td><td>18.8</td><td>13.6</td><td>18.3</td></tr>
+<tr><td>Hy3-preview (High)</td><td>15.7 ± 0.9</td><td>17.0</td><td>15.9</td><td>14.1</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前的 context learning benchmark 主要存在以下差距：</p>
+<ul><li><strong>专业领域偏向</strong>：CL-bench、CL4SE、OctoBench 等聚焦金融、科学、编程等专业场景，无法评估模型在日常生活情境中的上下文学习能力</li><li><strong>上下文过于&quot;干净&quot;</strong>：现有 benchmark 的上下文通常结构良好、逻辑清晰，而真实生活中的上下文往往混乱、碎片化、个性化</li><li><strong>端到端耦合</strong>：Agent benchmark（WebArena、SWE-bench 等）将多种能力耦合在一起，难以隔离评估 context learning 本身</li><li><strong>长上下文不等于好推理</strong>：长上下文 benchmark 主要测试信息检索能力，而非对混乱上下文的深层推理</li></ul>
+<ul><li><strong>证据平衡与不确定性校准</strong>：过度投入单一叙事，面对多种合理解释时缺乏保留模糊性的能力</li><li><strong>隐含结构推断</strong>：依赖表面线索而非恢复底层关系（如权限结构、因果链）</li><li><strong>指令遵循与约束遵守</strong>：包含无关信息或违反任务要求</li><li><strong>细粒度推理与 grounding</strong>：在对齐细节和重建隐含逻辑方面存在困难</li></ul>
+<ul><li><strong>首个专注于现实生活场景的 context learning benchmark</strong>：填补了现有 benchmark 在日常生活上下文评估方面的空白</li><li><strong>高质量人工策划数据</strong>：405 个实例、5,348 个验证标准，每个实例平均 13 小时专家工作量</li><li><strong>系统化的分类体系</strong>：三大类九子类覆盖日常生活中常见的上下文类型</li><li><strong>严谨的评估方法</strong>：二值化 rubrics + GPT-5.1 评估器，评估准确率 &gt;90%，不同评估器一致性高</li><li><strong>丰富的分析维度</strong>：推理影响、上下文长度、错误分类、群聊特有模式、定性案例等</li><li><strong>揭示了关键洞察</strong>：性能差不是长上下文问题而是深度推理问题；Context-Misused 远多于 Context-Ignored</li></ul>
+<ul><li><strong>仅覆盖文本上下文</strong>：现实生活中的 context learning 本质上是多模态的（图片、视频等）</li><li><strong>评估成本高</strong>：依赖 GPT-5.1 作为评估器，成本较高；较小的开源评估器存在明显偏差</li><li><strong>未提供构建流程细节</strong>：因政策限制未公开详细的数据构建过程</li><li><strong>群聊场景是特别重要但挑战巨大的方向</strong>：模型在多人交互中的身份追踪、角色识别方面表现很差，需要更多针对性研究...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents.md" arxiv="2604.26904" -->
+<article class="paper-card" id="arxiv-2604.26904">
+  <h2>ClawGym: A Scalable Framework for Building Effective Claw Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.26904" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.26904.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.26904</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者提出 <strong>ClawGym</strong>，一个数据驱动的框架，系统性地统一了 Claw-style 个人智能体的任务合成、训练和评测。核心创新在于<strong>双路径数据合成策略</strong>：自上而下的 persona 驱动路径 + 自下而上的 skill 接地路径，配合自动环境构建和混合验证机制。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>尽管 OpenClaw 等系统能力令人印象深刻，自主智能体在日常数字任务中仍表现不佳，对较小 LLM 尤为明显。核心瓶颈在于：</p>
+<ul><li><strong>个性化需求多样</strong>：不同职业、工作流和日常生活对任务分布的定义提出了挑战</li><li><strong>长时程可验证性困难</strong>：涉及文件操作序列、工具调用、工作区更新和中间验证，自动化评估非平凡</li><li><strong>环境接地要求</strong>：需要真实模拟具体的文件系统和工作区 artifact，难以大规模仿制</li></ul>
+<p>现有工作在训练算法（ClawR1, MetaClaw）和评测基准（PinchBench 等）方面有所进展，但<strong>缺乏一个系统性的框架来统一任务合成、轨迹收集、智能体训练和评测</strong>。</p>
+<p>作者提出 <strong>ClawGym</strong>，一个数据驱动的框架，系统性地统一了 Claw-style 个人智能体的任务合成、训练和评测。核心创新在于<strong>双路径数据合成策略</strong>：自上而下的 persona 驱动路径 + 自下而上的 skill 接地路径，配合自动环境构建和混合验证机制。</p>
+<p>ClawGym 框架包含三大组件：</p>
+<ul><li><strong>ClawGym-SynData</strong>：13.5K 合成训练任务的数据集</li><li><strong>ClawGym-Agents</strong>：通过黑盒 rollout 收集高质量轨迹并训练的智能体家族</li><li><strong>ClawGym-Bench</strong>：200 个经人工-LLM 协作审核的高质量评测实例</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/ClawGym-Main-0429.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/ClawGym-Main-0429.png" alt="ClawGym 总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/category_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/category_distribution.png" alt="场景类别分布"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/action_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/action_distribution.png" alt="操作分布"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>主要评测结果（PinchBench + ClawGym-Bench）：</p>
+<table class="result-table">
+<tr><th>模型</th><th>PinchBench</th><th>P&amp;C</th><th>S&amp;A</th><th>A&amp;R</th><th>C&amp;D</th><th>P&amp;K</th><th>SD</th><th>Avg</th></tr>
+<tr><td class="best">Proprietary Frontier</td></tr>
+<tr><td>Claude-4.7-Opus</td><td>79.40</td><td>73.02</td><td>74.28</td><td>80.14</td><td>80.98</td><td>81.04</td><td>82.04</td><td class="best">77.81</td></tr>
+<tr><td>Claude-4.6-Sonnet</td><td>79.30</td><td>70.44</td><td>68.04</td><td>76.27</td><td>74.59</td><td>74.21</td><td>73.40</td><td>72.40</td></tr>
+<tr><td>GPT-5.4</td><td>68.30</td><td class="best">76.00</td><td>66.56</td><td>73.83</td><td>76.19</td><td>68.51</td><td>82.40</td><td>73.49</td></tr>
+<tr><td>Gemini-3-Flash</td><td class="best">88.70</td><td>68.70</td><td>68.06</td><td>68.89</td><td>78.87</td><td>80.68</td><td class="best">84.04</td><td>73.50</td></tr>
+<tr><td class="best">Open-Weight Frontier</td></tr>
+<tr><td>GLM-5.1</td><td>76.40</td><td>70.95</td><td>64.11</td><td>71.71</td><td>75.99</td><td>74.09</td><td>73.86</td><td class="best">71.12</td></tr>
+<tr><td>Qwen3.5-Plus</td><td>78.70</td><td>67.34</td><td>66.56</td><td>74.27</td><td>73.07</td><td>71.79</td><td>72.10</td><td>70.35</td></tr>
+<tr><td class="best">Compact Models</td></tr>
+<tr><td>Qwen3-8B</td><td>54.50</td><td>37.46</td><td>29.06</td><td>30.40</td><td>41.12</td><td>44.47</td><td>30.69</td><td>35.02</td></tr>
+<tr><td>Qwen3-30A3B</td><td>55.60</td><td>42.47</td><td>42.09</td><td>45.04</td><td>51.95</td><td>45.98</td><td>46.24</td><td>45.11</td></tr>
+<tr><td class="best">ClawGym-Agents</td></tr>
+<tr><td>ClawGym-4B</td><td>76.40</td><td>45.21</td><td>46.60</td><td>47.51</td><td>48.99</td><td>52.25</td><td>48.27</td><td>47.73</td></tr>
+<tr><td>ClawGym-8B</td><td>75.70</td><td>49.47</td><td>46.83</td><td>46.35</td><td>55.37</td><td>52.29</td><td>54.78</td><td>50.24</td></tr>
+<tr><td class="best">ClawGym-30A3B</td><td class="best">86.00</td><td>52.98</td><td>50.97</td><td class="best">64.64</td><td class="best">61.46</td><td>57.90</td><td>56.13</td><td class="best">56.82</td></tr>
+</table>
+<p>核心发现：...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>尽管 OpenClaw 等系统能力令人印象深刻，自主智能体在日常数字任务中仍表现不佳，对较小 LLM 尤为明显。核心瓶颈在于：</p>
+<ul><li><strong>个性化需求多样</strong>：不同职业、工作流和日常生活对任务分布的定义提出了挑战</li><li><strong>长时程可验证性困难</strong>：涉及文件操作序列、工具调用、工作区更新和中间验证，自动化评估非平凡</li><li><strong>环境接地要求</strong>：需要真实模拟具体的文件系统和工作区 artifact，难以大规模仿制</li></ul>
+<p>现有工作在训练算法（ClawR1, MetaClaw）和评测基准（PinchBench 等）方面有所进展，但<strong>缺乏一个系统性的框架来统一任务合成、轨迹收集、智能体训练和评测</strong>。</p>
+<ul><li><strong>端到端系统性框架</strong>：首次将任务合成、轨迹收集、智能体训练和评测统一在一个框架中</li><li><strong>双路径互补合成</strong>：persona-driven 保证场景多样性，skill-grounded 保证操作接地性，实验验证了混合策略的协同效果</li><li><strong>可扩展性强</strong>：自动化合成管线使得大规模数据生成成为可能（30K skill → 16K → 13.5K 任务）</li><li><strong>混合验证机制</strong>：代码+Rubric 的验证方式兼顾了确定性和定性需求</li><li><strong>泛化能力好</strong>：在内部 ClawGym-Bench 和外部 PinchBench 上均展示显著提升</li><li><strong>开源精神</strong>：承诺开源代码、数据和基准</li></ul>
+<ul><li><strong>与闭源前沿模型仍有差距</strong>：ClawGym-30A3B 平均分 56.82 vs Claude-4.7-Opus 77.81</li><li><strong>最佳 reward 阈值是经验选择</strong>：0.5 的阈值通过实验确定，缺乏理论依据</li><li><strong>RL 探索有限</strong>：RL 管线仅做了初步实验，效果提升相对有限</li><li><strong>执行可行性评分相对较低</strong>：人工评估中 Execution Feasibility 得分 3.50（满分 5），反映某些任务的环境假设较复杂</li><li><strong>teacher 模型依赖</strong>：轨迹收集依赖 MiniMax-M2.5 和 GLM-5.1，可能引入 teacher 偏见</li><li><strong>评测覆盖范围</strong>：200 个评测实例虽然经过严格筛选，但规模仍然有限</li></ul>
+<ul><li><strong>双路径合成策略可复用</strong>：对于任何需要环境接地的 agent 数据合成，persona-driven + skill-grounded 的互补策略是一个通用范式</li><li><strong>混合验证机制</strong>：code-based (0.7) + rubric-based (0.3) 的加权组合在很多 agent 评测场景中可直接采用...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets">
+  <h2>Contexts are Never Long Enough: Structured Reasoning for Scalable Question Answering over Long Document Sets</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://github.com/stanford-oval/sliders" target="_blank">Code</a>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者的核心判断是：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>长文档、多文档问答在金融、法律、科研分析等场景非常常见，但即便前沿模型已经支持百万 token 上下文，真实文档集合依然会很快超出上下文窗口。常见做法是：</p>
+<ul><li>把文档切成 chunk。</li><li>在 chunk 上分别抽取或回答。</li><li>再把 chunk 级结果聚合成最终答案。</li></ul>
+<p>作者认为这里有一个根本性问题，称为 <strong>aggregation bottleneck</strong>：</p>
+<ul><li>chunking 虽然缓解了“放不进上下文”的问题；</li><li>但随着 chunk 数量增多，系统仍然需要对越来越多的 chunk 级中间结果做二次聚合与推理；</li><li>这其实又把问题重新变回了“长上下文整合问题”。</li></ul>
+<p>也就是说，很多 long-context 方法并没有真正摆脱长度瓶颈，只是把瓶颈从“原始文档”转移到了“chunk 输出的聚合层”。</p>
+<p>这张图对应论文最重要的动机：</p>
+<ul><li>传统 chunk-based pipeline 把原文切碎后，虽然局部处理更容易；</li><li>但下游还是要把大量局部结果重新拼起来；</li><li>随着文档数和 chunk 数上涨，聚合层的负担会迅速膨胀；</li><li>SLIDERS 的做法是把这些局部信息沉淀到结构化表中，让后续推理在数据库上进行，而不是继续在文本上“拼接后再读”。</li></ul>
+<p>“aggregation bottleneck” 这个概念很强，因为它解释了为什么很多方法在工程上看似做了分治，实质上仍然没有解决可扩展推理。</p>
+<p>当问题需要强主观判断、模糊语义解释、开放式写作时，数据库表示未必能完整承载所有信息。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的核心判断是：</p>
+<ul><li>真正需要扩展的不是一次性喂给模型的文本长度；</li><li>而是系统持久化、组织、查询和整合证据的能力。</li></ul>
+<p>所以他们把任务从：</p>
+<ul><li>“让 LLM 在超长文本里直接找答案”</li></ul>
+<p>改写成：</p>
+<ul><li>“让 LLM 先把文本转换成结构化数据库，再在数据库上做程序化推理”。</li></ul>
+<p>这意味着：</p>
+<ul><li>文本负责提供原始证据；</li><li>关系数据库负责保存显式状态；</li><li>SQL 负责执行聚合、过滤、比较、算术与跨文档整合；</li><li>LLM 更像一个 agent，负责 schema 设计、抽取、纠错、查询生成与多轮工具调用。</li></ul>
+<p>作者把整个方法拆成五个任务，这也是论文最值得关注的地方。</p>
+<p>作者比较了：</p>
+<ul><li>RAG</li><li>LongRAG</li><li>GraphRAG</li><li>直接使用 frontier LLM</li><li>DocETL</li><li>Chain of Agents</li><li>RLM</li><li>SLIDERS</li></ul>
+<p>这使得论文不仅和传统检索问答比，也和更偏 agent / decomposition / scaffold 的系统比。</p>
+<p>SLIDERS 用 Qwen3.5 122B-A10B 做底座时，context-bounded benchmark 平均也能达到 75.26，显著高于直接把同一模型当 basemodel 使用时的 61.44。</p>
+<p>这表明收益主要来自 <strong>框架设计</strong>，而不是单靠更强闭源模型。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/main_funnel.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/main_funnel.png" alt="aggregation bottleneck"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/methodology_color.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/methodology_color.png" alt="SLIDERS pipeline"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Models</th><th>LLMs</th><th>FB</th><th>Loong</th><th>Oolong</th><th>Avg.</th><th>WC</th><th>FQ</th></tr>
+<tr><td>RAG</td><td>Qwen3-4B + GPT-4.1</td><td>62.67</td><td>54.35</td><td>11.32</td><td>42.77</td><td>31.41</td><td>5.00</td></tr>
+<tr><td>LongRAG</td><td>Qwen3-4B + GPT-4.1</td><td>72.00</td><td>59.10</td><td>22.00</td><td>51.03</td><td>43.20</td><td>28.87</td></tr>
+<tr><td>GraphRAG</td><td>Qwen3-4B + GPT-4.1</td><td>75.33</td><td>61.28</td><td>22.00</td><td>52.87</td><td>48.59</td><td>未报告</td></tr>
+<tr><td>Basemodel</td><td>GPT-4.1</td><td>82.00</td><td>76.74</td><td>45.56</td><td>68.69</td><td>不适用</td><td>不适用</td></tr>
+<tr><td>Basemodel</td><td>Qwen3.5 122B-A10B</td><td>84.67</td><td>74.78</td><td>24.89</td><td>61.44</td><td>不适用</td><td>不适用</td></tr>
+<tr><td>DocETL</td><td>GPT-4.1</td><td>63.33</td><td>75.03</td><td>49.00</td><td>62.44</td><td>54.26</td><td>未报告</td></tr>
+<tr><td>Chain of Agent</td><td>GPT-5 + GPT-5-mini</td><td>71.30</td><td>54.46</td><td>17.11</td><td>47.62</td><td>未报告</td><td>未报告</td></tr>
+<tr><td>RLM</td><td>GPT-5 + GPT-5-mini</td><td>75.33</td><td>72.64</td><td>51.42</td><td>66.46</td><td>59.80</td><td>未报告</td></tr>
+<tr><td class="best">SLIDERS</td><td class="best">GPT-4.1 + GPT-4.1-mini</td><td class="best">89.33</td><td class="best">78.57</td><td>64.67</td><td class="best">75.56</td><td class="best">78.91</td><td>55.22</td></tr>
+<tr><td class="best">SLIDERS</td><td class="best">Qwen3.5 122B-A10B</td><td>82.10</td><td>75.70</td><td class="best">68.00</td><td>75.26</td><td>76.92</td><td class="best">60.18</td></tr>
+</table>
+<p>这点非常关键。SLIDERS 并不是只在超长输入下才有意义。即使在 FinanceBench、Loong、Oolong 这些还能放进强模型上下文的任务上，它也依旧优于直接用 GPT-4.1。</p>
+<p>论文给出的结论是：</p>
+<ul><li>相比 GPT-4.1 直接读长上下文，SLIDERS 平均高 <strong>6.6 个点</strong>；</li><li>在 Oolong 这种聚合压力大的任务上，结构化推理优势尤其明显。</li></ul>
+<p>这说明作者抓住的不是单纯“上下文不够长”的问题，而是“跨片段聚合、比较、算术、全局一致性维护”本来就不适合纯 free-form 文本推理。</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>我认为这篇工作的主要贡献可以概括为 4 点：</p>
+<ul><li><strong>提出 aggregation bottleneck 这一问题表述</strong></li></ul>
+<p>很多 long-context/chunk-based 方法的真正瓶颈被说清楚了。</p>
+<ul><li><strong>提出 SLIDERS 这一结构化推理框架</strong></li></ul>
+<p>把长文档问答改写为数据库构建与 SQL 推理问题。</p>
+<ul><li><strong>把 reconciliation 做成系统核心模块</strong></li></ul>
+<p>尤其强调 provenance、rationale、metadata 在全局一致化中的作用。</p>
+<ul><li><strong>构建 ultra-long benchmark</strong></li></ul>
+<p>WikiCeleb100 和 FinQ100 让论文真正评到了现有 context window 之外。</p>
+<p>相比把中间结果保留成摘要文本、scratchpad 或递归 prompt，数据库是一种更稳定、更可计算、更可审计的状态表示。</p>
+<p>如果你近期关注的是 agent、长上下文、tool-use 或 memory，这篇论文很值得记住，原因在于它给出了一条很明确的路线：</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring.md" arxiv="2604.26962" -->
+<article class="paper-card" id="arxiv-2604.26962">
+  <h2>DeepTutor: Towards Agentic Personalized Tutoring</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.26962" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.26962.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/HKUDS/DeepTutor" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.26962</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>DeepTutor 的核心设计非常清楚:</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者认为，当前教育场景里的 LLM 系统虽然已经能做很多局部任务，但整体上仍然存在两个关键缺口。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>DeepTutor 的核心设计非常清楚:</p>
+<ul><li>用 <code>Static Knowledge Grounding (SKG)</code> 提供课程知识上下文</li><li>用 <code>Dynamic Personal Memory (DPM)</code> 提供学生上下文</li><li>用一个共享的 <code>Hybrid Personalization Engine</code> 把这两类上下文注入 tutoring 与 question generation</li><li>每次交互结束后，把新轨迹写回 memory，形成闭环</li></ul>
+<p>作者想做的不是“一个更会答题的 tutor”，而是“一个能随着学生持续变化的 tutoring agent”。</p>
+<p>上图很好地概括了论文定位:</p>
+<ul><li>以前的方法更像局部工作流</li><li>DeepTutor 把 tutoring trace 和 question generation 通过共享 learner context 连起来</li></ul>
+<p>图中的整体框架可以概括为:</p>
+<ul><li>课程资料进入知识底座</li><li>学生交互进入 Trace Forest</li><li>个性化引擎组装 <code>domain context + learner context</code></li><li>这个 context 同时服务于 <code>problem tutoring</code> 和 <code>question generation</code></li><li>新交互又写回 memory，更新 learner profile</li></ul>
+<p>作者把 learner profile 写作:</p>
+<div class="formula-block">\[\mathcal{D} = (\mathcal{D}_s, \mathcal{D}_w, \mathcal{D}_r)\]</div>
+<p>其中:</p>
+<ul><li>$\mathcal{D}_s$: session history / solving paths / performance trends</li><li>$\mathcal{D}_w$: recurring confusions / error patterns / knowledge gaps</li><li>$\mathcal{D}_r$: pedagogical self-reflections，用于指导后续交互风格</li></ul>
+<p>整个系统在每个 agent step 前都会组装一个 personalization context，核心就是:</p>
+<ul><li>领域知识上下文 $\mathcal{C}_{\text{rag}}$</li><li>学生记忆上下文 $\mathcal{C}_{\text{mem}}$</li></ul>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/full-pipe-0504.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/full-pipe-0504.png" alt="DeepTutor 总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/comparison-0505.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/comparison-0505.png" alt="DeepTutor 与已有方法对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/bench-0315.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_deeptutor_towards_agentic_personalized_tutoring/bench-0315.png" alt="TutorBench 构造流程"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者还指出，过去教育 benchmark 大多是 <code>instructor-centric</code>：</p>
+<ul><li>看 tutor 是否符合教学原则</li><li>看回答是否正确</li><li>看语言是否清晰</li></ul>
+<p>但它们很少真正测试:</p>
+<ul><li>系统是否针对一个具体学生适配</li><li>是否能在多轮交互中更新对学生的理解</li><li>是否能把 tutoring 和后续 practice generation 闭环联动起来</li></ul>
+<p>所以他们提出:</p>
+<p><code>如果要做真正的 personalized tutoring agent，就必须同时解决“系统闭环”和“个性化评测”两个问题。</code></p>
+<p>作者认为现有 benchmark 最大问题是:</p>
+<ul><li>学生画像太粗</li><li>与课程内容脱节</li><li>很少真正评测多轮适配</li></ul>
+<p>所以他们构建了 <code>TutorBench</code>，目标是让每个样本都包含:</p>
+<ul><li>learner profile</li><li>source-grounded knowledge gaps</li><li>interactive tutoring task</li><li>source references</li></ul>
+<p>作者设计了 10 个指标，分成两组。</p>
+<table class="result-table">
+<tr><th>System</th><th>Tutoring Avg</th><th>Practice Avg</th><th>Overall Quality</th><th>Delta</th></tr>
+<tr><td>Naive Tutor</td><td>3.96</td><td>3.10</td><td>3.53</td><td>--</td></tr>
+<tr><td>CoT Tutor</td><td>3.97</td><td>3.06</td><td>3.52</td><td>-0.28%</td></tr>
+<tr><td>Self-Refine Tutor</td><td>4.05</td><td>3.08</td><td>3.57</td><td>+1.13%</td></tr>
+<tr><td>ReAct Tutor</td><td>3.96</td><td>3.08</td><td>3.52</td><td>-0.28%</td></tr>
+<tr><td>DeepTutor</td><td class="best">4.39</td><td class="best">3.42</td><td class="best">3.91</td><td class="best">+10.76%</td></tr>
+</table>
+<p>这是全文最核心的一张表。</p>
+<p>它说明几个很重要的结论:</p>
+<ul><li>单纯加 CoT、self-refine、ReAct，不足以显著提升 personalized tutoring</li><li>DeepTutor 明显优于所有这些 baseline</li><li>提升不是只发生在某一个子指标，而是 tutoring-side 和 practice-side 都在涨</li></ul>
+<p>具体看，DeepTutor 最显著的 gains 出现在:</p>
+<ul><li><code>PER</code>: 4.59</li><li><code>VID</code>: 4.81</li><li><code>LD</code>: 4.61</li><li><code>GND</code>: 2.96</li><li><code>DIV</code>: 3.44</li><li><code>CC</code>: 3.38</li></ul>
+<p>这和方法设计高度一致:</p>
+<ul><li>tutoring 更 personalized</li><li>表达更 vivid</li><li>reasoning 更深</li><li>practice 更 grounded 且跨概念覆盖更强</li></ul>
+<p>TutorBench + first-person interactive simulation 比传统单轮教育 benchmark 更接近真实 tutoring 场景。...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果从 <code>agent</code> 角度看，这篇最值得记的不是“教育”本身，而是它展示了一个很强的 pattern:</p>
+<ul><li><code>domain grounding</code> 和 <code>user memory</code> 应该分开建模</li><li>shared memory substrate 可以跨多个 task pipeline 复用</li><li>agent 的个性化不应只靠 summary，而要靠可查询的 trace evidence</li><li>investigate-solve-write 这种多阶段 scaffold 具有跨任务迁移潜力</li></ul>
+<p>这和很多通用 agent 系统里的:</p>
+<ul><li>planner</li><li>retriever</li><li>memory</li><li>executor</li><li>writer</li></ul>
+<p>其实是相通的，只不过这里被放到了教育场景下，并做得更完整。</p>
+<p>这篇论文最有价值的地方，在于它不是把教育问题简单套到一个通用 agent 上，而是认真做了一个真正闭环的个性化 tutoring 系统，并且配套给出了 student-centric 的交互 benchmark。DeepTutor 的核心启发是:</p>
+<p><code>个性化 agent 不应该只会在当前回合说得像是“懂你”，而应该拥有一个可检索、可更新、能跨任务共享的个体模型，让每次互动都改变下一次互动。</code></p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers.md" arxiv="2604.01221" -->
+<article class="paper-card" id="arxiv-2604.01221">
+  <h2>HippoCamp: Benchmarking Contextual Agents on Personal Computers</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.01221" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.01221.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.01221</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong><code>HippoCamp</code> 的核心贡献不是“又做了一个 agent benchmark”，而是第一次比较系统地把 <strong>personal file-system 上的个性化多模态记忆与推理</strong> 变成可诊断、可分解、可量化的 benchmark，并证明当前 agent 的主要短板不在检索本身，而在 <strong>检索后的证据理解、实体绑定、跨文件综合和最终验证</strong>。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>论文评测了三大类方法：</p>
+<p>ChatGPT Agent Mode 虽然是最强的，但它并没有压倒性解决问题：</p>
+<ul><li>在 Adam 这个结构清晰的 profile 上，factual Acc 可以到 <code>90.3</code></li><li>但在 Bei 这种更杂乱、实体更复杂的 profile 上，只剩 <code>31.2</code></li></ul>
+<p>说明 profile complexity 的变化对 agent 影响极大。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/23_evaluation_pipeline.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/23_evaluation_pipeline.png" alt="Evaluation Pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/3_hippocase.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/3_hippocase.png" alt="HippoCamp Overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/1_hierarchy.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_hippocamp_benchmarking_contextual_agents_on_personal_computers/1_hierarchy.png" alt="Hierarchical Annotation Schema"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文在 related work 里对比了很多已有 benchmark，包括 HotpotQA、BrowseComp、WebQA、GAIA、WebShop、MMDocRAG、LoCoMo、EgoLifeQA 等。作者强调，HippoCamp 的独特点不在于“又多了一个多模态 benchmark”，而在于它同时具备三件事：</p>
+<ul><li><code>User Profile</code>: 任务围绕具体用户展开，而不是公共知识库</li><li><code>File-System</code>: 证据分散在真实文件系统，而不是单个网页或单个文档</li><li><code>Multimodal</code>: 支持 text / image / document / video / audio 五类模态</li></ul>
+<p>因此它更接近一种 <strong>personalized multimodal memory benchmark</strong>，而不是普通的 retrieval benchmark。</p>
+<p>下面是最关键的 overall 指标整理：</p>
+<table class="result-table">
+<tr><th>方法</th><th>Profiling F1</th><th>Profiling Acc</th><th>Factual Retention F1</th><th>Factual Retention Acc</th></tr>
+<tr><td>Standard RAG</td><td>18.4</td><td>26.7</td><td>30.0</td><td>30.2</td></tr>
+<tr><td>Self-RAG</td><td>15.2</td><td>10.0</td><td>31.9</td><td>27.5</td></tr>
+<tr><td>ReAct (Qwen3-30B-A3B)</td><td>11.8</td><td>13.5</td><td>43.1</td><td>28.5</td></tr>
+<tr><td>ReAct (Gemini-2.5-flash)</td><td>18.5</td><td>20.0</td><td>26.5</td><td>38.7</td></tr>
+<tr><td>Search-R1</td><td>10.8</td><td>5.0</td><td>41.0</td><td>25.3</td></tr>
+<tr><td>Terminal Agent (Qwen3-VL-8B-Instruct)</td><td>11.6</td><td>16.7</td><td>17.3</td><td>11.5</td></tr>
+<tr><td>Terminal Agent (Gemini-2.5-flash)</td><td>15.0</td><td>25.0</td><td>26.4</td><td>23.3</td></tr>
+<tr><td>Terminal Agent (GPT-5.2)</td><td>11.1</td><td>30.0</td><td>24.6</td><td>48.2</td></tr>
+<tr><td>ChatGPT Agent Mode</td><td class="best">21.0</td><td class="best">48.3</td><td class="best">35.3</td><td class="best">62.8</td></tr>
+</table>
+<p>论文最有诊断价值的部分，是 capability-wise analysis。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>规模仍然有限</strong>: 只有 3 个 archetypal profiles，尽管很深，但横向覆盖仍有限。</li><li><strong>LLM-as-a-judge 仍有主观性</strong>: 作者做了 human audit，但 judge-based evaluation 还是可能引入偏差。</li><li><strong>环境不完全等于真实 OS 交互</strong>: 虽然是 device-scale file system，但仍然是 benchmark 化、受控化的环境。</li><li><strong>方法对比里产品级 agent 有系统性优势/限制混杂</strong>: 不同 agent mode 的 tool policy、系统接口、时间预算并不完全等价。</li></ul>
+<p>如果把这篇放在你现在的 <code>agent</code> 阅读脉络里，它的启发很强，尤其适合和 memory agent、OS agent、multimodal retrieval agent 连起来看。</p>
+<p>从 benchmark 的标注结构看，一个很自然的后续方向是做：</p>
+<ul><li>file node</li><li>evidence node</li><li>entity node</li><li>temporal relation</li><li>support graph</li></ul>
+<p>也就是把个人文件系统转成可推理的 evidence graph，而不是只做 top-k retrieval。</p>
+<p><code>HippoCamp</code> 的核心贡献不是“又做了一个 agent benchmark”，而是第一次比较系统地把 <strong>personal file-system 上的个性化多模态记忆与推理</strong> 变成可诊断、可分解、可量化的 benchmark，并证明当前 agent 的主要短板不在检索本身，而在 <strong>检索后的证据理解、实体绑定、跨文件综合和最终验证</strong>。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks.md" arxiv="" -->
+<article class="paper-card" id="arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks">
+  <h2>Odysseys: Benchmarking Web Agents on Realistic Long Horizon Tasks</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.24964" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.24964.pdf" target="_blank">PDF</a>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>当前 Web Agent 基准测试（WebArena、VisualWebArena、Online-Mind2Web、WebVoyager 等）已趋于饱和：任务偏短、集中在单一网站，前沿模型已接近天花板。但真实世界的 Web 使用本质上是<strong>长程、多站点</strong>的工作流——跨零售商比价、跨平台旅行规划、多源信息综合等——需要 Agent 在<strong>数小时</strong>的浏览中保持上下文连贯性、跨站点推理和自主规划。</p>
+<p><strong>核心问题：</strong>如何构建一个基于真实浏览行为、支持细粒度评估的长程 Web Agent 基准？</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>当前 Web Agent 基准测试（WebArena、VisualWebArena、Online-Mind2Web、WebVoyager 等）已趋于饱和：任务偏短、集中在单一网站，前沿模型已接近天花板。但真实世界的 Web 使用本质上是<strong>长程、多站点</strong>的工作流——跨零售商比价、跨平台旅行规划、多源信息综合等——需要 Agent 在<strong>数小时</strong>的浏览中保持上下文连贯性、跨站点推理和自主规划。</p>
+<p><strong>核心问题：</strong>如何构建一个基于真实浏览行为、支持细粒度评估的长程 Web Agent 基准？</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 Web Agent 基准测试（WebArena、VisualWebArena、Online-Mind2Web、WebVoyager 等）已趋于饱和：任务偏短、集中在单一网站，前沿模型已接近天花板。但真实世界的 Web 使用本质上是<strong>长程、多站点</strong>的工作流——跨零售商比价、跨平台旅行规划、多源信息综合等——需要 Agent 在<strong>数小时</strong>的浏览中保持上下文连贯性、跨站点推理和自主规划。</p>
+<p><strong>核心问题：</strong>如何构建一个基于真实浏览行为、支持细粒度评估的长程 Web Agent 基准？</p>
+
+<table class="result-table">
+<tr><th>指标</th><th>Cohen&#x27;s κ</th><th>Precision</th><th>Recall</th><th>F1</th><th>Accuracy</th></tr>
+<tr><td>O-M2W Judge</td><td>0.508</td><td>0.842</td><td>0.696</td><td>0.762</td><td>0.752</td></tr>
+<tr><td>Rubrics (Averaged)</td><td>0.788</td><td class="best">0.939</td><td>0.960</td><td class="best">0.949</td><td>0.923</td></tr>
+<tr><td>Rubrics (Perfect)</td><td class="best">0.849</td><td>0.901</td><td class="best">0.970</td><td>0.934</td><td class="best">0.926</td></tr>
+</table>
+<p>&gt; Rubric 评估一致性远超轨迹级 judge（Cohen&#x27;s κ: 0.849 vs 0.508），证明细粒度分解评估在长程场景中的必要性。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/odyssey_figure1_v13.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/odyssey_figure1_v13.png" alt="总览图"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/success_vs_steps_200_hard.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/success_vs_steps_200_hard.png" alt="200步扩展"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/scatter_steps_vs_perfect_score.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks/scatter_steps_vs_perfect_score.png" alt="Pareto曲线"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>将 Opus 4.6 的步数预算从 100 扩展到 200：</p>
+<ul><li>完全成功率从 <strong>44.5% 提升至 76.5%</strong>（86/200 → 153/200），单调持续上升（100 步 44.5% → 120 步 50.5% → 150 步 59.5% → 180 步 67.0% → 200 步 76.5%）</li><li>14.5% 的任务即使 200 步也耗尽预算</li><li>乐观上界估计约 86.0%——至少 ~14% 的任务即使无限步也失败</li><li>轨迹效率从 100 步的 1.06% 变为 200 步的 1.08%，表明性能未退化，Agent 仍在做有效工作</li><li>在 76 个 hard 任务子集上，Opus 从 10% 升至 65%（+55pp），而 <strong>Qwen 3.5-9B 在 100→200 步间几乎无提升</strong>（1.3% flatline）——Qwen 失败表现为在标签页间无序跳转（thrashing），是能力上限而非步数限制</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>成本高昂</strong>：Opus 4.6 每个任务约 30 分钟 + $2.5，完整评估 200 任务约 $500+</li><li><strong>评估依赖 LLM judge</strong>：虽然 rubric 一致性高，但仍受 judge 模型能力限制</li><li><strong>仅限 Web 浏览</strong>：任务围绕 Chrome 浏览器，未覆盖桌面应用、移动端等更广的 computer-use 场景</li><li><strong>偏重信息获取型任务</strong>：主要为搜索、比较、汇总，对交互型任务（如填写表单、在线购物）覆盖有限</li><li><strong>静态基准</strong>：Web 内容随时变化，任务可行性可能随时间退化</li><li><strong>开源模型评估不完整</strong>：仅测试了 Qwen3.5 和 UI-TARS，未覆盖更多开源 computer-use 模型</li></ul>
+
+<ul><li><strong>RL 训练信号</strong>：Rubric 提供的细粒度部分信用信号可用于强化学习训练弱模型，这是论文明确指出的方向</li><li><strong>子 Agent / 多 Agent 架构</strong>：高扇出任务（10-30 子项）需要子 Agent 分工协作</li><li><strong>步数感知规划</strong>：Agent 应推理剩余步数预算，在信息收集与产出生成间动态切换</li><li><strong>多动作批处理</strong>：GPT-5.4 每次调用返回 2.03 个动作（vs Opus 的 1 个），显著减少 wall-clock time——训练或 prompting 策略可显式鼓励此行为</li><li><strong>跨模态扩展</strong>：将长程评估从 Web 扩展到桌面 OS、移动端等更广泛的 computer-use 场景</li><li><strong>动态基准维护</strong>：Web 内容变化导致任务失效，需要自动化可行性检测和任务更新机制</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation.md" arxiv="2604.28181" -->
+<article class="paper-card" id="arxiv-2604.28181">
+  <h2>Synthetic Computers at Scale for Long-Horizon Productivity Simulation</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.28181" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.28181.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.28181</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这一部分当前还没有补到更细的整理。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 Agent 训练数据的来源存在显著局限：</p>
+<ul><li><strong>人类示范数据</strong>：高质量但成本极高、覆盖窄，无法规模化</li><li><strong>合成任务生成</strong>（SWE-bench、Terminal-Bench 等）：局限于特定领域（代码修复），任务通常是<strong>孤立的</strong>，缺乏丰富的上下文环境</li><li><strong>WebArena 等环境</strong>：提供了交互界面但缺乏用户特定的持久化文件系统和工作历史</li><li><strong>核心差距</strong>：现有方法提供的是&quot;任务&quot;而非&quot;工作环境&quot;——没有真实的文件层次、项目历史、协作者关系和累积的工作状态</li></ul>
+<p>整个流水线包含三个核心阶段：</p>
+<ul><li><strong>Synthetic Computer Creation</strong>：从 persona 创建用户特定的计算机环境</li><li><strong>Long-Horizon Productivity Simulation</strong>：在合成计算机上运行数周的工作模拟</li><li><strong>Experience Extraction &amp; Skill Creation</strong>：从仿真轨迹中提取经验信号并转化为可改进 Agent 的 skills</li></ul>
+<p class="caption-note">图：Synthetic Computers at Scale 框架总览</p>
+<p class="caption-note">Synthetic Computers at Scale 框架：从 Persona 到合成计算机到长期仿真到经验提取</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/overview.png" alt="框架总览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/sec2_overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/sec2_overview.png" alt="Sec2 Overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/artifact_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/artifact_distribution.png" alt="Artifact 分布"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>Agent runtime</strong>：Claude Code SDK</li><li><strong>Work Agent</strong>：Claude Sonnet 4.6</li><li><strong>Setup Agent</strong>：Claude Opus 4.6（长期模拟设置）</li><li><strong>Artifact 创建 skills</strong>：Anthropic 的 skills（非 Office 类型）+ MiniMax 的开源 skills（Office 类型：minimax-docx, minimax-xlsx, pptx-generator, minimax-pdf）</li><li><strong>规模</strong>：1,000 个合成计算机（从 1,000 个 persona 出发）</li><li><strong>评估</strong>：100 个合成计算机的 rubric 评估 + 100 个 held-out 计算机的 in-domain 评估 + GDPVal 的 out-of-domain 评估</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前 Agent 训练数据的来源存在显著局限：</p>
+<ul><li><strong>人类示范数据</strong>：高质量但成本极高、覆盖窄，无法规模化</li><li><strong>合成任务生成</strong>（SWE-bench、Terminal-Bench 等）：局限于特定领域（代码修复），任务通常是<strong>孤立的</strong>，缺乏丰富的上下文环境</li><li><strong>WebArena 等环境</strong>：提供了交互界面但缺乏用户特定的持久化文件系统和工作历史</li><li><strong>核心差距</strong>：现有方法提供的是&quot;任务&quot;而非&quot;工作环境&quot;——没有真实的文件层次、项目历史、协作者关系和累积的工作状态</li></ul>
+<ul><li><strong>首个大规模合成计算机方法论</strong>：从 persona 创建完整的用户特定计算机环境，包含丰富的文件系统、项目历史和协作者关系，填补了 Agent 训练数据在&quot;真实工作环境&quot;方面的空白</li><li><strong>长期仿真规模惊人</strong>：每次仿真平均 2,272 turns、8.59 小时、31 次协作通信，远超现有 benchmark 的任务时长</li><li><strong>内容丰富的 artifact</strong>：生成的文件不是空占位符——DOCX 平均 14.6KB、PPTX 平均 593.7KB，Office 格式占 67.8%</li><li><strong>经验信号的有效性</strong>：从仿真轨迹提取的 skills 在域内（83% 胜率，+7.0pp）和域外（GDPVal 上 105 胜 67 负，p=0.002）都显著改进了 Agent 性能</li><li><strong>跨模型迁移</strong>：从 Sonnet 仿真提取的 skills 对 Haiku 和 Opus 也有正面效果</li><li><strong>可扩展的自改进循环</strong>：随着仿真数量增加，skill 质量持续提升（100→500→900 台训练计算机，胜率从 64% 升至 83%）</li><li><strong>详细的失败模式分析</strong>：跨文档一致性、协作者反馈遗漏、空白消息、版本混乱等系统性失败模式为 Agent 改进提供了明确方向</li></ul>
+<ul><li><strong>Artifact 视觉风格过于统一</strong>：当前 artifact 的内容虽然丰富，但视觉风格和格式跨计算机过于一致，缺乏用户或组织特定的设计偏好</li><li><strong>文件系统过于&quot;干净&quot;</strong>：真实计算机包含临时下载、重复草稿、废弃文件、截图、过时材料等噪音，合成计算机缺乏这种自然积累的历史</li><li><strong>协作者过于被动</strong>：当前模拟协作者主要是响应式的，而真实协作者有自己的工作、文件、会议、截止日期和演变状态...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills.md" arxiv="2605.20876" -->
+<article class="paper-card" id="arxiv-2605.20876">
+  <h2>Terminal-World: Scaling Terminal-Agent Environments via Agent Skills</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.20876" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.20876.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.20876</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>Terminal-World 的核心贡献，是把 <strong>agent skill</strong> 从“人给 agent 的执行说明”提升为 <strong>terminal-agent 数据合成的中心原语</strong>，并围绕它联合构建任务、环境与轨迹，从而以很低的数据量和成本，训练出比现有 terminal-agent 合成数据方法更强、更高效的模型。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 <strong>terminal agent 的训练数据瓶颈</strong>。</p>
+<p>和 API agent 不同，terminal agent 不是在固定工具列表里选一个 API 调一下，而是真正在命令行环境中执行 shell 命令、读写文件、安装依赖、跑测试、启动服务、调试环境。作者认为，这类 agent 的训练难点不只是“缺任务”，而是同时缺三样彼此强耦合的东西：</p>
+<ul><li><strong>任务指令</strong>：到底要 agent 完成什么；</li><li><strong>可执行环境</strong>：文件、依赖、初始状态、服务配置是否真实可运行；</li><li><strong>高质量轨迹</strong>：teacher 是否给出了有效、简洁、少走弯路的交互过程。</li></ul>
+<p>已有自动化数据构建方法，大多从某种 <strong>partial source</strong> 出发，比如：</p>
+<ul><li>人工种子关键词或短描述；</li><li>GitHub 仓库；</li><li>单一环境组件。</li></ul>
+<p>然后再让 LLM 去“把剩下的补完”。作者认为这种思路有三个根本问题：</p>
+<ul><li><strong>任务分布受限</strong>：因为起点本身很窄，最后合成出的任务也集中在少数种子分布里；</li><li><strong>环境和任务不对齐</strong>：任务语义和环境不是从一开始共同定义出来的，而是后补的，所以常常 fragile；</li><li><strong>teacher 轨迹低效</strong>：teacher 在没有明确 procedural guidance 的情况下，只能自己探索，容易产生冗余命令和低质量路径。</li></ul>
+<p>论文的核心主张是：<strong>终端任务的数据构造，不应该从“半成品种子”出发，而应该从 agent skill 出发。</strong></p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者把 <strong>agent skill</strong> 当作 terminal-agent 数据合成的中心原语。原因是 skill 天然同时编码了三件事：</p>
+<ul><li><strong>what</strong>：要完成什么能力；</li><li><strong>when</strong>：什么前提条件、环境状态下适用；</li><li><strong>how</strong>：应该怎样执行。</li></ul>
+<p>这恰好对应 terminal-agent 训练样本最需要的三部分：</p>
+<ul><li>任务指令；</li><li>环境构造；</li><li>教师轨迹。</li></ul>
+<p>所以 Terminal-World 的想法不是“先有任务，再补环境，再让 teacher 去试”；而是：</p>
+<p><strong>从 skill 出发，自顶向下联合生成 task instruction、environment blueprint 和 execution guideline，再把它们实例化成可执行 sandbox，并收集 teacher trajectory。</strong></p>
+<p>上图左边是方法总览，右边是性能概览。整篇工作的 pipeline 可以概括成四步：</p>
+<ul><li><strong>Agent Skill Collection</strong></li><li><strong>Task Generation</strong></li><li><strong>Environment Building</strong></li><li><strong>Trajectory Collection</strong></li></ul>
+<p>作者还进一步把 skill 扩展成：</p>
+<ul><li><strong>single skills</strong>：单技能；</li><li><strong>skill teams</strong>：同一子类中的多技能、多角色协作；</li><li><strong>skill graphs</strong>：跨子类技能组合成更长的工作流。</li></ul>
+<p>因此它不是只在“单任务模板”层面扩数据，而是在 <strong>能力组合图</strong> 上扩展 terminal task 空间。</p>
+<p>我认为这篇论文最核心的贡献可以概括为三层：</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/method_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/method_v2.png" alt="Method pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/intro_v5.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/intro_v5.png" alt="Terminal-World overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/env_trajectory_stats.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/env_trajectory_stats.png" alt="Data statistics"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文在 6 个 benchmark 上评估：</p>
+<ul><li>Terminal-Bench 2.0</li><li>AIME24</li><li>AIME25</li><li>DABench</li><li>TableBench</li><li>BIRD</li></ul>
+<p>其中 Terminal-Bench 2.0 是 terminal-native 编码 benchmark，其余几个被转换成 terminal-based task。</p>
+<p>主结果表里最值得抓的，是和 Nemotron-Terminal 以及其他 <code>&lt;100B</code> 开源 terminal-agent 模型的对比：</p>
+<table class="result-table">
+<tr><th>Model</th><th>#Train Samples</th><th>TB2.0 P@1</th><th>TB2.0 P@3</th><th>Avg. P@1</th><th>Avg. P@3</th></tr>
+<tr><td>Nemotron-Terminal-8B</td><td>490.5k</td><td>13.5</td><td>21.3</td><td>58.5</td><td>69.3</td></tr>
+<tr><td class="best">Terminal-World-8B</td><td class="best">5.7k</td><td class="best">15.7</td><td class="best">23.6</td><td class="best">63.5</td><td class="best">71.7</td></tr>
+<tr><td>Nemotron-Terminal-14B</td><td>490.5k</td><td>20.2</td><td>24.7</td><td>66.9</td><td>73.2</td></tr>
+<tr><td class="best">Terminal-World-14B</td><td class="best">5.7k</td><td class="best">21.3</td><td class="best">27.0</td><td class="best">66.0</td><td class="best">74.1</td></tr>
+<tr><td>Nemotron-Terminal-32B</td><td>490.5k</td><td>27.0</td><td>37.1</td><td>68.9</td><td>76.0</td></tr>
+<tr><td class="best">Terminal-World-32B</td><td class="best">5.7k</td><td class="best">31.5</td><td class="best">43.8</td><td class="best">69.3</td><td class="best">77.9</td></tr>
+</table>
+<p>我觉得这张表最重要的不是“又提升了几分”，而是两层更深的结论：</p>
+<ul><li><strong>极高的数据效率</strong></li></ul>
+<p>Terminal-World-32B 只用了 <code>5.7k</code> 训练样本，而 Nemotron-Terminal-32B 用了 <code>490.5k</code>。也就是前者只用了后者大约 <code>1.2%</code> 的数据。</p>
+<ul><li><strong>终端能力与跨任务泛化兼得</strong></li></ul>
+<p>论文强调 Nemotron-Terminal 还混入了大量辅助样本，而 Terminal-World 只用 terminal-style trajectories，却仍能在非终端 benchmark 上匹敌甚至超过它。</p>
+<p>这意味着作者构造的 skill-grounded trajectory，不只是“对 terminal bench 刷得准”，还学到了某种更通用的问题解决模式。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>虽然这篇工作很强，但我觉得也有一些自然限制：</p>
+<ul><li><strong>skill source 仍然决定了能力边界</strong></li></ul>
+<p>如果上游技能库本身偏向某些能力，合成出来的 terminal worlds 也会继承这种偏置。</p>
+<ul><li><strong>LLM-as-a-Judge 与 GVR 本身也带来额外偏好</strong></li></ul>
+<p>最终保留下来的任务，可能更偏向易于被 judge / verifier 描述和检查的任务类型。</p>
+<ul><li><strong>目前还是偏 SFT 式利用</strong></li></ul>
+<p>虽然这篇的数据构造对 RL 很有潜力，但论文主要还是展示用这些轨迹做 SFT 的效果。</p>
+<ul><li><strong>环境构建质量对整体很敏感</strong></li></ul>
+<p>如果 sandbox 或 verifier 质量不好，会把噪声传到 teacher trajectory 和 student 学习中。</p>
+<p>这篇工作对 <code>agent</code> 方向很有启发，尤其是你现在经常看的那些 agent RL / agent data synthesis 论文里，它提供了一个很清楚的视角：</p>
+<ul><li><strong>agent 数据的瓶颈不是只有 task instruction</strong></li></ul>
+<p>更关键的是 task、environment、trajectory 三者的联合构造。</p>
+<ul><li><strong>真实技能文档可以成为训练数据原语</strong></li></ul>
+<p>skill 文档比 seed keyword 或 repo 名更“结构化”、更贴近实际工作流。</p>
+<ul><li><strong>persona 是数据多样性的廉价放大器</strong></li></ul>
+<p>对同一技能注入不同 persona，可以很低成本地拓展使用场景。</p>
+<ul><li><strong>失败轨迹不是垃圾</strong></li></ul>
+<p>对 terminal agent 来说，失败过程里的局部正确行为非常有学习价值。</p>
+<p>Terminal-World 的核心贡献，是把 <strong>agent skill</strong> 从“人给 agent 的执行说明”提升为 <strong>terminal-agent 数据合成的中心原语</strong>，并围绕它联合构建任务、环境与轨迹，从而以很低的数据量和成本，训练出比现有 terminal-agent 合成数据方法更强、更高效的模型。</p>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents.md" arxiv="2605.10832" -->
+<article class="paper-card" id="arxiv-2605.10832">
+  <h2>Towards On-Policy Data Evolution for Visual-Native Multimodal Deep Search Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.10832" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.10832.pdf" target="_blank">PDF</a>
+  <span class="meta-muted">Code: 论文源码里未看到明确公开仓库链接</span>
+  <span style="color:var(--text-secondary)">arXiv 2605.10832</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者的主张不是只改模型，也不是只改数据，而是把问题看成一个 <strong>workspace + data generator + policy</strong> 的协同设计问题：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇 paper 关注的是 <strong>multimodal deep search agent</strong>。这类 agent 不是只做单轮 VQA，也不是简单把图像喂给模型直接回答，而是要在开放世界里连续调用工具，完成：</p>
+<ul><li>search</li><li>browse / visit</li><li>visual search</li><li>image manipulation</li><li>computation</li></ul>
+<p>最后再把跨模态证据汇总成 grounded answer。</p>
+<p>作者认为当前多模态 deep search 系统有两个核心瓶颈：</p>
+<ul><li><strong>中间视觉证据不会“留在工作区里”继续被后续工具消费</strong></li><li>搜索、浏览、裁剪、旋转这些工具虽然会返回图像，但很多现有系统把这些图像当作“一次性观察结果”</li><li>后续工具不能像处理文本上下文那样继续引用这些中间图像</li><li>所以 agent 的视觉链式推理经常被截断在原始输入图像上</li></ul>
+<ul><li><strong>训练数据构建是静态 recipe，不会随着 agent 能力变化而自适应</strong></li><li>现有做法大多先设计好一个数据合成流程，再规模化生成</li><li>但 target agent 训练到不同阶段，需要的数据难度、能力覆盖、轨迹模式并不一样</li><li>静态合成很难对齐当前 policy 的 learning frontier</li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的主张不是只改模型，也不是只改数据，而是把问题看成一个 <strong>workspace + data generator + policy</strong> 的协同设计问题：</p>
+<ul><li>在交互层面，先造一个 <strong>visual-native harness</strong></li><li>在数据层面，再用 <strong>ODE</strong> 做闭环、按 policy 状态演化的数据构造</li></ul>
+<p>换句话说，这篇文章的切入点很 agentic：它不是单纯提高模型视觉能力，而是提高 agent 使用视觉证据工作的能力，以及让训练数据随着 agent 的短板动态演化。</p>
+<p>论文方法由两部分组成：</p>
+<ul><li><strong>Visual-Native Agent Harness</strong></li><li>给 agent 一个支持持久化视觉状态的工作区</li><li>核心是 image bank reference protocol</li></ul>
+<ul><li><strong>ODE: On-policy Data Evolution</strong></li><li>用当前 rollout 的反馈反过来更新下一轮的数据生成配置</li><li>同时支持 SFT 数据和 RL 数据</li></ul>
+<p>图里左边是 visual-native harness，右边是 ODE 闭环。这个总图基本概括了全文。</p>
+<p>这里的“on-policy”不是传统意义上的只说 RL，而是说：</p>
+<ul><li>数据是否保留</li><li>难度是否上调/下调</li><li>哪个阶段该怎么修改</li></ul>
+<p>都由 <strong>当前 rollout policy 暴露出的失败模式</strong> 来决定。</p>
+<p>因此它不是静态 recipe，也不是纯人工数据工程，而是 policy-conditioned data generator。</p>
+<p>这点很漂亮。很多工作会把 SFT data curation 和 RL task generation 分成两套系统，而本文是在同一套框架下做 mode-specific rubric 和 policy-specific adaptation。</p>
+<ul><li><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" target="_blank" rel="noopener">shijue_nips_main.png</a></li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/harness_analysis_fig3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/harness_analysis_fig3.png" alt="Harness Ablation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/static_vs_evolution_fig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/static_vs_evolution_fig.png" alt="Static vs Evolution"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在 8 个 benchmark 上评测：</p>
+<ul><li>MMBC</li><li>HLE-VL</li><li>BC-VL</li><li>VDR</li><li>MMSearch</li><li>MMSearch+</li><li>SimpleVQA</li><li>FVQA</li></ul>
+<p>这些 benchmark 横跨 multimodal browsing、visual deep research、fact-based VQA 等不同场景。</p>
+<table class="result-table">
+<tr><th>Model</th><th>MMBC</th><th>HLE-VL</th><th>BC-VL</th><th>VDR</th><th>MMSearch</th><th>MMSearch+</th><th>SVQA</th><th>FVQA</th><th>Avg.</th></tr>
+<tr><td>Gemini-2.5 Pro (Agent Workflow)</td><td>13.8</td><td>17.3</td><td>42.3</td><td>10.0</td><td>55.7</td><td>24.9</td><td>74.3</td><td>65.0</td><td>37.9</td></tr>
+<tr><td>Qwen3-VL-8B (Visual-Native Harness)</td><td>7.6</td><td>6.1</td><td>26.1</td><td>4.2</td><td>47.3</td><td>10.0</td><td>53.0</td><td>44.7</td><td>24.9</td></tr>
+<tr><td>+ ODE-SFT</td><td>8.5</td><td>8.2</td><td>39.6</td><td>19.2</td><td>61.7</td><td>21.3</td><td>68.3</td><td>62.0</td><td>36.1</td></tr>
+<tr><td class="best">+ ODE-RL</td><td class="best">12.5</td><td class="best">11.4</td><td class="best">41.9</td><td class="best">20.4</td><td class="best">66.0</td><td class="best">24.9</td><td class="best">70.3</td><td class="best">64.7</td><td class="best">39.0</td></tr>
+<tr><td>Qwen3-VL-30B (Visual-Native Harness)</td><td>7.1</td><td>8.5</td><td>32.8</td><td>11.0</td><td>57.0</td><td>10.0</td><td>63.7</td><td>54.3</td><td>30.6</td></tr>
+<tr><td>+ ODE-SFT</td><td>10.3</td><td>9.9</td><td>43.1</td><td>24.0</td><td>65.7</td><td>26.7</td><td>70.3</td><td>66.3</td><td>39.5</td></tr>
+<tr><td class="best">+ ODE-RL</td><td class="best">11.2</td><td class="best">10.5</td><td class="best">46.1</td><td class="best">26.4</td><td class="best">69.7</td><td class="best">28.1</td><td class="best">71.0</td><td class="best">69.3</td><td class="best">41.5</td></tr>
+</table>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>问题定义很到位</strong></li><li>把 multimodal deep search 的核心困难拆成“工作区设计 + 数据演化”两个层面，而不是只盯模型 backbone</li></ul>
+<ul><li><strong>方法结构完整</strong></li><li>harness、data generator、rubric、SFT、RL 串成了一个闭环</li></ul>
+<ul><li><strong>实验扎实</strong></li><li>有主结果</li><li>有 harness 消融</li><li>有 static vs evolution 对比</li><li>有机制分析</li></ul>
+<ul><li><strong>对 agent 社区很有启发</strong></li><li>这篇 paper 不只是一个 benchmark 上提分，更像是在提出一种 multimodal agent training recipe</li></ul>
+<ul><li><strong>系统很重</strong></li><li>9 工具 + graph organization + rubric analysis + config optimization</li><li>训练和数据构建成本都不低</li></ul>
+<ul><li><strong>对 LLM judge / analyzer 依赖比较强</strong></li><li>rubric 打分、failure attribution、config update 都要靠强模型</li><li>这意味着方法质量部分依赖 judge 的稳定性</li></ul>
+<ul><li><strong>更多展示的是 recipe effectiveness，而不是理论解释</strong></li><li>为什么某些 rubric 组合最好、为什么某些配置更新最优，并没有更深层理论</li></ul>
+<ul><li><strong>可迁移性仍有待验证</strong></li><li>backbone 主要是 Qwen3-VL</li><li>harness 和 ODE 是否能无痛迁移到更多 agent stack、更多工具生态，还需要更多证据</li></ul>
+<p>如果你关心的是 agent / VLM / OPD 的细粒度数据构造，这篇 paper 有几个很直接的启发：</p>
+<ul><li><strong>可以把“可复用视觉记忆”看成 agent state design，而不是 prompt 技巧</strong></li><li>对 VLM agent 来说，memory 不一定只是文本 memory，也可以是 image-bank memory</li></ul>
+<ul><li><strong>on-policy 不一定只优化 policy，也可以优化 data generator</strong></li><li>这和你前面一直在看的 OPD 系列是有呼应的</li><li>这里只不过把 on-policy 的对象从 answer distribution 扩展到了 task distribution...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<!-- PAPER_CARD_START source="agent/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies.md" arxiv="2605.03596" -->
+<article class="paper-card" id="arxiv-2605.03596">
+  <h2>Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.03596" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.03596.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/OpenDataBox/Workspace-Bench" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.03596</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>Workspace-Bench 填补核心空白：<strong>单个 Agent 知识工作空间的关系结构</strong>。超越静态文件提供，系统评测 workspace reasoning 的六维度能力：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者对 ByteDance Lark 平台上 <strong>154 个真实任务场景</strong> 进行深入分析，发现：</p>
+<ul><li>AI Agent 已能解决 GUI 导航和多轮工具调用等表层任务</li><li>但在处理大规模、碎片化的文档工作空间时严重失败</li><li>商业场景中撰写定制化提案需要跨十多个内容相关文件进行多文件协调</li><li>现有 Agent 频繁出现<strong>关键信息遗漏、逻辑不一致、事实不准确</strong></li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>Workspace-Bench 填补核心空白：<strong>单个 Agent 知识工作空间的关系结构</strong>。超越静态文件提供，系统评测 workspace reasoning 的六维度能力：</p>
+<ul><li>Workspace Exploration（工作空间探索）</li><li>Task-Supporting Files Utilization（任务支撑文件利用）</li><li>Result-Providing Files Utilization（结果提供文件利用）</li><li>Content Relations Understanding（内容关系理解）</li><li>Lineage Tracing（版本溯源）</li><li>Semantic Heterogeneous File Understanding（语义异构文件理解）</li></ul>
+<p>Workspace-Bench 包含三大模块：</p>
+<ul><li><strong>工作空间构建</strong>：5 个角色工作空间，74 种文件类型，20,476 个文件（最大 20GB）</li><li><strong>任务构建与标注</strong>：388 个任务，7,399 条评估 rubric，25 名标注者</li><li><strong>评估框架</strong>：双并行加速 + Agent-as-a-Judge</li></ul>
+<p class="caption-note">完整评估框架：Agent 初始化、双并行加速、多策略文件提取、BFS 回滚、Agent-as-a-Judge</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/Figure5-v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/Figure5-v3.png" alt="评估框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/rubrics_success.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/rubrics_success.png" alt="Rubric Pass Rate"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/ability_config_bubble_collaboration_type_pass70_bubble.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/ability_config_bubble_collaboration_type_pass70_bubble.png" alt="能力维度对比"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文将现有 Agent Benchmark 分为四类，逐一分析其局限：</p>
+<p><strong>Prompt-Driven</strong>（如 OneMillion-Bench、CL-Bench）：所有信息嵌入自然语言指令中，零外部文件交互，完全跳过办公工作流的核心媒介。</p>
+<p><strong>Open-Source/Environment-Driven</strong>（如 OSWorld、GAIA、WebArena）：需通过工具与动态环境交互，但主要聚焦 Action Grounding 或 API 编排，忽略本地文件生态系统中的导航与推理。</p>
+<p><strong>Task-File-Driven</strong>（如 OfficeQA-Pro、GDPVal）：引入真实文件处理，但直接将任务相关文件打包提供给 Agent，跳过了从复杂文件系统中独立搜索和筛选信息的挑战。</p>
+<p><strong>Workspace-Relevant</strong>（如 OfficeBench、TheAgentCompany、SWE-bench）：最接近现实，构建了文件系统环境，但存在三大瓶颈：</p>
+<ul><li>单一风格文件系统，缺少角色多样性</li><li>文件格式覆盖 &lt;10 种，缺少 50+ 种真实办公格式</li><li>任务设计缺乏对文件间协同关系的显式评测（聚合、语义关联、版本溯源）</li></ul>
+<p><strong>测试 Agent Harness（4 个）</strong>：</p>
+<ul><li><strong>OpenClaw</strong>：解耦双环执行架构，高层认知规划与底层工具调用分离，结构化知识存储 + 语义路由层实现跨会话共享记忆</li><li><strong>Claude Code</strong>：高密度推理与深度工作空间集成，原生使用 MCP 和 SKILLs，混合状态控制策略（CLAUDE.md + 动态压缩算法）</li><li><strong>LangChain DeepAgent</strong>：基于 LangGraph 持久 DAG 架构的白盒 Harness，解耦控制流与 LLM，内置规划工具（write_todos）确保执行路径透明可追踪</li><li><strong>Hermes</strong>：内置学习循环的开源 Agent，四层解耦记忆引擎（静态身份指令 + 动态状态文件 + SQLite FTS5 档案），自学习机制将试错经验持久化为本地技能库</li></ul>
+<p><strong>测试基础模型（7 个）</strong>：Opus-4.7、GLM-5.1、GPT-5.4、Gemini-3.1-Pro、Kimi-2.5、MiniMax-M2.7、Seed-2.0-Code</p>
+<p><strong>评估设置</strong>：Workspace-Bench-Lite（100 任务），Seed-2.0-Lite 作为 Judge LLM，标准化执行和评估 Prompt。</p>
+<p>28 种配置（4 harness × 7 LLM）的评估结果：</p>
+<ul><li>Pass Rate 范围：<strong>27% ~ 67%</strong></li><li>平均 Pass Rate：<strong>47.4%</strong></li><li>最佳配置：<strong>OpenClaw + Opus-4.7</strong>（~67%），其次是 ClaudeCode + Opus-4.7、Hermes + Opus-4.7</li><li><strong>人类基线：80.7%</strong>，显著超越所有全自动 Agent...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>论文将现有 Agent Benchmark 分为四类，逐一分析其局限：</p>
+<p><strong>Prompt-Driven</strong>（如 OneMillion-Bench、CL-Bench）：所有信息嵌入自然语言指令中，零外部文件交互，完全跳过办公工作流的核心媒介。</p>
+<p><strong>Open-Source/Environment-Driven</strong>（如 OSWorld、GAIA、WebArena）：需通过工具与动态环境交互，但主要聚焦 Action Grounding 或 API 编排，忽略本地文件生态系统中的导航与推理。</p>
+<p><strong>Task-File-Driven</strong>（如 OfficeQA-Pro、GDPVal）：引入真实文件处理，但直接将任务相关文件打包提供给 Agent，跳过了从复杂文件系统中独立搜索和筛选信息的挑战。</p>
+<p><strong>Workspace-Relevant</strong>（如 OfficeBench、TheAgentCompany、SWE-bench）：最接近现实，构建了文件系统环境，但存在三大瓶颈：</p>
+<ul><li>单一风格文件系统，缺少角色多样性</li><li>文件格式覆盖 &lt;10 种，缺少 50+ 种真实办公格式</li><li>任务设计缺乏对文件间协同关系的显式评测（聚合、语义关联、版本溯源）</li></ul>
+<ul><li><strong>首个系统评测 Workspace Learning 的大规模 Benchmark</strong>：填补了从原子化任务到工作空间级依赖推理的评测空白，六维度全面覆盖</li><li><strong>真实规模工作空间</strong>：5 个角色画像、74 种文件类型、20,476 个文件（最大 20GB），远超现有 Benchmark 的规模和多样性</li><li><strong>细粒度评估体系</strong>：7,399 条 rubric（平均每任务 19.1 条），覆盖 Foundation/Process/Result 三种类型，不仅评估最终结果也评估中间决策</li><li><strong>完整的评估基础设施</strong>：双并行加速（工作空间级 + 任务级）、多策略文件提取、并行 BFS 回滚、Agent-as-a-Judge，构成端到端自动化评估流水线</li><li><strong>深度实验分析</strong>：28 种配置 × 5 个发现 × 错误分析，揭示了 Agent 能力瓶颈的多个维度</li><li><strong>Workspace Learning 五阶段理论框架</strong>：从 L0 到 L4 的演进框架和 Data Association Gap 概念，为未来研究提供了清晰的路线图</li><li><strong>Workspace-Bench-Lite</strong>：100 任务子集保持分布一致性，降低 70% 评估成本，便于快速迭代...</li></ul>
+</div>
+</article>
+<!-- PAPER_CARD_END -->
+
+<a class="back-link" href="../agent_工作整理.html">&larr; 返回 Agent 工作整理总索引</a>
+
+</div>
+</body>
+</html>
