@@ -1,0 +1,771 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GUI Agent 宸ヤ綔鏁寸悊</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+    --text: #172033;
+    --text-secondary: #586174;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --accent-light: #e8f0ff;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #dbe3ef;
+    --shadow: 0 10px 30px rgba(29, 78, 216, 0.08);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34rem),
+      linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #eef3fb 100%);
+    color: var(--text);
+    line-height: 1.72;
+    padding: 2rem 1rem 4rem;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2.2rem 1.5rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #101828;
+    margin-bottom: 0.45rem;
+  }
+  header p { color: var(--text-secondary); font-size: 0.98rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc-wrap {
+    position: fixed;
+    top: 1.5rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 7px 16px;
+    background: var(--card-bg);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(520px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.9rem; margin: 0.4rem 0 0.5rem; }
+  .toc-panel ol { padding-left: 1.2rem; }
+  .toc-panel li { margin-bottom: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+    margin: 1.4rem 0 2rem;
+  }
+  .overview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .overview-card h3 { font-size: 0.98rem; margin-bottom: 0.35rem; color: var(--accent-strong); }
+  .overview-card p { color: var(--text-secondary); font-size: 0.86rem; }
+  .paper-card {
+    width: min(980px, 100%);
+    margin: 0 auto 1.6rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    border: 1px solid var(--border);
+  }
+  .paper-card h2 {
+    font-size: 1.32rem;
+    font-weight: 800;
+    margin-bottom: 0.55rem;
+    line-height: 1.38;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.83rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-light);
+  }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid #e6edf7;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin: 0.8rem 0;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 0.45rem;
+    color: var(--text);
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #2f3a4c; margin-bottom: 0.35rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .figure-showcase {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: #f8fbff;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .figure-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--accent-strong);
+    margin-bottom: 0.6rem;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+  .figure-link {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .figure-link.figure-primary { grid-column: 1 / -1; }
+  .figure-link img {
+    width: 100%;
+    max-height: 390px;
+    object-fit: contain;
+    display: block;
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.7rem 0;
+    font-size: 0.86rem;
+  }
+  .result-table th, .result-table td {
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 800; }
+  .result-table td:first-child { text-align: left; }
+  .best { font-weight: 800; color: var(--accent-strong); }
+  .note-box {
+    background: #fff7ed;
+    border-left: 4px solid #f97316;
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin: 1rem 0 1.5rem;
+    color: #4a3218;
+    font-size: 0.92rem;
+  }
+  @media (max-width: 900px) {
+    body { padding-top: 1rem; }
+    .toc-wrap { position: static; margin: 0 auto 1rem; width: min(980px, 100%); }
+    .toc-btn { display: none; }
+    .toc-panel { display: block; position: static; width: 100%; max-height: none; }
+    .overview-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .overview-grid, .figure-grid { grid-template-columns: 1fr; }
+    .figure-link.figure-primary { grid-column: auto; }
+    .paper-card { padding: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="toc-wrap">
+  <div class="toc-btn">鐩綍</div>
+  <div class="toc-panel">
+    <h3>GUI Agent 鐮旂┒鍦板浘</h3>
+    <ol>
+      <li><a href="#overview">鎬昏锛氬洓鏉′富绾?/a></li>
+      <li><a href="#gui-explorer">GUI-explorer锛氳浆绉绘劅鐭ョ煡璇?/a></li>
+      <li><a href="#echotrail">EchoTrail-GUI锛歝ritic 寮曞璁板繂</a></li>
+      <li><a href="#ui-mem">UI-Mem锛氳蹇嗗紩瀵煎湪绾?RL</a></li>
+      <li><a href="#ui-voyager">UI-Voyager锛氬け璐ヨ建杩硅嚜杩涘寲</a></li>
+      <li><a href="#osexpert">OSExpert锛氫笓涓氳蒋浠舵妧鑳芥帰绱?/a></li>
+      <li><a href="#gui-sd">GUI-SD锛氬潗鏍?grounding 鑷捀棣?/a></li>
+      <li><a href="#screensearch">ScreenSearch锛氫笉纭畾鎬ф劅鐭ユ帰绱?/a></li>
+      <li><a href="#diffspot">DiffSpot锛氱粏绮掑害瑙嗚宸垎</a></li>
+      <li><a href="#toolcua">ToolCUA锛欸UI + Tool 璺緞缂栨帓</a></li>
+      <li><a href="#cua-gym">CUA-Gym锛氬彲楠岃瘉璁粌鐜</a></li>
+      <li><a href="#weavebench">WeaveBench锛氶暱绋嬫贩鍚堟帴鍙ｈ瘎娴?/a></li>
+      <li><a href="#webgen">WebGen-Agent锛氫氦浜掑紡缃戦〉鐢熸垚鍙嶉</a></li>
+      <li><a href="#odysseys">Odysseys锛氱湡瀹為暱绋?Web Agent</a></li>
+      <li><a href="#synthesis">缁煎悎鍚彂</a></li>
+    </ol>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <h1>GUI Agent 宸ヤ綔鏁寸悊</h1>
+    <p>鍥寸粫 agent 鐩綍涓?GUI / Computer-Use Agent / Web Agent 鐩稿叧璁烘枃鐨勬墜鍔ㄦ眹鎬伙細浠庤瑙?grounding銆佺幆澧冭蹇嗐€佽嚜鎺㈢储锛屽埌 GUI+Tool 娣峰悎鍔ㄤ綔鍜屽彲楠岃瘉璇勬祴銆?/p>
+  </header>
+
+  <section id="overview" class="paper-card">
+    <h2>鎬昏锛欸UI Agent 姝ｅ湪浠庘€滅偣鍝噷鈥濊蛋鍚戔€滃浣曞彲闈犲湴浣跨敤涓€涓绠楁満鐜鈥?/h2>
+    <div class="summary-box">
+      杩欎簺宸ヤ綔鍙互鐪嬫垚鍥涙潯浜掔浉鍜悎鐨勭嚎锛氫竴鏄妸 GUI 鐘舵€佽浆绉诲拰鍘嗗彶缁忛獙鏄惧紡璁颁笅鏉ワ紱浜屾槸鎻愬崌鐐瑰嚮鍧愭爣銆佸眬閮ㄨ瑙夊彉鍖栥€佺姸鎬佹涔夎繖浜涗綆灞傛劅鐭ヨ兘鍔涳紱涓夋槸璁?agent 鍦?GUI action 鍜?tool/API/CLI 涔嬮棿鍋氳矾寰勭紪鎺掞紱鍥涙槸鐢ㄥ彲楠岃瘉鐜鍜?trajectory-aware judge 缁欓暱绋嬩换鍔℃彁渚涚ǔ瀹氬弽棣堛€?    </div>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <h3>璁板繂涓庤嚜杩涘寲</h3>
+        <p>GUI-explorer銆丒choTrail銆乁I-Mem銆乁I-Voyager銆丱SExpert 閮藉湪鍥炵瓟锛歛gent 鑳戒笉鑳藉厛鐔熸倝鐜锛屾妸鍙鐢ㄧ粡楠屽彉鎴愬悗缁换鍔＄殑璧勪骇銆?/p>
+      </div>
+      <div class="overview-card">
+        <h3>Grounding 涓庢劅鐭?/h3>
+        <p>GUI-SD銆丼creenSearch銆丏iffSpot 鎶婂潗鏍囥€佸眬閮ㄨ瑙夊樊寮傘€佺浉浼煎睆骞曟涔夋媶寮€鐪嬶紝閬垮厤鎶婃墍鏈夐棶棰橀兘濉炶繘绔埌绔?token 棰勬祴銆?/p>
+      </div>
+      <div class="overview-card">
+        <h3>GUI + Tool 娣峰悎</h3>
+        <p>ToolCUA 鍜?WeaveBench 鐨勬牳蹇冨叡璇嗘槸锛氱幇浠?CUA 涓嶈鏄函 GUI锛屼篃涓嶈鏄函 API锛岃€岃鍦ㄥ悓涓€鏉¤建杩归噷缂栨帓澶氱鎺ュ彛銆?/p>
+      </div>
+      <div class="overview-card">
+        <h3>鍙獙璇佸弽棣?/h3>
+        <p>CUA-Gym 鎶婅缁冩牱鏈彉鎴?$(t,s,r)$ 鐨勮仈鍚堢敓鎴愰棶棰橈紝WeaveBench 鍒欏己璋冨彧鐪嬫渶缁堜骇鐗╀細楂樹及 agent锛岄渶瑕佸璁¤繃绋嬭瘉鎹摼銆?/p>
+      </div>
+    </div>
+    <table class="result-table">
+      <thead>
+        <tr><th>闂灞傛</th><th>浠ｈ〃宸ヤ綔</th><th>鏍稿績淇″彿</th><th>閫傚悎瑙ｅ喅鐨勭摱棰?/th></tr>
+      </thead>
+      <tbody>
+        <tr><td>鐘舵€佽浆绉昏蹇?/td><td>GUI-explorer / EchoTrail / UI-Mem</td><td>obs-action-next obs銆佹垚鍔熻建杩广€亀orkflow memory</td><td>閲嶅浠诲姟銆侀暱绋嬪鑸€佺粡楠屽鐢?/td></tr>
+        <tr><td>澶辫触澶嶇敤</td><td>UI-Voyager / OSExpert</td><td>fork point銆乫ailed boundary銆乿erified skill</td><td>澶辫触鍚庡浣曚骇鐢熻缁冧俊鍙锋垨杈圭晫鎰忚瘑</td></tr>
+        <tr><td>瑙嗚瀹氫綅</td><td>GUI-SD / ScreenSearch / DiffSpot</td><td>瑙嗚鐗规潈銆佸悗缁х姸鎬佸垎鍙夈€丆SS-level mutation</td><td>鐐瑰嚮鍧愭爣銆佺粏绮掑害鍙樺寲銆佺姸鎬佹涔?/td></tr>
+        <tr><td>娣峰悎鍔ㄤ綔</td><td>ToolCUA / WeaveBench</td><td>GUI-tool switching銆乼rajectory-aware provenance</td><td>浠€涔堟椂鍊欑敤 GUI锛屼粈涔堟椂鍊欑敤宸ュ叿/CLI</td></tr>
+        <tr><td>璁粌涓庤瘎娴?/td><td>CUA-Gym / WeaveBench</td><td>programmatic reward銆乼rajectory-aware judge</td><td>浣庡櫔澹?RLVR銆侀暱绋?benchmark 闃蹭綔寮?/td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent.md" arxiv="2505" -->
+  <article id="gui-explorer" class="paper-card">
+    <h2>GUI-explorer: Autonomous Exploration and Mining of Transition-aware Knowledge for GUI Agent</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent.md">鏈湴鎬荤粨</a>
+      <span class="tag">GUI exploration</span><span class="tag">transition-aware memory</span><span class="tag">training-free</span>
+    </div>
+    <div class="summary-box">
+      GUI-explorer 鐨勯噸鐐逛笉鏄缁冧竴涓柊妯″瀷锛岃€屾槸璁?GUI agent 鑷富鎺㈢储搴旂敤锛屾妸鈥滃綋鍓嶇晫闈€佸姩浣溿€佷笅涓€涓晫闈⑩€濈殑鐘舵€佽浆绉荤煡璇嗘寲鍑烘潵锛屽舰鎴愬彲妫€绱㈢殑 GUI knowledge base銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>鎶婄煡璇嗗崟鍏冧粠闈欐€?screenshot 鎴?action label 鎻愬崌涓?transition tuple锛?(observation, action, next\ observation)$銆?/li>
+        <li>鎺㈢储闃舵璁板綍鍔ㄤ綔鍚庢灉锛岄伩鍏嶅彧璁扳€滆繖涓寜閽湪鍝€濓紝鑰屼笉鐭ラ亾鈥滅偣瀹屼細鍘诲摢閲屸€濄€?/li>
+        <li>鎺ㄧ悊闃舵鏍规嵁褰撳墠浠诲姟鍜岀晫闈㈡绱㈢浉鍏宠浆绉荤煡璇嗭紝缁?agent 鎻愪緵鍔ㄦ€?guidance銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">浠峰€间笌灞€闄?/h3>
+      <p>瀹冪洿鎺ュ洖搴斾簡 GUI agent 鐨勪竴涓熀纭€鐥涚偣锛氳瑙?grounding 涓嶇瓑浜庣幆澧冪悊瑙ｃ€傜己鐐规槸鎺㈢储璐ㄩ噺鍙楀垵濮?agent 鍜岀幆澧冭鐩栭檺鍒讹紝涓?transition memory 濡傛灉娌℃湁鍘婚噸銆佺増鏈鐞嗗拰澶辫触杩囨护锛屽鏄撹啫鑳€鎴?noisy cache銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent_tex/GUI-explorer-v8.drawio.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent_tex/GUI-explorer-v8.drawio.png" alt="GUI-explorer framework">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration.md" arxiv="2512" -->
+  <article id="echotrail" class="paper-card">
+    <h2>EchoTrail-GUI: Building Actionable Memory for GUI Agents via Critic-Guided Self-Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration.md">鏈湴鎬荤粨</a>
+      <span class="tag">actionable memory</span><span class="tag">self-exploration</span><span class="tag">critic filtering</span>
+    </div>
+    <div class="summary-box">
+      EchoTrail-GUI 鎶婅嚜鎺㈢储杞ㄨ抗鍙樻垚鈥滃彲鎵ц璁板繂鈥濓細critic 璐熻矗绛涙帀鏃犳晥鎴栦笉鍙潬鎺㈢储锛屼繚鐣欏彲澶嶇敤鐨勬垚鍔熻矾寰勶紝骞跺湪鎺ㄧ悊鏃舵寜浠诲姟妫€绱㈡敞鍏ャ€?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>鍏堣 agent 鍦?GUI 鐜涓嚜鎺㈢储锛岀敓鎴愬ぇ閲?candidate trajectories銆?/li>
+        <li>critic 瀵硅建杩硅川閲忋€佺洰鏍囩浉鍏虫€у拰鍙墽琛屾€ц繘琛岃繃婊わ紝鎶婄粡楠屼粠鈥滄棩蹇椻€濆彉鎴愨€渁ctionable memory鈥濄€?/li>
+        <li>鎺ㄧ悊鏃舵绱㈢浉浼间换鍔℃垨鐩镐技鐣岄潰涓嬬殑杞ㄨ抗鐗囨锛屼綔涓轰笂涓嬫枃绀鸿寖锛屽噺灏戜粠闆?grounding 鐨勬垚鏈€?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍜?GUI-explorer 鐨勫尯鍒?/h3>
+      <p>GUI-explorer 鏇村亸 transition-level environment knowledge锛汦choTrail 鏇村儚 task trajectory memory銆傚墠鑰呭洖绛斺€滆繖涓姩浣滀細閫犳垚浠€涔堢姸鎬佽浆绉烩€濓紝鍚庤€呭洖绛斺€滆繃鍘荤被浼间换鍔℃槸鎬庝箞瀹屾垚鐨勨€濄€?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration_tex/cvpr_main.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration_tex/cvpr_main.png" alt="EchoTrail-GUI overview">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents.md" arxiv="2602" -->
+  <article id="ui-mem" class="paper-card">
+    <h2>UI-Mem: Self-Evolving Experience Memory for Online Reinforcement Learning in Mobile GUI Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents.md">鏈湴鎬荤粨</a>
+      <span class="tag">mobile GUI</span><span class="tag">memory-guided GRPO</span><span class="tag">online RL</span>
+    </div>
+    <div class="summary-box">
+      UI-Mem 鐨勫叧閿槸璁?memory 涓嶅彧鍦ㄦ帹鐞嗘椂鍋?RAG锛岃€屾槸鐩存帴鍙備笌 online RL锛氱敤寮?寮?鏃?memory guidance 鏋勯€犵粍鍐呭樊寮傦紝涓?GRPO 鎻愪緵鏇存湁淇℃伅閲忕殑 advantage銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>缁存姢 hierarchical memory锛屽寘鎷?workflow銆乻ubtask skill銆乫ailure pattern 绛夊灞傜粡楠屻€?/li>
+        <li>鍦ㄥ悓涓€浠诲姟涓婄敤涓嶅悓寮哄害 memory guidance 閲囨牱 rollout锛屽埢鎰忓埗閫?reward variance銆?/li>
+        <li>璁粌鍚庢牴鎹柊鎴愬姛/澶辫触缁忛獙鏇存柊 memory锛屽舰鎴愨€渕emory 鎸囧 rollout锛宺ollout 鍙嶅摵 memory鈥濈殑闂幆銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">瀵?GUI Agent 鐨勫惎鍙?/h3>
+      <p>瀹冩妸鈥滆蹇嗏€濅粠闈欐€佹绱㈡ā鍧楀崌绾ф垚 RL 鏁版嵁鐢熸垚鍣ㄣ€傚浜庣█鐤?reward GUI 浠诲姟锛岃繖姣旂洸鐩閲囨牱鏇磋仾鏄庯紝鍥犱负 memory guidance 鑳戒富鍔ㄥ垱閫犵粍鍐呭彲姣旇緝鐨勬垚鍔?澶辫触杞ㄨ抗銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/pipeline.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/pipeline.png" alt="UI-Mem pipeline">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_retrieval.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_retrieval.png" alt="UI-Mem retrieval">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_update.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_update.png" alt="UI-Mem update">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience.md" arxiv="2603" -->
+  <article id="ui-voyager" class="paper-card">
+    <h2>UI-Voyager: A Self-Evolving GUI Agent Learning via Failed Experience</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience.md">鏈湴鎬荤粨</a>
+      <span class="tag">failed experience</span><span class="tag">GRSD</span><span class="tag">self-evolving</span>
+    </div>
+    <div class="summary-box">
+      UI-Voyager 鐨勪寒鐐规槸鎶婂け璐ヨ建杩瑰彉鎴愯缁冭祫浜э細涓嶆槸鍙繚鐣欐垚鍔熺ず鑼冿紝鑰屾槸鍦ㄦ垚鍔?澶辫触杞ㄨ抗鍒嗗弶澶勬壘灞€閮?correction锛岀敤 step-level self-distillation 淇绛栫暐銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>鍏堥€氳繃 RFT/rollout 鏀堕泦鎴愬姛涓庡け璐ョ粡楠屻€?/li>
+        <li>鐢?screenshot similarity 绛夋柟娉曞畾浣?fork point锛氬悓浠诲姟涓垚鍔熻建杩瑰拰澶辫触杞ㄨ抗浠庡摢閲屽紑濮嬭蛋宀斻€?/li>
+        <li>鍦?fork point 涓婄敤鎴愬姛鍔ㄤ綔浣滀负灞€閮?teacher锛岃繘琛?GRSD 寮?self-distillation锛岃€屼笉鏄妸鏁存潯澶辫触杞ㄨ抗涓㈡帀銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">浠峰€间笌灞€闄?/h3>
+      <p>瀹冮潪甯搁€傚悎 GUI 鍦烘櫙锛屽洜涓?GUI 闀跨▼澶辫触甯稿父鐢变竴涓眬閮ㄩ敊璇姩浣滆Е鍙戙€傚眬闄愭槸 fork point 妫€娴嬩緷璧栫姸鎬佺浉浼煎害锛屽鏋滅晫闈㈠彉鍖栧ぇ鎴栭殣钘忕姸鎬佷笉鍚岋紝灞€閮ㄥ榻愪細鍙樺緱涓嶇ǔ瀹氥€?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/main_framework_v3.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/main_framework_v3.png" alt="UI-Voyager framework">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/fork_point_detection_illustration.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/fork_point_detection_illustration.png" alt="fork point detection">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration.md" arxiv="2603.07978" -->
+  <article id="osexpert" class="paper-card">
+    <h2>OSExpert: Computer-Use Agents Learning Professional Skills via Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration.md">鏈湴鎬荤粨</a>
+      <span class="tag">professional CUA</span><span class="tag">GUI-DFS</span><span class="tag">skill set</span>
+    </div>
+    <div class="summary-box">
+      OSExpert 鎶?CUA 浠庘€滀复鏃跺畬鎴愪换鍔♀€濇帹杩涘埌鈥滃厛瀛︿範涓€涓笓涓氳蒋浠剁幆澧冣€濄€傚畠鐢?GUI-DFS 鎺㈢储 unit functions锛屾瀯寤烘垚鍔熸妧鑳姐€佸け璐ヨ竟鐣屽拰 fine-grained action primitives銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>Bottom-Up Self-Exploration锛氫粠椤跺眰鐣岄潰寮€濮?DFS 鎺㈢储鑿滃崟銆佸伐鍏锋爮銆佺敾甯冪瓑鍔熻兘銆?/li>
+        <li>Skill Set Construction锛氬皢閫氳繃楠岃瘉鐨?plan/action sequence 瀛樻垚 unit skills锛屽啀缁勫悎鎴?composite skills銆?/li>
+        <li>Fast Planner锛氱敤 skill-derived query-plan pairs LoRA 璁粌灏忔ā鍨嬶紝涓€娆″墠鍚戠敓鎴愬畬鏁?plan锛岄檷浣?step-wise planning 寤惰繜銆?/li>
+        <li>Skill Boundary Check锛氬け璐ユ妧鑳戒篃杩涘叆 skill set锛岃 agent 鐭ラ亾鍝簺浠诲姟褰撳墠鑳藉姏杈圭晫鍐呭仛涓嶅埌銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>鍦?OSExpert-Eval 涓紝鐜版湁 CUA 鍦?long-horizon銆乽nseen UI銆乫ine-grained 鎿嶄綔涓婃垚鍔熺巼寰堜綆锛涘姞鍏?fine-grained skills 鍚庯紝GIMP 鍜?LibreOffice 鐨勭簿缁嗘搷浣滄垚鍔熺巼鏄庢樉鎻愬崌銆傚畠缁欏嚭鐨勫伐绋嬩俊鍙峰緢鏄庣‘锛氬鏉傚潗鏍?鍖哄煙鎺у埗涓嶈鍏ㄥ帇缁?VLM token decoder锛屽簲璇ュ鍖栨垚鍙獙璇?primitive銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main_v2.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main_v2.png" alt="OSExpert framework">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main2_v1.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main2_v1.png" alt="OSExpert skill organization">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding.md" arxiv="2605.00642" -->
+  <article id="gui-sd" class="paper-card">
+    <h2>Learn where to Click from Yourself: On-Policy Self-Distillation for GUI Grounding</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding.md">鏈湴鎬荤粨</a>
+      <a href="https://arxiv.org/abs/2605.00642">arXiv</a>
+      <span class="tag">GUI grounding</span><span class="tag">OPSD</span><span class="tag">coordinate distillation</span>
+    </div>
+    <div class="summary-box">
+      GUI-SD 鏄妸 OPSD 鐢ㄥ埌 GUI 鍧愭爣 grounding 鐨勪唬琛ㄥ伐浣溿€傚畠鍙戠幇 naive OPSD 浼氶€€鍖栨垚 SFT锛屼簬鏄敤瑙嗚鐗规潈涓婁笅鏂囧拰鐔靛紩瀵间紭鍖栵紝璁?teacher 鏃㈠己鍙堜笉杩囧害 one-hot銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>Visual Privileged Guidance锛歵eacher 鐪嬪埌鐩爣 bbox銆侀珮鏂蒋鎺╃爜鍜?hint prompt锛屼絾涓嶇洿鎺ユ嬁绮剧‘鍧愭爣鏂囨湰銆?/li>
+        <li>Entropy-Guided Optimization锛氬鍧愭爣 token 鍋氫綅缃俊鐢ㄥ垎閰嶏紝楂樹綅鏁颁綅鏉冮噸鏇村ぇ锛涘悓鏃剁敤 teacher entropy 杩囨护浣庣疆淇＄洃鐫ｃ€?/li>
+        <li>Teacher EMA 鏇存柊锛氳 teacher/student 鍚屾簮浣嗕繚鎸佺ǔ瀹氬樊寮傘€?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>鐩告瘮 GRPO-Gaussian锛孏UI-SD 鎶ュ憡绾?4x 璁粌鍔犻€燂紝骞跺湪澶氫釜 grounding benchmark 涓婂彇寰楁洿楂樺钩鍧囩簿搴︺€傚畠鏈€閲嶈鐨勭粡楠屾槸锛欸UI 鍧愭爣钂搁涓嶈兘鍙妸 bbox 褰撴櫘閫氭枃鏈?token锛岄渶瑕佹帶鍒?teacher 鍒嗗竷鐨勭喌鍜?token 鏉冮噸銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" alt="GUI-SD framework">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" alt="GUI-SD paradigms">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_screensearch_uncertainty_aware_os_exploration.md" arxiv="2605.16024" -->
+  <article id="screensearch" class="paper-card">
+    <h2>ScreenSearch: Uncertainty-Aware OS Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_screensearch_uncertainty_aware_os_exploration.md">鏈湴鎬荤粨</a>
+      <a href="https://arxiv.org/abs/2605.16024">arXiv</a>
+      <span class="tag">OS exploration</span><span class="tag">partial observability</span><span class="tag">state graph</span>
+    </div>
+    <div class="summary-box">
+      ScreenSearch 鎶?desktop GUI 鐨勨€滅湅璧锋潵涓€鏍蜂絾鍏跺疄涓嶄竴鏍封€濆彉鎴愬彲璁＄畻闂锛氱敤 UIA 缁撴瀯鍋?screen retrieval / dedup锛屽啀鐢?matched-action outcome dispersion 浼拌鐘舵€佹涔夈€?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>鐢?UIA-derived structural features 涓?screen 寤?canonical state ID锛岄檷浣?cursor/focus 绛夋棤鎰忎箟鍙樺寲褰卞搷銆?/li>
+        <li>缁存姢 deduplicated state graph锛岃涓嶅悓 history 涓殑鐩稿悓鐣岄潰鍏变韩缁熻銆?/li>
+        <li>鐢ㄥ悓涓€ action 鍦ㄧ浉浼?screen cluster 涓婄殑鍚庣户鐘舵€佸垎鍙夌▼搴﹀畾涔?ambiguity锛屽啀鐢?PUCT graph-bandit 骞宠　 novelty 鍜?ambiguity reduction銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">瀵硅缁冪殑鍚彂</h3>
+      <p>瀹冩彁渚涗簡鍖哄埆浜?token probability 鐨勪笉纭畾鎬т俊鍙凤細region/action 鐨勮川閲忓彲浠ョ湅瀹冩墽琛屽悗杩涘叆鍝釜 state cluster锛屾槸鍚﹂檷浣庢涔夈€傚 bbox銆乧lick point銆乨rag region 杩欑被寮傝川鍔ㄤ綔鍙傛暟钂搁寰堟湁鍚彂銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/system_overview.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/system_overview.png" alt="ScreenSearch overview">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/screen_similarity_and_retrieval.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/screen_similarity_and_retrieval.png" alt="Screen retrieval">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces.md" arxiv="2605.29615" -->
+  <article id="diffspot" class="paper-card">
+    <h2>DiffSpot: Can VLMs Spot Fine-Grained Visual Differences in Web Interfaces?</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces.md">鏈湴鎬荤粨</a>
+      <a href="https://arxiv.org/abs/2605.29615">arXiv</a>
+      <a href="https://github.com/Tencent/DiffSpot">Code</a>
+      <span class="tag">web interface</span><span class="tag">visual diff</span><span class="tag">perception benchmark</span>
+    </div>
+    <div class="summary-box">
+      DiffSpot 涓嶆槸璁粌 agent锛岃€屾槸绮惧噯娴?GUI/web agent 鐨勫眬閮ㄨ瑙夐獙璇佽兘鍔涳細褰撶綉椤靛彧鍙戠敓涓€涓?CSS 灞炴€х骇鍙樺寲鏃讹紝VLM 鑳藉惁鍙戠幇銆佸畾浣嶅苟璇存竻鍙樺寲銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>浠庣湡瀹炵綉椤电敓鎴?self-contained HTML锛岀劧鍚庡湪 code space 鍋氬崟鍏冪礌銆佸崟灞炴€?mutation銆?/li>
+        <li>鐢?Grounding Gate 纭繚鍙樺寲纭疄鍙銆佸眬閮ㄣ€佸彲瀹氫綅锛屼笉璁?benchmark 鍙樻垚妯＄硦鍥惧儚宸垎銆?/li>
+        <li>鍔犲叆 no-diff pairs 娴?hallucination control锛屽尯鍒嗏€滅湅涓嶈鈥濆拰鈥滃埌澶勯兘瑙夊緱鍙樹簡鈥濄€?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>13 涓?frontier VLM 鍦ㄧ粏绮掑害 web diff 涓婁粛杩滄湭瑙ｅ喅锛屾渶浣虫€讳綋鍑嗙‘鐜囦篃鍙湁绾?47.2%銆傚け璐ユ洿澶氫緷璧栧睘鎬х被鍨嬶紝鑰屼笉鏄綉椤?domain锛岃繖璇存槑 GUI perception 鐨勭摱棰堟槸 property-level localized visual verification銆?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/pipeline_v2.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/pipeline_v2.png" alt="DiffSpot pipeline">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/heatmap_op_model.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/heatmap_op_model.png" alt="Operator heatmap">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents.md" arxiv="2605.12481" -->
+  <article id="toolcua" class="paper-card">
+    <h2>ToolCUA: Towards Optimal GUI-Tool Path Orchestration for Computer Use Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents.md">鏈湴鎬荤粨</a>
+      <a href="https://github.com/X-PLUG/ToolCUA">Code</a>
+      <span class="tag">GUI-tool hybrid</span><span class="tag">MCP tools</span><span class="tag">online agentic RL</span>
+    </div>
+    <div class="summary-box">
+      ToolCUA 鐨勬牳蹇冨垽鏂緢閿嬪埄锛氱粰 agent 宸ュ叿涓嶇瓑浜?agent 浼氱敤宸ュ叿銆傞毦鐐逛笉鏄€滀細涓嶄細璋冪敤鈥濓紝鑰屾槸鈥滀粈涔堟椂鍊欒鐢ㄥ伐鍏凤紝浠€涔堟椂鍊欏繀椤诲洖鍒?GUI grounding鈥濄€?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>浠庢垚鍔?pure-GUI trajectories 鍑哄彂锛屽悎鎴?trajectory-aware tool library 鍜?GUI-tool interleaved trajectories銆?/li>
+        <li>next-state grounding锛氬伐鍏疯皟鐢ㄥ悗棰勬祴鐨勭姸鎬佸繀椤诲拰鍘?GUI 杞ㄨ抗涓殑鍚庣画 screenshot 瀵归綈锛岄伩鍏嶅够鎯?API銆?/li>
+        <li>Tool-Bootstrapped GUI RFT锛氬厛 warmup SFT锛屽啀鍦?GUI/tool critical switching steps 涓婂仛鍗曡疆 RL銆?/li>
+        <li>Online Agentic RL锛氱敤 Tool-Efficient Path Reward 榧撳姳鍚堥€傚伐鍏蜂笌鏇寸煭璺緞锛岃€屼笉鏄紦鍔卞伐鍏疯皟鐢ㄨ秺澶氳秺濂姐€?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>棰勫疄楠屾樉绀猴紝寰堝寮烘ā鍨嬪姞鍏ュ伐鍏峰悗鎴愬姛鐜囧弽鑰屼笅闄嶏細灏忔ā鍨?underuse锛屽ぇ妯″瀷 overuse銆俆oolCUA-8B 鍦?OSWorld-MCP 涓婇€氳繃娣峰悎璺緞缂栨帓鎻愬崌鍒扮害 46.85%锛屽悓鏃跺噺灏戝钩鍧囨楠ゃ€傚畠鍜?OSExpert 寰堜簰琛ワ細OSExpert 鍙戠幇鎶€鑳斤紝ToolCUA 瀛︿細鍦?GUI-tool 绌洪棿閲岀紪鎺掓妧鑳姐€?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" alt="ToolCUA method overview">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" alt="ToolCUA teaser">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents.md" arxiv="2605.25624" -->
+  <article id="cua-gym" class="paper-card">
+    <h2>CUA-Gym: Scaling Verifiable Training Environments and Tasks for Computer-Use Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents.md">鏈湴鎬荤粨</a>
+      <a href="https://arxiv.org/abs/2605.25624">arXiv</a>
+      <span class="tag">RLVR</span><span class="tag">programmatic reward</span><span class="tag">mock web apps</span>
+    </div>
+    <div class="summary-box">
+      CUA-Gym 鎶?GUI/CUA 鐨?RLVR 鏁版嵁鏋勯€犳垚 verified tuple $(t,s_\text{init},s_\text{gold},r)$锛氫换鍔°€佸垵濮嬬幆澧冦€佺洰鏍囩姸鎬佸拰绋嬪簭鍖?reward 蹇呴』涓€璧风敓鎴愩€佷竴璧烽獙璇併€?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>Generator 鐢熸垚鐜鐘舵€佸拰 golden state锛孌iscriminator 鍦ㄤ俊鎭殧绂讳笅鍐?reward.py锛孫rchestrator 璐熻矗楠岃瘉涓庤繃婊ゃ€?/li>
+        <li>浣跨敤浜斾釜 agreement conditions锛屼緥濡?$r(V_\text{gold})=1$銆?r(V_\text{init})=0$銆乺eward 涓嶅惈 forbidden patterns銆?/li>
+        <li>VLM judge 涓嶇洿鎺ヤ綔涓?RL reward锛岃€屾斁鍦ㄧ绾?filter 闃舵妫€鏌ョ▼搴?reward 涓庤瑙夌粨鏋滄槸鍚︿竴鑷淬€?/li>
+        <li>CUA-Gym-Hub 鍚堟垚鍙敞鍏ョ姸鎬佺殑 mock web apps锛岃鍚屼竴鐜鏀寔澶ч噺浠诲姟銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>鏈€缁堢敓鎴?32,112 涓?verified tuples 鍜?110 涓幆澧冿紱GSPO 璁粌鍚庡湪 OSWorld-Verified 鍜?held-out WebArena 涓婇兘鏈夋敹鐩娿€傚畠鏈€鍊煎緱鍊熼壌鐨勪笉鏄煇涓?policy trick锛岃€屾槸鈥滅幆澧冨伐鍘?+ reward 宸ュ巶 + 鏁版嵁宸ュ巶鈥濈殑绯荤粺鍖栬寖寮忋€?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/main_figure.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/main_figure.png" alt="CUA-Gym synthesis pipeline">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/env_figure.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/env_figure.png" alt="CUA-Gym environment pipeline">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces.md" arxiv="2606.09426" -->
+  <article id="weavebench" class="paper-card">
+    <h2>WeaveBench: A Long-Horizon, Real-World Benchmark for Computer-Use Agents with Hybrid Interfaces</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces.md">鏈湴鎬荤粨</a>
+      <a href="https://arxiv.org/abs/2606.09426">arXiv</a>
+      <span class="tag">hybrid interface</span><span class="tag">long-horizon</span><span class="tag">trajectory-aware judge</span>
+    </div>
+    <div class="summary-box">
+      WeaveBench 璇勬祴鐨勬槸涓嬩竴浠?CUA 鐨勭湡瀹炵煕鐩撅細agent 蹇呴』鍦ㄥ悓涓€鏉￠暱杞ㄨ抗閲屾妸 GUI 渚ц瑙?浜や簰鐘舵€佸拰 CLI/code 渚х粨鏋勫寲鎿嶄綔鎸佺画缂栫粐璧锋潵銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>114 涓换鍔°€? 涓湡瀹炲伐浣滃煙锛岃姹?channel non-substitutability銆乴ong-horizon execution銆乧ross-application state銆?/li>
+        <li>涓嶆槸缁?GUI benchmark 鍔?API锛岃€屾槸浠诲姟鎴愬姛鏉′欢涓?GUI 涓?CLI/code 閮戒笉鍙浛浠ｃ€?/li>
+        <li>Trajectory-aware judge 瀹¤ final artifact銆佹枃浠躲€佹埅鍥俱€佹棩蹇楀拰 action trace锛岄伩鍏?outcome-only 璇勫垎楂樹及 agent銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍏抽敭缁撹</h3>
+      <p>interface ablation 涓?GUI-only 鍜?CLI-only 閮藉緢浣庯紝Hybrid 鏈€楂樺埌绾?35.1%銆倀rajectory-aware judge 浼氭瘮 outcome-only 鎵ｆ帀 10.3 鍒?20.2 涓?PassRate points锛岃鏄庡己妯″瀷瓒婃潵瓒婂彲鑳解€滃儚鎴愬姛涓€鏍峰け璐モ€濄€?/p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">鍏抽敭鍥剧ず</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_overview_new.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_overview_new.png" alt="WeaveBench overview">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_integrity.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_integrity.png" alt="trajectory-aware judging">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2509_webgen_agent_enhancing_interactive_website_generation_with_multi_level_feedback_and_step_level_reinforcement_learning.md" arxiv="2509" -->
+  <article id="webgen" class="paper-card">
+    <h2>WebGen-Agent: Enhancing Interactive Website Generation with Multi-Level Feedback and Step-Level Reinforcement Learning</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2509_webgen_agent_enhancing_interactive_website_generation_with_multi_level_feedback_and_step_level_reinforcement_learning.md">鏈湴鎬荤粨</a>
+      <span class="tag">web agent</span><span class="tag">multi-level feedback</span><span class="tag">Step-GRPO</span>
+    </div>
+    <div class="summary-box">
+      WebGen-Agent 鏇村亸鈥滅敓鎴愪氦浜掑紡缃戠珯鈥濈殑 agent锛屼絾瀹冨 GUI agent 寰堟湁鍙傝€冧环鍊硷細閫氳繃鎴浘/浜や簰鍙嶉鍜?step-level RL锛屾妸鏈€缁堥〉闈㈣川閲忔媶鎴愬彲灞€閮ㄦ敼杩涚殑杩囩▼淇″彿銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鏍稿績鏈哄埗</h3>
+      <ul>
+        <li>鍒╃敤澶氬眰鍙嶉璇勪及椤甸潰锛屽寘鎷瑙夊瑙傘€佷氦浜掕涓恒€佸眬閮ㄧ粍浠跺拰鏁翠綋浠诲姟鐩爣銆?/li>
+        <li>閫氳繃 Step-GRPO 灏嗛暱绋嬬綉椤电敓鎴愮殑鏈€缁堣川閲忎俊鍙锋媶鍒颁腑闂存楠わ紝缂撹В sparse reward銆?/li>
+        <li>瀵?GUI agent 鐨勫惎鍙戞槸锛氱綉椤?GUI 缂栬緫浠诲姟鍙互鎶娾€滆瑙?diff銆丏OM diff銆佷氦浜掓祴璇曗€濈粨鍚堣捣鏉ワ紝鑰屼笉鏄彧璁?VLM 鐪嬫渶缁堟埅鍥俱€?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">杩炴帴鍒?DiffSpot / CUA-Gym</h3>
+      <p>濡傛灉 WebGen-Agent 鐨?feedback 鑳藉紩鍏?DiffSpot 寮?property-level visual verification锛屽啀缁撳悎 CUA-Gym 寮?programmatic reward锛屽氨鑳芥洿绋冲湴璁粌 UI editing / website generation agent銆?/p>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks.md" arxiv="2604" -->
+  <article id="odysseys" class="paper-card">
+    <h2>Odysseys: Benchmarking Web Agents on Realistic Long-Horizon Tasks</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks.md">鏈湴鎬荤粨</a>
+      <span class="tag">web agent</span><span class="tag">long-horizon</span><span class="tag">realistic tasks</span>
+    </div>
+    <div class="summary-box">
+      Odysseys 浠ｈ〃浜?Web Agent 璇勬祴浠庣煭閾捐矾鐐瑰嚮璧板悜鐪熷疄闀跨▼浠诲姟鐨勮秼鍔裤€傚畠鍏虫敞 agent 鍦ㄥ鏉傜綉椤电幆澧冧腑鎸佺画瑙勫垝銆佽法椤甸潰淇濇寔鐘舵€併€佸鐞嗙幇瀹炵害鏉熺殑鑳藉姏銆?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">涓轰粈涔堟斁鍦?GUI Agent 椤?/h3>
+      <p>Web agent 鏄?GUI agent 鐨勪竴涓噸瑕佸瓙绫伙細DOM/accessibility tree 鑳芥彁渚涚粨鏋勫寲淇℃伅锛屼絾鐢ㄦ埛鏈€缁堥潰瀵圭殑浠嶆槸瑙嗚鐣岄潰鍜屼氦浜掔姸鎬併€侽dysseys 涓?WeaveBench 鐨勫叡鍚岀偣鏄兘鍦ㄦ彁閱掞細鐪熷疄 agent 浠诲姟涓嶆槸鍗曟 grounding锛岃€屾槸闀跨▼鐘舵€佺淮鎶ゅ拰杩囩▼鍚堣銆?/p>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">瀵硅缁冪殑鍚彂</h3>
+      <p>闀跨▼ web benchmark 鏇撮€傚悎鐢?trajectory-aware memory銆佸彲楠岃瘉缁堟€併€佸眬閮ㄨ繃绋嬪鍔卞叡鍚岃缁冦€傚鏋滃彧鐢ㄦ渶缁?success/fail锛屽緢闅惧垽鏂け璐ユ潵鑷?grounding銆侀〉闈㈢悊瑙ｃ€佽法椤电姸鎬併€佽繕鏄伐鍏蜂娇鐢ㄧ瓥鐣ャ€?/p>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <section id="synthesis" class="paper-card">
+    <h2>缁煎悎鍚彂锛氬鏋滆鍋氭洿寮虹殑 GUI Agent锛屾渶濂藉埆鍙洴鐫€鈥滄ā鍨嬬偣寰楀噯涓嶅噯鈥?/h2>
+    <div class="summary-box">
+      杩欎竴鎵瑰伐浣滄嫾璧锋潵锛屽叾瀹炵粰鍑轰簡涓€鏉＄浉褰撴竻鏅扮殑璺嚎锛氬厛璁?agent 寤虹珛鐜鍦板浘鍜岀粡楠岃蹇嗭紝鍐嶆妸鍧愭爣/鍖哄煙/宸ュ叿璋冪敤杩欑被寮傝川鍔ㄤ綔鎺ュ埌鍙獙璇佸悗缁х姸鎬佷笂锛屾渶鍚庣敤浣庡櫔澹?reward 鍜?trajectory-aware judge 鍋氶棴鐜缁冦€?    </div>
+    <div class="section-panel">
+      <h3 class="section-title">鍙互缁勫悎鎴愮殑璁粌璺嚎</h3>
+      <ul>
+        <li>鎺㈢储灞傦細鐢?ScreenSearch/OSExpert/GUI-explorer 鍏堢啛鎮夌幆澧冿紝鐢熸垚 state graph銆乼ransition memory銆乽nit skills 鍜屽け璐ヨ竟鐣屻€?/li>
+        <li>璁板繂灞傦細鐢?EchoTrail/UI-Mem 鎶婃垚鍔熻建杩广€亀orkflow銆乫ailure patterns 缁勭粐鎴愬彲妫€绱€佸彲鏇存柊銆佸彲鍙備笌 RL 閲囨牱鐨?memory銆?/li>
+        <li>鍔ㄤ綔灞傦細瀵?click/bbox/drag 杩欑被瑙嗚鍙傛暟锛岀敤 GUI-SD 鐨勭喌闂ㄦ帶钂搁鍜?ScreenSearch 鐨?outcome-level consistency 闄嶄綆鍣０銆?/li>
+        <li>宸ュ叿灞傦細鐢?ToolCUA 鐨?next-state grounding 鍜?path reward 瀛?GUI/tool switching锛岃€屼笉鏄畝鍗曟妸 tool call 褰撴枃鏈ā浠裤€?/li>
+        <li>鍙嶉灞傦細鐢?CUA-Gym 寮?programmatic reward 鍋氫富璁粌淇″彿锛岀敤 DiffSpot/WeaveBench 寮忚瑙変笌杞ㄨ抗瀹¤鍋氱绾胯繃婊ゆ垨璇勬祴銆?/li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">涓€涓瘮杈冨姟瀹炵殑鍒ゆ柇</h3>
+      <p>GUI agent 鐨勪笅涓€涓摱棰堝緢鍙兘涓嶆槸鍗曠函鈥滄洿寮?VLM鈥濓紝鑰屾槸宸ョ▼鍖栧湴缁勭粐鐜缁忛獙銆佸姩浣滃悗鏋滃拰鍙獙璇佸弽棣堛€傛崲鍙ヨ瘽璇达紝妯″瀷闇€瑕佺殑涓嶅彧鏄湅灞忓箷锛岃€屾槸鎷ユ湁涓€濂楀叧浜庡睆骞曞浣曞彉鍖栥€佸伐鍏蜂綍鏃跺彲闈犮€佷换鍔℃€庢牱闂幆鐨勫閮ㄨ蹇嗗拰璁粌鍩虹璁炬柦銆?/p>
+    </div>
+    <div class="note-box">
+      澶囨敞锛氭湰椤典粎鏁寸悊 agent 鐩綍涓笌 GUI / CUA / Web Agent 鏄庣‘鐩稿叧鐨勫伐浣滐紱鍏朵腑 VeriRL 瀵瑰簲鐨勬湰鍦?markdown 鍐呭鐩墠瀹為檯鏄?MeMo 璁板繂璁烘枃锛屾爣棰樹笌鏂囦欢鍚嶄笉涓€鑷达紝鍥犳鏈撼鍏?GUI Agent 涓诲崱鐗囷紝閬垮厤璇眹鎬汇€?    </div>
+  </section>
+</div>
+</body>
+</html>
+
