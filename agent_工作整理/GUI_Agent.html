@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GUI Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+    --text: #172033;
+    --text-secondary: #586174;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --accent-light: #e8f0ff;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #dbe3ef;
+    --shadow: 0 10px 30px rgba(29, 78, 216, 0.08);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34rem),
+      linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #eef3fb 100%);
+    color: var(--text);
+    line-height: 1.72;
+    padding: 2rem 1rem 4rem;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2.2rem 1.5rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #101828;
+    margin-bottom: 0.45rem;
+  }
+  header p { color: var(--text-secondary); font-size: 0.98rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc-wrap {
+    position: fixed;
+    top: 1.5rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 7px 16px;
+    background: var(--card-bg);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(520px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.9rem; margin: 0.4rem 0 0.5rem; }
+  .toc-panel ol { padding-left: 1.2rem; }
+  .toc-panel li { margin-bottom: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+    margin: 1.4rem 0 2rem;
+  }
+  .overview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .overview-card h3 { font-size: 0.98rem; margin-bottom: 0.35rem; color: var(--accent-strong); }
+  .overview-card p { color: var(--text-secondary); font-size: 0.86rem; }
+  .paper-card {
+    width: min(980px, 100%);
+    margin: 0 auto 1.6rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    border: 1px solid var(--border);
+  }
+  .paper-card h2 {
+    font-size: 1.32rem;
+    font-weight: 800;
+    margin-bottom: 0.55rem;
+    line-height: 1.38;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.83rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-light);
+  }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid #e6edf7;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin: 0.8rem 0;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 0.45rem;
+    color: var(--text);
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #2f3a4c; margin-bottom: 0.35rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .figure-showcase {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: #f8fbff;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .figure-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--accent-strong);
+    margin-bottom: 0.6rem;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+  .figure-link {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .figure-link.figure-primary { grid-column: 1 / -1; }
+  .figure-link img {
+    width: 100%;
+    max-height: 390px;
+    object-fit: contain;
+    display: block;
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.7rem 0;
+    font-size: 0.86rem;
+  }
+  .result-table th, .result-table td {
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 800; }
+  .result-table td:first-child { text-align: left; }
+  .best { font-weight: 800; color: var(--accent-strong); }
+  .note-box {
+    background: #fff7ed;
+    border-left: 4px solid #f97316;
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin: 1rem 0 1.5rem;
+    color: #4a3218;
+    font-size: 0.92rem;
+  }
+  @media (max-width: 900px) {
+    body { padding-top: 1rem; }
+    .toc-wrap { position: static; margin: 0 auto 1rem; width: min(980px, 100%); }
+    .toc-btn { display: none; }
+    .toc-panel { display: block; position: static; width: 100%; max-height: none; }
+    .overview-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .overview-grid, .figure-grid { grid-template-columns: 1fr; }
+    .figure-link.figure-primary { grid-column: auto; }
+    .paper-card { padding: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="toc-wrap">
+  <div class="toc-btn">目录</div>
+  <div class="toc-panel">
+    <h3>GUI Agent 研究地图</h3>
+    <ol>
+      <li><a href="#overview">总览：四条主线</a></li>
+      <li><a href="#gui-explorer">GUI-explorer：转移感知知识</a></li>
+      <li><a href="#echotrail">EchoTrail-GUI：critic 引导记忆</a></li>
+      <li><a href="#ui-mem">UI-Mem：记忆引导在线 RL</a></li>
+      <li><a href="#ui-voyager">UI-Voyager：失败轨迹自进化</a></li>
+      <li><a href="#osexpert">OSExpert：专业软件技能探索</a></li>
+      <li><a href="#gui-sd">GUI-SD：坐标 grounding 自蒸馏</a></li>
+      <li><a href="#screensearch">ScreenSearch：不确定性感知探索</a></li>
+      <li><a href="#diffspot">DiffSpot：细粒度视觉差分</a></li>
+      <li><a href="#toolcua">ToolCUA：GUI + Tool 路径编排</a></li>
+      <li><a href="#cua-gym">CUA-Gym：可验证训练环境</a></li>
+      <li><a href="#weavebench">WeaveBench：长程混合接口评测</a></li>
+      <li><a href="#webgen">WebGen-Agent：交互式网页生成反馈</a></li>
+      <li><a href="#odysseys">Odysseys：真实长程 Web Agent</a></li>
+      <li><a href="#synthesis">综合启发</a></li>
+    </ol>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <h1>GUI Agent 工作整理</h1>
+    <p>围绕 agent 目录中 GUI / Computer-Use Agent / Web Agent 相关论文的手动汇总：从视觉 grounding、环境记忆、自探索，到 GUI+Tool 混合动作和可验证评测。</p>
+  </header>
+
+  <section id="overview" class="paper-card">
+    <h2>总览：GUI Agent 正在从“点哪里”走向“如何可靠地使用一个计算机环境”</h2>
+    <div class="summary-box">
+      这些工作可以看成四条互相咬合的线：一是把 GUI 状态转移和历史经验显式记下来；二是提升点击坐标、局部视觉变化、状态歧义这些低层感知能力；三是让 agent 在 GUI action 和 tool/API/CLI 之间做路径编排；四是用可验证环境和 trajectory-aware judge 给长程任务提供稳定反馈。
+    </div>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <h3>记忆与自进化</h3>
+        <p>GUI-explorer、EchoTrail、UI-Mem、UI-Voyager、OSExpert 都在回答：agent 能不能先熟悉环境，把可复用经验变成后续任务的资产。</p>
+      </div>
+      <div class="overview-card">
+        <h3>Grounding 与感知</h3>
+        <p>GUI-SD、ScreenSearch、DiffSpot 把坐标、局部视觉差异、相似屏幕歧义拆开看，避免把所有问题都塞进端到端 token 预测。</p>
+      </div>
+      <div class="overview-card">
+        <h3>GUI + Tool 混合</h3>
+        <p>ToolCUA 和 WeaveBench 的核心共识是：现代 CUA 不该是纯 GUI，也不该是纯 API，而要在同一条轨迹里编排多种接口。</p>
+      </div>
+      <div class="overview-card">
+        <h3>可验证反馈</h3>
+        <p>CUA-Gym 把训练样本变成 $(t,s,r)$ 的联合生成问题，WeaveBench 则强调只看最终产物会高估 agent，需要审计过程证据链。</p>
+      </div>
+    </div>
+    <table class="result-table">
+      <thead>
+        <tr><th>问题层次</th><th>代表工作</th><th>核心信号</th><th>适合解决的瓶颈</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>状态转移记忆</td><td>GUI-explorer / EchoTrail / UI-Mem</td><td>obs-action-next obs、成功轨迹、workflow memory</td><td>重复任务、长程导航、经验复用</td></tr>
+        <tr><td>失败复用</td><td>UI-Voyager / OSExpert</td><td>fork point、failed boundary、verified skill</td><td>失败后如何产生训练信号或边界意识</td></tr>
+        <tr><td>视觉定位</td><td>GUI-SD / ScreenSearch / DiffSpot</td><td>视觉特权、后继状态分叉、CSS-level mutation</td><td>点击坐标、细粒度变化、状态歧义</td></tr>
+        <tr><td>混合动作</td><td>ToolCUA / WeaveBench</td><td>GUI-tool switching、trajectory-aware provenance</td><td>什么时候用 GUI，什么时候用工具/CLI</td></tr>
+        <tr><td>训练与评测</td><td>CUA-Gym / WeaveBench</td><td>programmatic reward、trajectory-aware judge</td><td>低噪声 RLVR、长程 benchmark 防作弊</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent.md" arxiv="2505" -->
+  <article id="gui-explorer" class="paper-card">
+    <h2>GUI-explorer: Autonomous Exploration and Mining of Transition-aware Knowledge for GUI Agent</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent.md">本地总结</a>
+      <span class="tag">GUI exploration</span><span class="tag">transition-aware memory</span><span class="tag">training-free</span>
+    </div>
+    <div class="summary-box">
+      GUI-explorer 的重点不是训练一个新模型，而是让 GUI agent 自主探索应用，把“当前界面、动作、下一个界面”的状态转移知识挖出来，形成可检索的 GUI knowledge base。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>把知识单元从静态 screenshot 或 action label 提升为 transition tuple：$(observation, action, next\ observation)$。</li>
+        <li>探索阶段记录动作后果，避免只记“这个按钮在哪”，而不知道“点完会去哪里”。</li>
+        <li>推理阶段根据当前任务和界面检索相关转移知识，给 agent 提供动态 guidance。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">价值与局限</h3>
+      <p>它直接回应了 GUI agent 的一个基础痛点：视觉 grounding 不等于环境理解。缺点是探索质量受初始 agent 和环境覆盖限制，且 transition memory 如果没有去重、版本管理和失败过滤，容易膨胀成 noisy cache。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent_tex/GUI-explorer-v8.drawio.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2505_gui_explorer_autonomous_exploration_and_mining_of_transition_aware_knowledge_for_gui_agent_tex/GUI-explorer-v8.drawio.png" alt="GUI-explorer framework">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration.md" arxiv="2512" -->
+  <article id="echotrail" class="paper-card">
+    <h2>EchoTrail-GUI: Building Actionable Memory for GUI Agents via Critic-Guided Self-Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration.md">本地总结</a>
+      <span class="tag">actionable memory</span><span class="tag">self-exploration</span><span class="tag">critic filtering</span>
+    </div>
+    <div class="summary-box">
+      EchoTrail-GUI 把自探索轨迹变成“可执行记忆”：critic 负责筛掉无效或不可靠探索，保留可复用的成功路径，并在推理时按任务检索注入。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>先让 agent 在 GUI 环境中自探索，生成大量 candidate trajectories。</li>
+        <li>critic 对轨迹质量、目标相关性和可执行性进行过滤，把经验从“日志”变成“actionable memory”。</li>
+        <li>推理时检索相似任务或相似界面下的轨迹片段，作为上下文示范，减少从零 grounding 的成本。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">和 GUI-explorer 的区别</h3>
+      <p>GUI-explorer 更偏 transition-level environment knowledge；EchoTrail 更像 task trajectory memory。前者回答“这个动作会造成什么状态转移”，后者回答“过去类似任务是怎么完成的”。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration_tex/cvpr_main.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2512_echotrail_gui_building_actionable_memory_for_gui_agents_via_critic_guided_self_exploration_tex/cvpr_main.png" alt="EchoTrail-GUI overview">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents.md" arxiv="2602" -->
+  <article id="ui-mem" class="paper-card">
+    <h2>UI-Mem: Self-Evolving Experience Memory for Online Reinforcement Learning in Mobile GUI Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents.md">本地总结</a>
+      <span class="tag">mobile GUI</span><span class="tag">memory-guided GRPO</span><span class="tag">online RL</span>
+    </div>
+    <div class="summary-box">
+      UI-Mem 的关键是让 memory 不只在推理时做 RAG，而是直接参与 online RL：用强/弱/无 memory guidance 构造组内差异，为 GRPO 提供更有信息量的 advantage。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>维护 hierarchical memory，包括 workflow、subtask skill、failure pattern 等多层经验。</li>
+        <li>在同一任务上用不同强度 memory guidance 采样 rollout，刻意制造 reward variance。</li>
+        <li>训练后根据新成功/失败经验更新 memory，形成“memory 指导 rollout，rollout 反哺 memory”的闭环。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">对 GUI Agent 的启发</h3>
+      <p>它把“记忆”从静态检索模块升级成 RL 数据生成器。对于稀疏 reward GUI 任务，这比盲目多采样更聪明，因为 memory guidance 能主动创造组内可比较的成功/失败轨迹。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/pipeline.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/pipeline.png" alt="UI-Mem pipeline">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_retrieval.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_retrieval.png" alt="UI-Mem retrieval">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_update.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2602_ui_mem_self_evolving_experience_memory_for_online_reinforcement_learning_in_mobile_gui_agents_tex/figure_update.png" alt="UI-Mem update">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience.md" arxiv="2603" -->
+  <article id="ui-voyager" class="paper-card">
+    <h2>UI-Voyager: A Self-Evolving GUI Agent Learning via Failed Experience</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience.md">本地总结</a>
+      <span class="tag">failed experience</span><span class="tag">GRSD</span><span class="tag">self-evolving</span>
+    </div>
+    <div class="summary-box">
+      UI-Voyager 的亮点是把失败轨迹变成训练资产：不是只保留成功示范，而是在成功/失败轨迹分叉处找局部 correction，用 step-level self-distillation 修正策略。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>先通过 RFT/rollout 收集成功与失败经验。</li>
+        <li>用 screenshot similarity 等方法定位 fork point：同任务中成功轨迹和失败轨迹从哪里开始走岔。</li>
+        <li>在 fork point 上用成功动作作为局部 teacher，进行 GRSD 式 self-distillation，而不是把整条失败轨迹丢掉。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">价值与局限</h3>
+      <p>它非常适合 GUI 场景，因为 GUI 长程失败常常由一个局部错误动作触发。局限是 fork point 检测依赖状态相似度，如果界面变化大或隐藏状态不同，局部对齐会变得不稳定。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/main_framework_v3.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/main_framework_v3.png" alt="UI-Voyager framework">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/fork_point_detection_illustration.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2603_ui_voyager_a_self_evolving_gui_agent_learning_via_failed_experience_tex/fork_point_detection_illustration.png" alt="fork point detection">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration.md" arxiv="2603.07978" -->
+  <article id="osexpert" class="paper-card">
+    <h2>OSExpert: Computer-Use Agents Learning Professional Skills via Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration.md">本地总结</a>
+      <span class="tag">professional CUA</span><span class="tag">GUI-DFS</span><span class="tag">skill set</span>
+    </div>
+    <div class="summary-box">
+      OSExpert 把 CUA 从“临时完成任务”推进到“先学习一个专业软件环境”。它用 GUI-DFS 探索 unit functions，构建成功技能、失败边界和 fine-grained action primitives。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>Bottom-Up Self-Exploration：从顶层界面开始 DFS 探索菜单、工具栏、画布等功能。</li>
+        <li>Skill Set Construction：将通过验证的 plan/action sequence 存成 unit skills，再组合成 composite skills。</li>
+        <li>Fast Planner：用 skill-derived query-plan pairs LoRA 训练小模型，一次前向生成完整 plan，降低 step-wise planning 延迟。</li>
+        <li>Skill Boundary Check：失败技能也进入 skill set，让 agent 知道哪些任务当前能力边界内做不到。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>在 OSExpert-Eval 中，现有 CUA 在 long-horizon、unseen UI、fine-grained 操作上成功率很低；加入 fine-grained skills 后，GIMP 和 LibreOffice 的精细操作成功率明显提升。它给出的工程信号很明确：复杂坐标/区域控制不要全压给 VLM token decoder，应该外化成可验证 primitive。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main_v2.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main_v2.png" alt="OSExpert framework">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main2_v1.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2603_osexpert_computer_use_agents_learning_professional_skills_via_exploration_tex/main2_v1.png" alt="OSExpert skill organization">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding.md" arxiv="2605.00642" -->
+  <article id="gui-sd" class="paper-card">
+    <h2>Learn where to Click from Yourself: On-Policy Self-Distillation for GUI Grounding</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding.md">本地总结</a>
+      <a href="https://arxiv.org/abs/2605.00642">arXiv</a>
+      <span class="tag">GUI grounding</span><span class="tag">OPSD</span><span class="tag">coordinate distillation</span>
+    </div>
+    <div class="summary-box">
+      GUI-SD 是把 OPSD 用到 GUI 坐标 grounding 的代表工作。它发现 naive OPSD 会退化成 SFT，于是用视觉特权上下文和熵引导优化，让 teacher 既强又不过度 one-hot。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>Visual Privileged Guidance：teacher 看到目标 bbox、高斯软掩码和 hint prompt，但不直接拿精确坐标文本。</li>
+        <li>Entropy-Guided Optimization：对坐标 token 做位置信用分配，高位数位权重更大；同时用 teacher entropy 过滤低置信监督。</li>
+        <li>Teacher EMA 更新：让 teacher/student 同源但保持稳定差异。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>相比 GRPO-Gaussian，GUI-SD 报告约 4x 训练加速，并在多个 grounding benchmark 上取得更高平均精度。它最重要的经验是：GUI 坐标蒸馏不能只把 bbox 当普通文本 token，需要控制 teacher 分布的熵和 token 权重。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure3.png" alt="GUI-SD framework">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_learn_where_to_click_from_yourself_on_policy_self_distillation_for_gui_grounding/Figure1.png" alt="GUI-SD paradigms">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_screensearch_uncertainty_aware_os_exploration.md" arxiv="2605.16024" -->
+  <article id="screensearch" class="paper-card">
+    <h2>ScreenSearch: Uncertainty-Aware OS Exploration</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_screensearch_uncertainty_aware_os_exploration.md">本地总结</a>
+      <a href="https://arxiv.org/abs/2605.16024">arXiv</a>
+      <span class="tag">OS exploration</span><span class="tag">partial observability</span><span class="tag">state graph</span>
+    </div>
+    <div class="summary-box">
+      ScreenSearch 把 desktop GUI 的“看起来一样但其实不一样”变成可计算问题：用 UIA 结构做 screen retrieval / dedup，再用 matched-action outcome dispersion 估计状态歧义。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>用 UIA-derived structural features 为 screen 建 canonical state ID，降低 cursor/focus 等无意义变化影响。</li>
+        <li>维护 deduplicated state graph，让不同 history 中的相同界面共享统计。</li>
+        <li>用同一 action 在相似 screen cluster 上的后继状态分叉程度定义 ambiguity，再用 PUCT graph-bandit 平衡 novelty 和 ambiguity reduction。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">对训练的启发</h3>
+      <p>它提供了区别于 token probability 的不确定性信号：region/action 的质量可以看它执行后进入哪个 state cluster，是否降低歧义。对 bbox、click point、drag region 这类异质动作参数蒸馏很有启发。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/system_overview.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/system_overview.png" alt="ScreenSearch overview">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/screen_similarity_and_retrieval.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_screensearch_uncertainty_aware_os_exploration_tex/screen_similarity_and_retrieval.png" alt="Screen retrieval">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces.md" arxiv="2605.29615" -->
+  <article id="diffspot" class="paper-card">
+    <h2>DiffSpot: Can VLMs Spot Fine-Grained Visual Differences in Web Interfaces?</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces.md">本地总结</a>
+      <a href="https://arxiv.org/abs/2605.29615">arXiv</a>
+      <a href="https://github.com/Tencent/DiffSpot">Code</a>
+      <span class="tag">web interface</span><span class="tag">visual diff</span><span class="tag">perception benchmark</span>
+    </div>
+    <div class="summary-box">
+      DiffSpot 不是训练 agent，而是精准测 GUI/web agent 的局部视觉验证能力：当网页只发生一个 CSS 属性级变化时，VLM 能否发现、定位并说清变化。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>从真实网页生成 self-contained HTML，然后在 code space 做单元素、单属性 mutation。</li>
+        <li>用 Grounding Gate 确保变化确实可见、局部、可定位，不让 benchmark 变成模糊图像差分。</li>
+        <li>加入 no-diff pairs 测 hallucination control，区分“看不见”和“到处都觉得变了”。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>13 个 frontier VLM 在细粒度 web diff 上仍远未解决，最佳总体准确率也只有约 47.2%。失败更多依赖属性类型，而不是网页 domain，这说明 GUI perception 的瓶颈是 property-level localized visual verification。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/pipeline_v2.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/pipeline_v2.png" alt="DiffSpot pipeline">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/heatmap_op_model.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_diffspot_can_vlms_spot_fine_grained_visual_differences_in_web_interfaces_tex/heatmap_op_model.png" alt="Operator heatmap">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents.md" arxiv="2605.12481" -->
+  <article id="toolcua" class="paper-card">
+    <h2>ToolCUA: Towards Optimal GUI-Tool Path Orchestration for Computer Use Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents.md">本地总结</a>
+      <a href="https://github.com/X-PLUG/ToolCUA">Code</a>
+      <span class="tag">GUI-tool hybrid</span><span class="tag">MCP tools</span><span class="tag">online agentic RL</span>
+    </div>
+    <div class="summary-box">
+      ToolCUA 的核心判断很锋利：给 agent 工具不等于 agent 会用工具。难点不是“会不会调用”，而是“什么时候该用工具，什么时候必须回到 GUI grounding”。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>从成功 pure-GUI trajectories 出发，合成 trajectory-aware tool library 和 GUI-tool interleaved trajectories。</li>
+        <li>next-state grounding：工具调用后预测的状态必须和原 GUI 轨迹中的后续 screenshot 对齐，避免幻想 API。</li>
+        <li>Tool-Bootstrapped GUI RFT：先 warmup SFT，再在 GUI/tool critical switching steps 上做单轮 RL。</li>
+        <li>Online Agentic RL：用 Tool-Efficient Path Reward 鼓励合适工具与更短路径，而不是鼓励工具调用越多越好。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>预实验显示，很多强模型加入工具后成功率反而下降：小模型 underuse，大模型 overuse。ToolCUA-8B 在 OSWorld-MCP 上通过混合路径编排提升到约 46.85%，同时减少平均步骤。它和 OSExpert 很互补：OSExpert 发现技能，ToolCUA 学会在 GUI-tool 空间里编排技能。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" alt="ToolCUA method overview">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" alt="ToolCUA teaser">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents.md" arxiv="2605.25624" -->
+  <article id="cua-gym" class="paper-card">
+    <h2>CUA-Gym: Scaling Verifiable Training Environments and Tasks for Computer-Use Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents.md">本地总结</a>
+      <a href="https://arxiv.org/abs/2605.25624">arXiv</a>
+      <span class="tag">RLVR</span><span class="tag">programmatic reward</span><span class="tag">mock web apps</span>
+    </div>
+    <div class="summary-box">
+      CUA-Gym 把 GUI/CUA 的 RLVR 数据构造成 verified tuple $(t,s_\text{init},s_\text{gold},r)$：任务、初始环境、目标状态和程序化 reward 必须一起生成、一起验证。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>Generator 生成环境状态和 golden state，Discriminator 在信息隔离下写 reward.py，Orchestrator 负责验证与过滤。</li>
+        <li>使用五个 agreement conditions，例如 $r(V_\text{gold})=1$、$r(V_\text{init})=0$、reward 不含 forbidden patterns。</li>
+        <li>VLM judge 不直接作为 RL reward，而放在离线 filter 阶段检查程序 reward 与视觉结果是否一致。</li>
+        <li>CUA-Gym-Hub 合成可注入状态的 mock web apps，让同一环境支持大量任务。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>最终生成 32,112 个 verified tuples 和 110 个环境；GSPO 训练后在 OSWorld-Verified 和 held-out WebArena 上都有收益。它最值得借鉴的不是某个 policy trick，而是“环境工厂 + reward 工厂 + 数据工厂”的系统化范式。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/main_figure.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/main_figure.png" alt="CUA-Gym synthesis pipeline">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/env_figure.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2605_cua_gym_scaling_verifiable_training_environments_and_tasks_for_computer_use_agents_tex/env_figure.png" alt="CUA-Gym environment pipeline">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces.md" arxiv="2606.09426" -->
+  <article id="weavebench" class="paper-card">
+    <h2>WeaveBench: A Long-Horizon, Real-World Benchmark for Computer-Use Agents with Hybrid Interfaces</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces.md">本地总结</a>
+      <a href="https://arxiv.org/abs/2606.09426">arXiv</a>
+      <span class="tag">hybrid interface</span><span class="tag">long-horizon</span><span class="tag">trajectory-aware judge</span>
+    </div>
+    <div class="summary-box">
+      WeaveBench 评测的是下一代 CUA 的真实矛盾：agent 必须在同一条长轨迹里把 GUI 侧视觉/交互状态和 CLI/code 侧结构化操作持续编织起来。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>114 个任务、8 个真实工作域，要求 channel non-substitutability、long-horizon execution、cross-application state。</li>
+        <li>不是给 GUI benchmark 加 API，而是任务成功条件中 GUI 与 CLI/code 都不可替代。</li>
+        <li>Trajectory-aware judge 审计 final artifact、文件、截图、日志和 action trace，避免 outcome-only 评分高估 agent。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>interface ablation 中 GUI-only 和 CLI-only 都很低，Hybrid 最高到约 35.1%。trajectory-aware judge 会比 outcome-only 扣掉 10.3 到 20.2 个 PassRate points，说明强模型越来越可能“像成功一样失败”。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="../agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_overview_new.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_overview_new.png" alt="WeaveBench overview">
+        </a>
+        <a class="figure-link" href="../agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_integrity.png" target="_blank" rel="noopener">
+          <img src="../agent/assets/arxiv_2606_weavebench_a_long_horizon_real_world_benchmark_for_computer_use_agents_with_hybrid_interfaces_tex/fig_integrity.png" alt="trajectory-aware judging">
+        </a>
+      </div>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2509_webgen_agent_enhancing_interactive_website_generation_with_multi_level_feedback_and_step_level_reinforcement_learning.md" arxiv="2509" -->
+  <article id="webgen" class="paper-card">
+    <h2>WebGen-Agent: Enhancing Interactive Website Generation with Multi-Level Feedback and Step-Level Reinforcement Learning</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2509_webgen_agent_enhancing_interactive_website_generation_with_multi_level_feedback_and_step_level_reinforcement_learning.md">本地总结</a>
+      <span class="tag">web agent</span><span class="tag">multi-level feedback</span><span class="tag">Step-GRPO</span>
+    </div>
+    <div class="summary-box">
+      WebGen-Agent 更偏“生成交互式网站”的 agent，但它对 GUI agent 很有参考价值：通过截图/交互反馈和 step-level RL，把最终页面质量拆成可局部改进的过程信号。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>利用多层反馈评估页面，包括视觉外观、交互行为、局部组件和整体任务目标。</li>
+        <li>通过 Step-GRPO 将长程网页生成的最终质量信号拆到中间步骤，缓解 sparse reward。</li>
+        <li>对 GUI agent 的启发是：网页/GUI 编辑任务可以把“视觉 diff、DOM diff、交互测试”结合起来，而不是只让 VLM 看最终截图。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">连接到 DiffSpot / CUA-Gym</h3>
+      <p>如果 WebGen-Agent 的 feedback 能引入 DiffSpot 式 property-level visual verification，再结合 CUA-Gym 式 programmatic reward，就能更稳地训练 UI editing / website generation agent。</p>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <!-- PAPER_CARD_START source="../agent/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks.md" arxiv="2604" -->
+  <article id="odysseys" class="paper-card">
+    <h2>Odysseys: Benchmarking Web Agents on Realistic Long-Horizon Tasks</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2604_odysseys_benchmarking_web_agents_on_realistic_long_horizon_tasks.md">本地总结</a>
+      <span class="tag">web agent</span><span class="tag">long-horizon</span><span class="tag">realistic tasks</span>
+    </div>
+    <div class="summary-box">
+      Odysseys 代表了 Web Agent 评测从短链路点击走向真实长程任务的趋势。它关注 agent 在复杂网页环境中持续规划、跨页面保持状态、处理现实约束的能力。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">为什么放在 GUI Agent 页</h3>
+      <p>Web agent 是 GUI agent 的一个重要子类：DOM/accessibility tree 能提供结构化信息，但用户最终面对的仍是视觉界面和交互状态。Odysseys 与 WeaveBench 的共同点是都在提醒：真实 agent 任务不是单步 grounding，而是长程状态维护和过程合规。</p>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">对训练的启发</h3>
+      <p>长程 web benchmark 更适合用 trajectory-aware memory、可验证终态、局部过程奖励共同训练。如果只用最终 success/fail，很难判断失败来自 grounding、页面理解、跨页状态、还是工具使用策略。</p>
+    </div>
+  </article>
+  <!-- PAPER_CARD_END -->
+
+  <section id="synthesis" class="paper-card">
+    <h2>综合启发：如果要做更强的 GUI Agent，最好别只盯着“模型点得准不准”</h2>
+    <div class="summary-box">
+      这一批工作拼起来，其实给出了一条相当清晰的路线：先让 agent 建立环境地图和经验记忆，再把坐标/区域/工具调用这类异质动作接到可验证后继状态上，最后用低噪声 reward 和 trajectory-aware judge 做闭环训练。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">可以组合成的训练路线</h3>
+      <ul>
+        <li>探索层：用 ScreenSearch/OSExpert/GUI-explorer 先熟悉环境，生成 state graph、transition memory、unit skills 和失败边界。</li>
+        <li>记忆层：用 EchoTrail/UI-Mem 把成功轨迹、workflow、failure patterns 组织成可检索、可更新、可参与 RL 采样的 memory。</li>
+        <li>动作层：对 click/bbox/drag 这类视觉参数，用 GUI-SD 的熵门控蒸馏和 ScreenSearch 的 outcome-level consistency 降低噪声。</li>
+        <li>工具层：用 ToolCUA 的 next-state grounding 和 path reward 学 GUI/tool switching，而不是简单把 tool call 当文本模仿。</li>
+        <li>反馈层：用 CUA-Gym 式 programmatic reward 做主训练信号，用 DiffSpot/WeaveBench 式视觉与轨迹审计做离线过滤或评测。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">一个比较务实的判断</h3>
+      <p>GUI agent 的下一个瓶颈很可能不是单纯“更强 VLM”，而是工程化地组织环境经验、动作后果和可验证反馈。换句话说，模型需要的不只是看屏幕，而是拥有一套关于屏幕如何变化、工具何时可靠、任务怎样闭环的外部记忆和训练基础设施。</p>
+    </div>
+    <div class="note-box">
+      备注：本页仅整理 agent 目录中与 GUI / CUA / Web Agent 明确相关的工作；其中 VeriRL 对应的本地 markdown 内容目前实际是 MeMo 记忆论文，标题与文件名不一致，因此未纳入 GUI Agent 主卡片，避免误汇总。
+    </div>
+  </section>
+</div>
+</body>
+</html>
