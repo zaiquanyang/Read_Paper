@@ -11,12 +11,12 @@
 <p><strong>发现 2：LLM 中文本注意力 vs 视觉注意力</strong> - 视觉注意力受 attention shift 严重影响，不同样本间偏差大 - 文本注意力的偏移趋势更平缓，且不同样本和低索引 token 也能获得高关注度 - 结合视觉注意力会导致性能大幅下降</p>
 <p><strong>发现 3：LLM 中间层的注意力最可靠</strong> - 浅层：不相关区域吸收了文本 token 的大部分注意力 - 中间层（8+ 层开始）：不同文本 token 能聚焦到语义相关区域，&gt;95% 原始性能 - 深层：注意力可靠性显著下降</p>
 <figure>
-<img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
 </figure>
 <h3 id="learnpruner-框架">LearnPruner 框架</h3>
 <p>基于上述分析，提出<strong>两阶段剪枝框架</strong>：</p>
 <figure>
-<img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /><figcaption aria-hidden="true">框架概览</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /><figcaption aria-hidden="true">框架概览</figcaption>
 </figure>
 <p><strong>阶段一：移除视觉冗余（视觉编码器后）</strong></p>
 <p>使用<strong>可学习剪枝模块（LPM）</strong>替代 [CLS] 注意力： - 轻量 MLP 对每个视觉 token 做二分类（保留/剪枝） - 使用 Straight-Through Estimator（STE）实现端到端训练 - <span class="math inline"><strong>M</strong><sub>soft</sub> = Softmax(MLP(<strong>X</strong><sub><em>v</em></sub><sup>(0)</sup>))</span>，推理时作为重要性分数</p>

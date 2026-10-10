@@ -19,7 +19,7 @@ think-answer VLM 的推理链很长，前面已经生成出来的大量文字本
 </ul>
 <h3 id="一张图看懂问题设定">2.2 一张图看懂问题设定</h3>
 <figure>
-<img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/intro_10.png" alt="Reasoning-prefix masking intuition" /><figcaption aria-hidden="true">Reasoning-prefix masking intuition</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/intro_10.png" alt="Reasoning-prefix masking intuition" /><figcaption aria-hidden="true">Reasoning-prefix masking intuition</figcaption>
 </figure>
 <p>这张图非常关键。左边是 naive distillation：student 可以直接看完整 reasoning prefix，于是当前 token 的预测主要靠前文文字。右边是 Masking-KD：把一部分 salient reasoning prefix 挡住后，student 为了继续模仿 teacher 的当前 token 分布，就必须更多看图。</p>
 </div><h2 class="section-title">方法框架：方法框架</h2><p>作者提出针对上述问题的视觉语言模型训练或推理框架。</p>

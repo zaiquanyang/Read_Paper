@@ -16,11 +16,11 @@
 <h3 id="整体示意图">6.1 整体示意图</h3>
 <p>论文的 teaser 图很好地表达了问题背景：用户长期视觉历史经过整理后，支持个性化问答与比较。</p>
 <figure>
-<img src="../vlm/assets/arxiv_2605_personal_visual_context_learning_in_large_multimodal_models/teaser_v1.png" alt="teaser" /><figcaption aria-hidden="true">teaser</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_personal_visual_context_learning_in_large_multimodal_models/teaser_v1.png" alt="teaser" /><figcaption aria-hidden="true">teaser</figcaption>
 </figure>
 <p>下面这张图更接近方法工作流，展示了从多段 context 构建 memory bank，再按 query 请求局部视觉证据的过程。</p>
 <figure>
-<img src="../vlm/assets/arxiv_2605_personal_visual_context_learning_in_large_multimodal_models/qualitative_v1.png" alt="qualitative" /><figcaption aria-hidden="true">qualitative</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_personal_visual_context_learning_in_large_multimodal_models/qualitative_v1.png" alt="qualitative" /><figcaption aria-hidden="true">qualitative</figcaption>
 </figure>
 <h3 id="stage-i把离散上下文变成结构化记忆">6.2 Stage I：把离散上下文变成结构化记忆</h3>
 <p>作者不把 <span class="math inline"><em>k</em></span> 个上下文样本简单当作 <span class="math inline"><em>k</em></span> 个独立 prompt，而是把它们看成关于“同一个用户”的累积证据。</p>

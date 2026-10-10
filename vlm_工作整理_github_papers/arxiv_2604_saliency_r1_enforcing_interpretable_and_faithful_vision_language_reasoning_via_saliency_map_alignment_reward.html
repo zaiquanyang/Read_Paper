@@ -5,7 +5,7 @@
 <p><strong>不同思维过程关注图像的不同区域，即使得出相同答案</strong>： - 有的推理真正关注与问题相关的区域 - 有的关注不相关物体或背景 - 后者本质上是对视觉信息的误用或幻觉</p>
 <p>本文的核心目标是：<strong>确保 VLM 的推理过程真正“看”到了正确的图像区域</strong>。</p>
 <figure>
-<img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/teaser.png" alt="动机图：不同思维过程关注不同区域" /><figcaption aria-hidden="true">动机图：不同思维过程关注不同区域</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/teaser.png" alt="动机图：不同思维过程关注不同区域" /><figcaption aria-hidden="true">动机图：不同思维过程关注不同区域</figcaption>
 </figure>
 </div><h2 class="section-title">方法框架：3. 方法与框架（详细）</h2><h3 id="总体框架">3.1 总体框架</h3>
 <p>Saliency-R1 包含三个核心组件：</p>
@@ -15,7 +15,7 @@
 <li><strong>GRPO + Saliency Alignment Reward</strong>：用显著性图与人工标注 bounding box 的对齐度作为奖励信号</li>
 </ol>
 <figure>
-<img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /><figcaption aria-hidden="true">方法框架</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /><figcaption aria-hidden="true">方法框架</figcaption>
 </figure>
 <h3 id="token-level-saliency-map-生成logits-分解">3.2 Token-level Saliency Map 生成（Logits 分解）</h3>
 <p>基于 Transformer 架构，将 token logits 分解为各 context token 的一阶贡献：</p>
