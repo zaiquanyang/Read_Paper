@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Synthetic Computers at Scale for Long-Horizon Productivity Simulation | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604.28181">
+  <h2>Synthetic Computers at Scale for Long-Horizon Productivity Simulation</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.28181" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.28181.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.28181</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这一部分当前还没有补到更细的整理。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 Agent 训练数据的来源存在显著局限：</p>
+<ul><li><strong>人类示范数据</strong>：高质量但成本极高、覆盖窄，无法规模化</li><li><strong>合成任务生成</strong>（SWE-bench、Terminal-Bench 等）：局限于特定领域（代码修复），任务通常是<strong>孤立的</strong>，缺乏丰富的上下文环境</li><li><strong>WebArena 等环境</strong>：提供了交互界面但缺乏用户特定的持久化文件系统和工作历史</li><li><strong>核心差距</strong>：现有方法提供的是&quot;任务&quot;而非&quot;工作环境&quot;——没有真实的文件层次、项目历史、协作者关系和累积的工作状态</li></ul>
+<p>整个流水线包含三个核心阶段：</p>
+<ul><li><strong>Synthetic Computer Creation</strong>：从 persona 创建用户特定的计算机环境</li><li><strong>Long-Horizon Productivity Simulation</strong>：在合成计算机上运行数周的工作模拟</li><li><strong>Experience Extraction &amp; Skill Creation</strong>：从仿真轨迹中提取经验信号并转化为可改进 Agent 的 skills</li></ul>
+<p class="caption-note">图：Synthetic Computers at Scale 框架总览</p>
+<p class="caption-note">Synthetic Computers at Scale 框架：从 Persona 到合成计算机到长期仿真到经验提取</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/overview.png" alt="框架总览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/sec2_overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/sec2_overview.png" alt="Sec2 Overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/artifact_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_synthetic_computers_at_scale_for_long_horizon_productivity_simulation/artifact_distribution.png" alt="Artifact 分布"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>Agent runtime</strong>：Claude Code SDK</li><li><strong>Work Agent</strong>：Claude Sonnet 4.6</li><li><strong>Setup Agent</strong>：Claude Opus 4.6（长期模拟设置）</li><li><strong>Artifact 创建 skills</strong>：Anthropic 的 skills（非 Office 类型）+ MiniMax 的开源 skills（Office 类型：minimax-docx, minimax-xlsx, pptx-generator, minimax-pdf）</li><li><strong>规模</strong>：1,000 个合成计算机（从 1,000 个 persona 出发）</li><li><strong>评估</strong>：100 个合成计算机的 rubric 评估 + 100 个 held-out 计算机的 in-domain 评估 + GDPVal 的 out-of-domain 评估</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前 Agent 训练数据的来源存在显著局限：</p>
+<ul><li><strong>人类示范数据</strong>：高质量但成本极高、覆盖窄，无法规模化</li><li><strong>合成任务生成</strong>（SWE-bench、Terminal-Bench 等）：局限于特定领域（代码修复），任务通常是<strong>孤立的</strong>，缺乏丰富的上下文环境</li><li><strong>WebArena 等环境</strong>：提供了交互界面但缺乏用户特定的持久化文件系统和工作历史</li><li><strong>核心差距</strong>：现有方法提供的是&quot;任务&quot;而非&quot;工作环境&quot;——没有真实的文件层次、项目历史、协作者关系和累积的工作状态</li></ul>
+<ul><li><strong>首个大规模合成计算机方法论</strong>：从 persona 创建完整的用户特定计算机环境，包含丰富的文件系统、项目历史和协作者关系，填补了 Agent 训练数据在&quot;真实工作环境&quot;方面的空白</li><li><strong>长期仿真规模惊人</strong>：每次仿真平均 2,272 turns、8.59 小时、31 次协作通信，远超现有 benchmark 的任务时长</li><li><strong>内容丰富的 artifact</strong>：生成的文件不是空占位符——DOCX 平均 14.6KB、PPTX 平均 593.7KB，Office 格式占 67.8%</li><li><strong>经验信号的有效性</strong>：从仿真轨迹提取的 skills 在域内（83% 胜率，+7.0pp）和域外（GDPVal 上 105 胜 67 负，p=0.002）都显著改进了 Agent 性能</li><li><strong>跨模型迁移</strong>：从 Sonnet 仿真提取的 skills 对 Haiku 和 Opus 也有正面效果</li><li><strong>可扩展的自改进循环</strong>：随着仿真数量增加，skill 质量持续提升（100→500→900 台训练计算机，胜率从 64% 升至 83%）</li><li><strong>详细的失败模式分析</strong>：跨文档一致性、协作者反馈遗漏、空白消息、版本混乱等系统性失败模式为 Agent 改进提供了明确方向</li></ul>
+<ul><li><strong>Artifact 视觉风格过于统一</strong>：当前 artifact 的内容虽然丰富，但视觉风格和格式跨计算机过于一致，缺乏用户或组织特定的设计偏好</li><li><strong>文件系统过于&quot;干净&quot;</strong>：真实计算机包含临时下载、重复草稿、废弃文件、截图、过时材料等噪音，合成计算机缺乏这种自然积累的历史</li><li><strong>协作者过于被动</strong>：当前模拟协作者主要是响应式的，而真实协作者有自己的工作、文件、会议、截止日期和演变状态...</li></ul>
+</div>
+</article></main></body></html>

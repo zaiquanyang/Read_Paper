@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>RE-TRAC: REcursive TRAjectory Compression for Deep Search Agents | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2602.02486">
+  <h2>RE-TRAC: REcursive TRAjectory Compression for Deep Search Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2602.02486" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.02486.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2602.02486</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最有价值的地方，不是单纯提出了一个“多跑几轮”的 agent trick，而是把 deep research agent 的核心瓶颈明确归因为 <strong>线性 ReAct 对长程分支搜索的承载不足</strong>，并用 <strong>trajectory compression + recursive state passing</strong> 给出了一个非常实用、易扩展、还能蒸馏到小模型中的解决方案。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 <strong>Deep Research / web search agent</strong> 在长轨迹任务里的一个很具体但很致命的问题: 模型明明在前面规划过若干搜索分支，但随着 ReAct 轨迹不断变长，后面往往会忘掉这些分支，只沿着单一路径越走越深，最后错过真正有用的信息源。</p>
+<p>作者把这个现象总结为 <strong>incomplete branch exploration</strong>。它不是单纯的“模型不会推理”，而是：</p>
+<ul><li>任务本身需要多分支探索、回溯、交叉验证。</li><li>ReAct 的执行形态却是线性的 action-observation 链。</li><li>当上下文极长、工具调用密集时，早期计划会被后续 observation 淹没。</li><li>最终失败往往来自“本来该查的分支没查完”，而不是一点思路都没有。</li></ul>
+<p>论文对失败轨迹做了分析，在 BrowseComp 上统计到：</p>
+<table class="result-table">
+<tr><th>Model</th><th>失败轨迹中存在 incomplete branches 的比例</th></tr>
+<tr><td>GLM-4.7</td><td>93.0%</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>92.7%</td></tr>
+<tr><td>Tongyi-DeepResearch</td><td>83.4%</td></tr>
+</table>
+<p>这组数字很关键，因为它说明现有 deep research agent 的失败，大量是“搜索管理失败”，而非“能力完全缺失”。</p>
+<p>同时，作者还发现很多模型的 Pass@8 明显高于 Pass@1，这意味着模型并不是完全答不出来，而是在<strong>单次 rollout 中没有把搜索空间探索到位</strong>。</p>
+<p>上图想表达的核心结论是：模型其实有潜力在多次尝试中找到正确答案，但传统的 independent rollouts 彼此隔离，无法复用经验，也会带来大量重复搜索。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者提出的方法叫 <strong>RE-TRAC</strong>，全称是 <strong>REcursive TRAjectory Compression</strong>。它不是再造一个复杂 agent 框架，而是在 ReAct 之上加了一个“跨 rollout 的经验压缩层”。</p>
+<p>最核心的操作只有一句话：</p>
+<div class="formula-block">\[S_t \leftarrow \mathrm{Compress}(\tau_t, S_{t-1}; \mathcal{C})\]</div>
+<p>其中：</p>
+<ul><li>$\tau_t$ 表示第 $t$ 轮 rollout 的完整轨迹。</li><li>$S_{t-1}$ 表示上一轮累计下来的结构化状态。</li><li>$\mathcal{C}$ 表示固定的 compression specification。</li><li>$S_t$ 表示新的压缩状态，会被喂给下一轮 agent。</li></ul>
+<p>这背后的直觉是：</p>
+<ul><li>不要把上一轮完整的超长轨迹原样塞回去。</li><li>只保留对下一轮搜索真正有用的“高价值状态”。</li><li>让后续 rollout 既知道“已经确认了什么”，也知道“还有哪些未完成分支值得继续查”。</li></ul>
+<p>对大模型，RE-TRAC 可以直接当作 inference-time prompting strategy 来用，不需要额外训练。作者把它用于：</p>
+<ul><li>o4-mini</li><li>o3</li><li>GPT-5-medium</li><li>DeepSeek-V3.2</li><li>GLM-4.7</li></ul>
+<p>然后和几种经典 test-time scaling 方案对比：</p>
+<ul><li><code>RT@n</code>: RE-TRAC 跑 $n$ 轮后的最终答案</li><li><code>MV@n</code>: $n$ 个独立 rollout 的多数投票</li><li><code>WV@n</code>: 带自评置信度的加权投票</li><li><code>Best@n</code>: 选自评置信度最高的答案</li></ul>
+<p>在 BrowseComp300 上，主要结果如下：</p>
+<table class="result-table">
+<tr><th>Model</th><th>Pass@1</th><th>RT@8</th><th>MV@8</th><th>WV@8</th><th>Best@8</th></tr>
+<tr><td>o4-mini</td><td>25.7</td><td class="best">46.8</td><td>34.0</td><td>46.7</td><td>43.3</td></tr>
+<tr><td>o3</td><td>54.9</td><td class="best">69.8</td><td>64.3</td><td>69.0</td><td>68.0</td></tr>
+<tr><td>GPT-5-medium</td><td>48.3</td><td class="best">66.6</td><td>61.7</td><td>64.7</td><td>54.0</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>45.3</td><td class="best">60.8</td><td>55.7</td><td>57.0</td><td>55.0</td></tr>
+<tr><td>GLM-4.7</td><td>37.7</td><td class="best">60.7</td><td>41.7</td><td>48.0</td><td>42.3</td></tr>
+</table>
+<p>这个表最值得注意的地方有两个：</p>
+<ul><li>RE-TRAC 几乎在所有模型上都能稳定达到最佳或并列最佳。</li><li>对自我判断能力没那么强的模型，RE-TRAC 比投票类方法更稳，因为它不依赖“谁更会给自己打分”，而是靠跨轮经验传递来扩展搜索。</li></ul>
+<p>上图说明了另一点：RE-TRAC 不只是效果好，而且更省资源。原因在于后续 rollout 会复用前面轮次的状态，不需要每一轮都从空白开始重复搜索，所以在 token 和 tool usage 上更经济。</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MethodFig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MethodFig.png" alt="Method overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MainFig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/MainFig.png" alt="ReAct vs RE-TRAC"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/pass_at_k_5models.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_agent_r1_training_language_model_agents_to_reflect_via_reinforcement_learning/pass_at_k_5models.png" alt="Pass@K analysis"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在五个 deep research / search-heavy benchmark 上做了评测：</p>
+<ul><li>BrowseComp</li><li>BrowseComp-ZH</li><li>GAIA</li><li>XBench</li><li>HLE</li></ul>
+<p>主结果里最关键的几行如下：</p>
+<table class="result-table">
+<tr><th>Model</th><th>BrowseComp</th><th>BrowseComp-ZH</th><th>GAIA</th><th>XBench</th><th>HLE</th></tr>
+<tr><td>Tongyi-DeepResearch-30B-A3B</td><td>43.4</td><td>46.7</td><td>70.9</td><td>75.0</td><td class="best">32.9</td></tr>
+<tr><td class="best">RE-TRAC-30B-A3B</td><td class="best">53.0</td><td class="best">57.3</td><td class="best">78.2</td><td class="best">83.0</td><td>31.5</td></tr>
+<tr><td>AgentCPM-Explore-4B</td><td>25.0</td><td>29.0</td><td>63.9</td><td>70.0</td><td>19.1</td></tr>
+<tr><td>NestBrowse-4B</td><td>22.4</td><td>28.4</td><td>68.9</td><td>74.0</td><td>-</td></tr>
+<tr><td class="best">RE-TRAC-4B</td><td class="best">30.0</td><td class="best">36.1</td><td class="best">70.4</td><td class="best">76.6</td><td class="best">22.2</td></tr>
+</table>
+<p>作者据此想说明三件事：</p>
+<ul><li><strong>同尺寸最强</strong></li></ul>
+<p><code>RE-TRAC-30B-A3B</code> 相比底座 <code>Tongyi-DeepResearch-30B-A3B</code>，在 BrowseComp、BrowseComp-ZH、GAIA、XBench 上提升大约 8% 到 10%。</p>
+<ul><li><strong>小模型也能变强</strong></li></ul>
+<p><code>RE-TRAC-4B</code> 在 <code>&lt;15B</code> 的开源 baseline 中表现最好，说明 RE-TRAC 不只是“更大的模型更会用”，而是可以把 long-horizon search 的套路教给小模型。</p>
+<ul><li><strong>能和更大模型竞争</strong></li></ul>
+<p><code>RE-TRAC-30B-A3B</code> 在若干 benchmark 上能逼近甚至超过更大参数量模型，说明“搜索管理”本身就能带来很大增益。</p>
+<p>补充一点：在 HLE 上，RE-TRAC-30B-A3B 并没有超过 Tongyi-DeepResearch-30B-A3B，这也提醒我们 RE-TRAC 的优势更集中在 <strong>search-heavy、branch-heavy、trajectory-heavy</strong> 的任务，而不是所有类型能力都无条件上涨。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果把这篇工作放回你现在的 <code>agent</code> 主题下，我觉得最值得吸收的是下面几条：</p>
+<p>如果你后面想把这篇工作的方法借到自己的 agent 实验里，我建议最小实现可以先做成这四步：</p>
+<ul><li>保持现有 ReAct agent 不变。</li><li>每轮 rollout 结束后，用固定模板生成三段式状态：</li><li>conclusions</li><li>verified evidence</li><li>unresolved branches</li><li>下一轮把这份状态作为新的初始上下文输入。</li><li>对比单轮 ReAct、Best-of-N、RE-TRAC 风格递归 rollout 的成功率与工具调用成本。</li></ul>
+<p>如果再进一步，可以专门加两个机制：</p>
+<ul><li>一个 branch coverage 指标，统计“计划过但未执行”的分支比例。</li><li>一个 summary quality 评估器，检查压缩状态是否遗漏关键未解决问题。</li></ul>
+<p>这篇论文最有价值的地方，不是单纯提出了一个“多跑几轮”的 agent trick，而是把 deep research agent 的核心瓶颈明确归因为 <strong>线性 ReAct 对长程分支搜索的承载不足</strong>，并用 <strong>trajectory compression + recursive state passing</strong> 给出了一个非常实用、易扩展、还能蒸馏到小模型中的解决方案。</p>
+</div>
+</article></main></body></html>

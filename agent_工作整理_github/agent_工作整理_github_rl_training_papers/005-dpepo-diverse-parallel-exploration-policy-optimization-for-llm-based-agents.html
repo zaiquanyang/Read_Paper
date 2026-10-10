@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>DPEPO: Diverse Parallel Exploration Policy Optimization for LLM-based Agents | agent_工作整理_rl_training</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent RL Training — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_rl_training.html">← 返回 agent_工作整理_rl_training 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents">
+  <h2>DPEPO: Diverse Parallel Exploration Policy Optimization for LLM-based Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.24320" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.24320.pdf" target="_blank">PDF</a>
+  <span class="meta-muted">Code: 未公开</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+<ul><li><strong>探索多样性不足</strong>：多次采样的轨迹倾向于收敛到相同动作选择，无法覆盖环境的多样动态</li><li><strong>环境理解片面</strong>：单路径推理使得 Agent 对环境的认知不完整且有偏差，导致复杂任务中的次优决策</li></ul>
+<p><strong>核心问题：</strong>能否让 Agent 同时与多个并行环境交互，共享跨环境经验，从而构建更全面的环境认知？</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 LLM Agent 主流范式 <strong>ReAct</strong> 存在根本性的探索瓶颈：Agent 在每一步只能执行一个动作、观察一个反馈，从<strong>狭窄的线性视角</strong>构建环境认知。这导致：</p>
+<ul><li><strong>探索多样性不足</strong>：多次采样的轨迹倾向于收敛到相同动作选择，无法覆盖环境的多样动态</li><li><strong>环境理解片面</strong>：单路径推理使得 Agent 对环境的认知不完整且有偏差，导致复杂任务中的次优决策</li></ul>
+<p><strong>核心问题：</strong>能否让 Agent 同时与多个并行环境交互，共享跨环境经验，从而构建更全面的环境认知？</p>
+
+<p>DPEPO 采用两阶段训练范式：</p>
+<ul><li><strong>SFT 冷启动</strong>：用 DeepSeek-V3.2 标注的并行探索轨迹（~500 条 ALFWorld / ~1000 条 ScienceWorld）微调 Agent，使其具备基本的并行推理和动作生成能力</li><li><strong>RL 层次化奖励优化</strong>：基于 GRPO 框架，引入轨迹级 + 步级的层次化奖励信号</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/main_1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/main_1.png" alt="框架概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/ablation_explore_efficiency_new.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/ablation_explore_efficiency_new.png" alt="消融探索动态分析"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/intro.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_dpepo_diverse_parallel_exploration_policy_optimization_for_llm_based_agents/intro.png" alt="框架概览"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>方法</th><th>Pick</th><th>Cool</th><th>Heat</th><th>Look</th><th>Pick2</th><th>Clean</th><th>All</th><th>OOD</th><th>Avg.</th><th>L0</th><th>L1</th><th>L2</th><th>Avg.</th></tr>
+<tr><td>*闭源模型*</td></tr>
+<tr><td>GPT-4o</td><td>75.3</td><td>21.6</td><td>56.7</td><td>60.8</td><td>49.8</td><td>31.2</td><td>48.0</td><td>66.0</td><td>57.0</td><td>45.4</td><td>49.2</td><td>41.0</td><td>45.2</td></tr>
+<tr><td>DeepSeek-R1</td><td>80.0</td><td>80.0</td><td>56.3</td><td>46.2</td><td>87.5</td><td>77.8</td><td>75.0</td><td>85.1</td><td>80.1</td><td>22.2</td><td>31.4</td><td>29.1</td><td>27.6</td></tr>
+<tr><td>*Qwen2.5-1.5B*</td></tr>
+<tr><td>GRPO</td><td>85.3</td><td>59.7</td><td>78.2</td><td>53.7</td><td>53.5</td><td>84.5</td><td>72.8</td><td>71.1</td><td>72.0</td><td>21.1</td><td>13.7</td><td>10.9</td><td>15.2</td></tr>
+<tr><td>GiGPO</td><td>94.4</td><td>79.8</td><td>94.4</td><td>67.5</td><td>76.4</td><td>94.8</td><td>86.7</td><td>83.2</td><td>85.0</td><td>25.8</td><td>15.2</td><td>4.7</td><td>15.2</td></tr>
+<tr><td>RLVMR</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>89.1</td><td>87.9</td><td>88.5</td><td>46.9</td><td>34.3</td><td>26.5</td><td>35.9</td></tr>
+<tr><td class="best">DPEPO</td><td class="best">100.0</td><td class="best">96.0</td><td>93.8</td><td class="best">100.0</td><td>87.5</td><td class="best">96.3</td><td class="best">95.7</td><td class="best">92.5</td><td class="best">94.1</td><td class="best">59.8</td><td class="best">58.1</td><td class="best">34.2</td><td class="best">50.7</td></tr>
+<tr><td>*Qwen2.5-7B*</td></tr>
+<tr><td>GRPO</td><td>90.8</td><td>72.5</td><td>74.7</td><td>66.1</td><td>77.6</td><td>89.3</td><td>77.6</td><td>77.3</td><td>77.5</td><td>49.1</td><td>30.1</td><td>26.6</td><td>35.3</td></tr>
+<tr><td>GiGPO</td><td>97.7</td><td>89.3</td><td>83.7</td><td>82.7</td><td>79.2</td><td>98.8</td><td>90.8</td><td>90.2</td><td>90.5</td><td>53.4</td><td>25.2</td><td>25.8</td><td>34.8</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>仅在文本环境中验证</strong>：实验限于 ALFWorld（纯文本）和 ScienceWorld（模拟器），未涉及真实世界或多模态场景</li><li><strong>环境数量固定</strong>：训练时 K=4 个并行环境，动态环境数量选择策略未深入探索</li><li><strong>冷启动依赖强教师模型</strong>：SFT 数据依赖 DeepSeek-V3.2 标注，标注质量受限</li><li><strong>环境间无差异化激励</strong>：所有并行环境同质（共享初始状态），未探索异构环境并行</li><li><strong>未与序列级方法结合</strong>：DPEPO 替代了 ReAct，但未研究与 Reflexion 等反思机制的结合</li></ul>
+
+<ul><li><strong>异构并行探索</strong>：不同并行环境可设置不同的初始条件或难度，增强探索覆盖面</li><li><strong>动态并行度选择</strong>：Agent 自适应决定何时需要并行探索、需要多少并行环境</li><li><strong>与反思机制结合</strong>：将 DPEPO 的并行探索与 Reflexion 式的自我反思结合，形成&quot;探索-反思-再探索&quot;闭环</li><li><strong>扩展到多模态 Agent</strong>：在 Web 导航、GUI 操作等视觉 Agent 场景中验证并行探索的收益</li><li><strong>自适应奖励权重</strong>：根据任务阶段动态调整 DAR 和 DTR 的权重（早期鼓励探索，后期鼓励收敛）</li><li><strong>代码未公开</strong>：建议关注代码是否后续发布，或参考方法自行实现</li></ul>
+</div>
+</article></main></body></html>

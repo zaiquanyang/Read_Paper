@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling | agent_工作整理_rl_training</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent RL Training — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_rl_training.html">← 返回 agent_工作整理_rl_training 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.08083">
+  <h2>LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.08083" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.08083.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/zhengkid/AutoTTS" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.08083</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇工作提出 <strong>AutoTTS</strong>：把 test-time scaling 策略设计从“人手写 branching / pruning / stopping 启发式”改写成“人构造可回放环境，coding agent 自动发现控制器”的问题。具体到 width-depth TTS，它预采样推理轨迹和 probe 信号，让 agent 在离线 replay 环境里低成本搜索控制器；最终用约 39.9 美元和 160 分钟发现的策略，在多数组合上优于手工 TTS baseline 的 accuracy-cost Pareto frontier。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>论文把 adaptive TTS 建模成一个可控推理过程。对每个问题 <code>q</code>，controller 可以管理多个 reasoning branch：</p>
+<ul><li><code>BRANCH</code>: 创建新分支，并生成第一个固定长度 interval。</li><li><code>CONTINUE(i)</code>: 让第 <code>i</code> 个活跃分支继续生成一个 interval。</li><li><code>PROBE(i)</code>: 读取当前分支在当前深度的中间答案信号 <code>omega_{i,k}</code>。</li><li><code>PRUNE(i)</code>: 放弃某个活跃分支。</li><li><code>ANSWER</code>: 终止推理，并通过聚合规则输出最终答案。</li></ul>
+<p>状态定义为：</p>
+<p>```text</p>
+<p>s_t = (q, m_t, I_t, l_t, Z_t, Omega_t)</p>
+<p>```</p>
+<p>含义：</p>
+<ul><li><code>q</code>: 当前问题。</li><li><code>m_t</code>: 已创建分支数。</li><li><code>I_t</code>: 当前仍活跃的分支集合。</li><li><code>l_t</code>: 每个分支当前深度，单位是固定 token interval。</li><li><code>Z_t</code>: 每个分支已经生成的 prefix 序列。</li><li><code>Omega_t</code>: 已 reveal 的 probe feedback。</li></ul>
+<p>计算成本：</p>
+<p>```text</p>
+<p>Cost(s_t) = sum_i l_{t,i} + kappa_probe * |Omega_t|</p>
+<p>```</p>
+<p>如果 probe 成本相对生成可忽略，则 <code>kappa_probe = 0</code>。</p>
+<p>目标是找到一个 code-defined policy：</p>
+<p>```text</p>
+<p>pi(. | s, beta)</p>
+<p>```</p>
+<p>其中 <code>beta</code> 是单一 trade-off 参数，用来控制整个策略的预算倾向。优化目标是准确率与推理成本之间的 trade-off：</p>
+<p>```text</p>
+<p>maximize E[ 1{answer correct} - gamma * cost ]</p>
+<p>```</p>
+<p>这意味着 AutoTTS 搜索的不是一个固定推理算法，而是一族由 <code>beta</code> 控制的策略曲线。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>TTS 的基本想法是在推理时给模型更多计算，例如采样多条 reasoning trajectory、延长推理链、做 self-consistency、早停、剪枝、probe 中间状态等。但论文强调，性能不只取决于总计算量，还取决于计算如何在不同分支和深度之间分配。</p>
+<p>现有方法多是人工设计：</p>
+<ul><li>Self-Consistency 固定采样很多条轨迹，再 majority vote。</li><li>ASC / ESC 做启发式 early stopping。</li><li>Parallel-Probe 利用跨分支 probe 信息决定继续、剪枝或停止。</li><li>ST-BoN / DeepPrune 等方法也本质上是人手写控制策略。</li></ul>
+<p>这些方法都可以看作 width-depth 控制空间中的某条人造轨迹：width 是探索多少分支，depth 是每条分支走多深。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/Auto-tts.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/Auto-tts.png" alt="AutoTTS framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/tts_2d_space_edited.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/tts_2d_space_edited.png" alt="TTS width-depth control space"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/scaling_Qwen3-0.6B_aime25.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_llms_improving_llms_agentic_discovery_for_test_time_scaling/scaling_Qwen3-0.6B_aime25.png" alt="Scaling Qwen3-0.6B AIME25"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Method</th><th>AIME24 Acc.</th><th>AIME24 Tokens</th><th>AIME25 Acc.</th><th>AIME25 Tokens</th><th>HMMT25 Acc.</th><th>HMMT25 Tokens</th><th>Avg Acc.</th><th>Avg Tokens</th><th>Search Cost</th></tr>
+<tr><td>Ours</td><td>65.2</td><td>483.4K</td><td>57.6</td><td>592.5K</td><td>36.5</td><td>650.7K</td><td>53.1</td><td>575.5K</td><td>$39.9</td></tr>
+<tr><td>w/o Beta Parameterization</td><td>60.7</td><td>81.2K</td><td>54.4</td><td>93.9K</td><td>31.9</td><td>104.7K</td><td>49.0</td><td>93.3K</td><td>$46.4</td></tr>
+<tr><td>w/o Execution Traces</td><td>64.0</td><td>703.1K</td><td>56.7</td><td>823.7K</td><td>34.1</td><td>946.1K</td><td>51.6</td><td>824.3K</td><td>$30.9</td></tr>
+</table>
+<p>一个通用 agentic discovery 框架可以拆成：</p>
+<ul><li>定义 state/action/feedback/objective。</li><li>构建 cheap replay environment。</li><li>让 coding agent 提出 controller。</li><li>每轮返回 scalar metrics + execution traces。</li><li>用单一 <code>beta</code> 或 <code>budget</code> 控制整条 policy curve。</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇工作提出 <strong>AutoTTS</strong>：把 test-time scaling 策略设计从“人手写 branching / pruning / stopping 启发式”改写成“人构造可回放环境，coding agent 自动发现控制器”的问题。具体到 width-depth TTS，它预采样推理轨迹和 probe 信号，让 agent 在离线 replay 环境里低成本搜索控制器；最终用约 39.9 美元和 160 分钟发现的策略，在多数组合上优于手工 TTS baseline 的 accuracy-cost Pareto frontier。</p>
+<ul><li><strong>范式贡献清晰</strong>：不是提出又一个手工 TTS 策略，而是把策略设计改成环境驱动的 agentic discovery。</li><li><strong>离线 replay 让搜索可行</strong>：高频评估不再需要反复调用 base LLM。</li><li><strong>beta parameterization 很实用</strong>：让策略天然成为一条 budget curve，并降低过拟合风险。</li><li><strong>trace feedback 符合 agent 工作方式</strong>：coding agent 更擅长从具体执行轨迹中诊断程序，而不是只看标量分数。</li><li><strong>发现的 controller 有可解释机制</strong>：CMC 的 EMA stopping、width-depth coupling、alignment-aware allocation、conservative abandonment 都有明确行为意义。</li><li><strong>实验覆盖较好</strong>：跨 Qwen 模型规模、held-out benchmark、DeepSeek-R1-Distill-Llama-8B、GPQA-Diamond。</li></ul>
+<p>论文自己也指出两个主要限制：</p>
+<ul><li><strong>当前环境只覆盖 width-depth TTS control</strong></li></ul>
+<p>Action set 主要是 branch / continue / probe / prune / answer。更复杂的 tree search、verifier-guided refinement、tool-use reasoning、multi-agent debate 等还没有被统一进来。</p>
+<ul><li><strong>依赖 frontier coding agent</strong></li></ul>
+<p>实验中 explorer 是 Claude Code。是否开源 coding agent 也能稳定发现同等级 controller，是后续问题。</p>
+<p>我额外认为还有几个隐含限制：...</p>
+</div>
+</article></main></body></html>

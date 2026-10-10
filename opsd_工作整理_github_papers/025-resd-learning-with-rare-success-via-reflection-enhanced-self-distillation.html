@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>RESD: Learning with Rare Success via Reflection-Enhanced Self-Distillation | opsd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSD 工作整理 — On-Policy Self-Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px;
+    border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0;
+    color: var(--text); border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img {
+    max-width: 100%; max-height: 360px; object-fit: contain;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem;
+  }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.6rem 0; }
+  .pros-cons > div { padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.88rem; }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap { position: fixed; top: 2rem; left: 1rem; z-index: 100; }
+  .toc-btn {
+    display: inline-block; padding: 6px 16px; background: var(--card-bg);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); font-size: 0.82rem; font-weight: 700;
+    color: var(--accent); cursor: pointer;
+  }
+  .toc-panel {
+    display: none; position: absolute; top: 0; left: 0;
+    width: 520px; max-height: calc(100vh - 4rem); overflow-y: auto;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); padding: 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .toc ol { padding-left: 1.2rem; margin: 0; }
+  .toc li { margin-bottom: 0.25rem; font-size: 0.75rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 1px 7px; border-radius: 99px; font-size: 0.65rem; font-weight: 600;
+    margin-right: 0.3rem; vertical-align: middle;
+  }
+  @media (max-width: 640px) { .pros-cons { grid-template-columns: 1fr; } .paper-card { padding: 1.2rem; } }
+  .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--border); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27,39,78,.07); }
+  .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+  .work-list p { margin: 0 0 12px; color: var(--text-secondary); }
+  .work-list ol { margin: 0; padding-left: 1.25rem; }
+  .work-list li { margin: 8px 0; padding-left: 4px; }
+  .work-list a { font-weight: 700; }
+  .work-meta { display: block; margin-top: 2px; color: var(--text-secondary); font-size: .85rem; }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opsd_工作整理_github.html">← 返回 opsd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-resd">
+<h2>RESD: Learning with Rare Success via Reflection-Enhanced Self-Distillation</h2>
+<div class="meta-row">
+  <span class="tag">RESD</span>
+  <a href="https://arxiv.org/abs/2605.12741" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.12741" target="_blank">PDF</a>
+  <a href="https://github.com/horizon-llm/RESD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.12741</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>在标准 SDPO 框架里，把 teacher 看到的失败反馈从"原始错误信息"升级成"reflection + playbook + solution buffer"组成的增强上下文，让 self-teacher 在 rare-success 场景下仍能给出强 token-level 纠错监督。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2605_learning_with_rare_success_but_rich_feedback_via_reflection_enhanced_self_distillation/resd_workflow_v3.png" alt="RESD workflow"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li><strong>Retrospective Reflection：</strong>对失败轨迹做回顾性反思，分析失败原因</li>
+  <li><strong>Playbook Curation：</strong>全局持久化经验集，跨 step 积累可复用纠错规则</li>
+  <li><strong>Solution Buffer：</strong>缓存稀少成功轨迹供 teacher 参考</li>
+  <li><strong>Success-Rate Rebalancing：</strong>按 batch success rate 对样本做梯度再平衡</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Benchmark (m@4)</th><th>Base</th><th>SDPO</th><th class="best">RESD</th></tr>
+  <tr><td>Manufactoria-Has</td><td>0.38</td><td>0.95</td><td class="best">35.80</td></tr>
+  <tr><td>BouncingSim-Easy</td><td>—</td><td>1.00</td><td class="best">4.25</td></tr>
+  <tr><td>Finer</td><td>—</td><td>40.93</td><td class="best">53.66</td></tr>
+</table>
+<p>Manufactoria-Has Per-Test-Case Accuracy: RESD 76.95 vs SDPO 37.66（巨幅提升）。</p>
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li>去掉 reflection：Manufactoria-Has 从 76.95 掉到 51.41，影响最大</li>
+  <li>去掉 playbook：从 76.95 掉到 60.65，跨 step 经验积累不可少</li>
+  <li>去掉 solution buffer：从 76.95 掉到 60.24</li>
+</ul>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>抓住 rare-success bootstrapping 真实瓶颈</li><li>把 failure feedback 从一次性信号变成跨 step 可复用资产</li><li>在极低成功率任务上效果非常强</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>Reflection 质量仍依赖模型自身，可能产生"坏经验累积"</li><li>更多是 teacher prompt engineering + online memory，非全新优化原理</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>低成功率阶段更高效的 bootstrapping 工具，建议先 RESD 再切 GRPO 的阶段性训练策略。</p>
+</article></main></body></html>

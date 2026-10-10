@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2508-02558">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2508.02558</span><span class="badge">detailed</span></div>
+    <h2>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2508.02558" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2508.02558.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/OpenMOSS/Sparse-dLLM" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</p>
+<p>## 1. 基本信息</p>
+<ul><li>arXiv ID: 2508.02558</li><li>URL (abs/pdf): <a href="https://arxiv.org/abs/2508.02558" target="_blank" rel="noopener">abs</a> / <a href="https://arxiv.org/pdf/2508.02558.pdf" target="_blank" rel="noopener">pdf</a></li><li>主题目录: diffusion_llm</li><li>总结粒度: detailed</li><li>发表会议: AAAI 2026</li><li>作者团队: Yuerong Song, Xiaoran Liu, Ruixiao Li, Zhigeng Liu, Zengfeng Huang, Qipeng Guo, Ziwei He, Xipeng Qiu（Fudan University, Shanghai Innovation Institute, Shanghai AI Lab）</li><li>方法名: <strong>Sparse-dLLM</strong></li><li>代码: https://github.com/OpenMOSS/Sparse-dLLM</li></ul>
+<p>---</p>
+<p>## 2...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>现有工作（dLLM-Cache、dKV-Cache、FreeCache、Fast-dLLM）利用相邻解码步 KV 状态几乎相同的观察，将 ARM 的 KV cache 机制适配到 dLLMs：</p>
+<ul><li><strong>dLLM-Cache</strong>：为 prompt cache 和 response cache 设置不同刷新间隔，用特征相似度部分更新 response</li><li><strong>dKV-Cache</strong>：实现一步延迟缓存（decoded tokens 在下一步才被缓存）+ 刷新机制</li><li><strong>FreeCache</strong>：仅缓存 prompt tokens 的 KV 状态（基于 mask tokens 对早期 unmasked tokens 贡献迅速衰减的观察）</li><li><strong>Fast-dLLM</strong>：缓存当前解码 block 之外的所有 KV 状态</li></ul>
+<p><strong>核心不足</strong>：这些方法<strong>仅仅引入了 KV cache，但没有进一步分析 cache 内部特性或对其进行稀疏化</strong>。它们存储完整的 KV 表示，导致巨大的内存开销，限制了长上下文场景的实际部署。</p>
+<p>Sparse-dLLM 是<strong>第一个训练无关 (training-free)</strong> 的框架，将动态 cache 驱逐与稀疏注意力集成到 dLLMs 中。核心包含两个策略：</p>
+<ul><li><strong>动态双向 cache 驱逐</strong>：利用 token 显著性的时间一致性，用注意力感知的稀疏模式动态驱逐前缀和后缀 token 的低重要性 KV 条目</li><li><strong>延迟 cache 更新</strong>：cache 更新故意延迟一步以提高稳定性；切换到新的解码 block 时完全刷新 cache</li></ul>
+<p>与 ARM 只能稀疏化前缀 token 不同，Sparse-dLLM 同时针对<strong>前缀</strong>（当前 block 之前的 token）和<strong>后缀</strong>（当前 block 之后的 token）进行驱逐。</p>
+<p>设 $b$ 为 block 长度，$p$ 为 prompt 长度，$o \in [p, L)$ 为当前 block 首 token 的位置偏移。当前 block 之外的候选 KV 状态：</p>
+<p>$$\mathbf{K}_f = \text{Concat}[\mathbf{K}_{:o}, \mathbf{K}_{o+b:}], \quad \mathbf{V}_f = \text{Concat}[\mathbf{V}_{:o}, \mathbf{V}_{o+b:}]$$</p>
+<p>通过当前 block 的 query 状态 $\mathbf{Q}_b$ 计算注意力分数：</p>
+<p>$$\mathbf{A} = \frac{\mathbf{Q}_b \mathbf{K}_f^T}{\sqrt{d_k}}$$</p>
+<p>借鉴 SnapKV，引入 <strong>max pooling</strong> 聚合局部信息（防止驱逐后数据不完整导致性能退化）。设 $r$ 为保留比，$s$ 为 max pooling 核大小，通过 top-$k$ 选择 pivotal token 索引（$k = (L-b) \times r$）：</p>
+<p>$$\text{Indices} = \text{top-}k(\text{MaxPool}(\mathbf{A}))$$</p>
+<p>最终 cache 只保留选中的 KV：</p>
+<p>$$\mathbf{K}_c = \mathbf{K}_f[\text{Indices}], \quad \mathbf{V}_c = \mathbf{V}_f[\text{Indices}]$$</p>
+<p><strong>算法伪代码</strong>（Algorithm 1）：</p>
+<ul><li>提取当前 block 之外的 KV 状态（前缀+后缀拼接）</li><li>计算 block query 的平均值 $\bar{q} = \text{Mean}(\mathbf{Q}_b)$</li><li>计算注意力分数 $\mathbf{A} = \text{MatMul}(\bar{q}, \mathbf{K}_f^T)$</li><li>MaxPool1D 聚合 → TopKIndices → 选出 pivotal token 的 KV</li><li>更新 cache</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <ul><li><strong>模型</strong>：LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-7B-Base、Dream-v0-7B-Instruct</li><li><strong>默认超参</strong>：block length=32，保留比 $r=0.5$，max pooling 核大小 $s=3$，随机种子 2025</li><li><strong>基线</strong>：vanilla dLLM、dLLM-Cache、dKV-Cache、Fast-dLLM</li><li><strong>评估指标</strong>：Accuracy（3 次独立实验均值）、Throughput (TPS)、Peak Memory (GB)</li><li><strong>基准测试</strong>：MMLU (5-shot)、ARC-C (0-shot)、PIQA (0-shot)、GPQA (5-shot)、GSM8K (4-shot)、Math (4-shot)、HumanEval (0-shot)</li><li><strong>硬件</strong>：NVIDIA 4090 (48GB)</li><li><strong>评估工具</strong>：OpenCompass</li></ul>
+<p>| 方法 | MMLU | ARC-C | PIQA | GPQA | GSM8K | Math | HE | Avg. | Avg. TPS | Avg. Mem |</p>
+<p>|------|:----:|:-----:|:----:|:----:|:-----:|:----:|:--:|:----:|:--------:|:--------:|</p>
+<p>| LLaDA-8B-Instruct | 60.60 | <strong>88.47</strong> | 83.62 | 32.83 | 78.39 | 36.02 | 34.76 | 59.24 | 1.0× | <strong>1.0×</strong> |</p>
+<p>| + dLLM-Cache | 61.40 | 87.46 | 83.62 | 32.83 | 78.92 | <strong>36.56</strong> | <strong>37.80</strong> | 59.80 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 60.87 | 87.80 | 83.73 | <strong>35.35</strong> | <strong>79.30</strong> | 35.46 | 37.20 | <strong>59.96</strong> | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | <strong>61.43</strong> | 87.80 | 83.79 | 32.83 | 75.89 | 33.78 | 36.59 | 58.87 | 2.2× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM</strong> | 61.01 | <strong>88.47</strong> | <strong>84.44</strong> | <strong>35.35</strong> | 77.56 | 34.42 | <strong>37.80</strong> | 59.86 | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p><strong>关键结论</strong>：</p>
+<ul><li>Sparse-dLLM 吞吐量提升 <strong>3.4×</strong>（平均），远超所有基线（Fast-dLLM 2.2×、dLLM-Cache 2.3×）</li><li>内存与 vanilla dLLM 几乎相同（1.0×），而其他 cache 方法增加 10-20% 内存</li><li>性能保持可比，在 ARC-C、PIQA 等任务上达到最优</li></ul>
+<p>| 方法 | MMLU | ARC-C | PIQA | GPQA | GSM8K | Math | HE | Avg. | Avg. TPS | Avg. Mem |</p>
+<p>|------|:----:|:-----:|:----:|:----:|:-----:|:----:|:--:|:----:|:--------:|:--------:|</p>
+<p>| Dream-v0-7B-Base | <strong>72.96</strong> | 82.71 | 81.18 | <strong>32.83</strong> | 70.74 | 20.78 | <strong>53.05</strong> | 59.18 | 1.0× | 1.0× |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>现有工作（dLLM-Cache、dKV-Cache、FreeCache、Fast-dLLM）利用相邻解码步 KV 状态几乎相同的观察，将 ARM 的 KV cache 机制适配到 dLLMs：</p>
+<ul><li><strong>dLLM-Cache</strong>：为 prompt cache 和 response cache 设置不同刷新间隔，用特征相似度部分更新 response</li><li><strong>dKV-Cache</strong>：实现一步延迟缓存（decoded tokens 在下一步才被缓存）+ 刷新机制</li><li><strong>FreeCache</strong>：仅缓存 prompt tokens 的 KV 状态（基于 mask tokens 对早期 unmasked tokens 贡献迅速衰减的观察）</li><li><strong>Fast-dLLM</strong>：缓存当前解码 block 之外的所有 KV 状态</li></ul>
+<p><strong>核心不足</strong>：这些方法<strong>仅仅引入了 KV cache，但没有进一步分析 cache 内部特性或对其进行稀疏化</strong>。它们存储完整的 KV 表示，导致巨大的内存开销，限制了长上下文场景的实际部署。</p>
+<ul><li><strong>训练无关、即插即用</strong>：不需修改模型或重新训练，直接加速任何预训练 dLLM</li><li><strong>吞吐量大幅提升</strong>：平均 3.4-3.6× 加速，长上下文最高 10×，远超所有现有 cache 方法</li><li><strong>内存效率最优</strong>：与 vanilla dLLM 几乎相同（甚至更低），而其他 cache 方法增加 10-30% 内存</li><li><strong>长上下文可扩展</strong>：内存增长曲线几乎平坦，其他方法会 OOM</li><li><strong>性能保持甚至提升</strong>：在某些任务（如 Dream 上）平均精度超越基线</li><li><strong>双向稀疏化</strong>：同时驱逐前缀和后缀的低重要性 KV，充分利用 dLLM 双向注意力的特性</li></ul>
+<ul><li><strong>代码任务表现下降</strong>：HumanEval 上 Sparse-dLLM 弱于基线和完整 cache 方法——代码任务可能需要完整上下文</li><li><strong>Pivotal tokens 多为无语义 token</strong>：当前策略保留的 pivotal tokens 主要是换行符和空格，未来可探索更细粒度的语义感知驱逐</li><li><strong>超参数需设置</strong>：$r=0.5$、$s=3$ 是经验最优，可能在不同模型/任务上有差异</li><li><strong>延迟策略固定</strong>：当前固定延迟 1 步，N-step 延迟消融显示 3 步延迟准确率更高但吞吐量下降，自适应延迟值得探索</li><li><strong>未与训练阶段结合</strong>：如果训练时就考虑稀疏注意力模式，可能进一步提升性能</li></ul>
+<p>---</p>
+<ul><li><strong>dLLM 推理加速的通用框架</strong>：Sparse-dLLM 的核心思路——利用注意力稀疏性和跨步一致性进行 cache 驱逐——是一个通用范式，可直接应用于任何 dLLM 的推理加速，无需重新训练...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" alt="Sparse-dLLM 总览"></a><figcaption>Sparse-dLLM 总览</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/Obs-a.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/Obs-a.png" alt="dLLMs 中的注意力稀疏模式：跨层和跨步一致性"></a><figcaption>dLLMs 中的注意力稀疏模式：跨层和跨步一致性</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/kv_loss_for_delay_cache.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_accelerating_diffusion_llms_with_dynamic_cache_eviction/kv_loss_for_delay_cache.png" alt="相邻步 KV 状态变化的 L2-norm：step 0→1 变化最大，支持延迟策略"></a><figcaption>相邻步 KV 状态变化的 L2-norm：step 0→1 变化最大，支持延迟策略</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>

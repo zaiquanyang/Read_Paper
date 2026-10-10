@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TIP: Token Importance in On-Policy Distillation | opd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD 工作整理 — On-Policy Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.2rem 0 0.5rem 0;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li {
+    font-size: 0.92rem;
+    color: #333;
+    margin-bottom: 0.4rem;
+  }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.8rem 0;
+  }
+  .fig-row img {
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0;
+    font-size: 0.88rem;
+  }
+  .result-table th, .result-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 0.6rem 0;
+  }
+  .pros-cons > div {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+  }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap {
+    position: fixed;
+    top: 2rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 480px;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .toc ol {
+    padding-left: 1.2rem;
+    margin: 0;
+  }
+  .toc li {
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+  }
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  @media (max-width: 640px) {
+    .pros-cons { grid-template-columns: 1fr; }
+    .paper-card { padding: 1.2rem; }
+  }
+  @media (max-width: 1400px) {
+    .toc {
+      position: static;
+      width: 100%;
+      max-height: none;
+      margin-bottom: 2rem;
+    }
+    body { padding-left: 1rem; }
+  }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opd_工作整理_github.html">← 返回 opd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-tip">
+
+<h2>TIP: Token Importance in On-Policy Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">TIP</span>
+  <a href="https://arxiv.org/abs/2604.14084" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.14084.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.14084</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>OPD 里并非所有 rollout token 都值得蒸馏。只用 student entropy 选 token 会漏掉最危险的 Q3（自信但错误）token。TIP 将 uncertainty 和 teacher-student disagreement 融合为 Soft-OR 分数，只蒸馏高价值 token，50% 预算下性能全面超过 full-token OPD，显存下降约 47%。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Token 训练价值不均：</strong>传统 full-token OPD 对整条 student 轨迹每个 token 都做蒸馏，但大量 token 训练价值很低。</li>
+  <li><strong>Entropy-only 的盲区：</strong>只按 student entropy 选 token 时，Q3（低熵但 teacher 强烈不同意）和 Q4（低熵且正确）无法区分——自信但错误的 token 被一起忽略。</li>
+  <li><strong>核心判断：</strong>token importance 必须同时考虑 <em>uncertainty</em>（student 知不知道自己不会）和 <em>disagreement</em>（teacher 觉不觉得 student 走偏了）。</li>
+</ul>
+
+<h3 class="section-title">方法：Soft-OR Token Selection</h3>
+<ul>
+  <li><strong>四象限 taxonomy：</strong>按 student entropy $h_t$ 和 teacher-student KL divergence $\delta_t$ 将 token 分为 Q1（高熵+高分歧，最值得纠正）、Q2（高熵+低分歧）、Q3（低熵+高分歧，最危险）、Q4（低熵+低分歧，最不重要）。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_tip_token_importance_in_on_policy_distillation/taxonomy.png" alt="TIP taxonomy: Q1/Q2/Q3/Q4 quadrant">
+  </div>
+</div>
+
+<ul>
+  <li><strong>Soft-OR scoring：</strong>$s_t = \hat{h}_t + \hat{\delta}_t - \hat{h}_t \hat{\delta}_t$，任一信号高即可把 token 选出，避免 Q3 被漏掉。</li>
+  <li><strong>Top-$k$ selection：</strong>按 $s_t$ 取 top-$\lfloor\rho m\rfloor$ token 做蒸馏，$\rho$ 为保留比例。</li>
+  <li><strong>最终损失：</strong>只在选中 token 上做 KL distillation，$\hat{\delta}_t=0$ 时退化回 entropy-only。</li>
+</ul>
+
+<h3 class="section-title">实验结果</h3>
+
+<p><strong>Soft-OR vs Full-token OPD</strong></p>
+<table class="result-table">
+  <tr><th>Setting</th><th>Benchmark</th><th>Full-token OPD</th><th>Soft-OR (Budget)</th><th>Change</th></tr>
+  <tr><td rowspan="3">Qwen3-8B → 4B</td><td>MATH-500</td><td>76.7</td><td class="best">79.1 (50%)</td><td>+2.4</td></tr>
+  <tr><td>AIME'24</td><td>21.9</td><td class="best">25.7 (50%)</td><td>+3.8</td></tr>
+  <tr><td>AIME'25</td><td>19.4</td><td class="best">23.2 (20%)</td><td>+3.8</td></tr>
+  <tr><td rowspan="3">Llama-70B → 8B</td><td>MATH-500</td><td>71.0</td><td class="best">74.7 (50%)</td><td>+3.7</td></tr>
+  <tr><td>AIME'24</td><td>21.5</td><td class="best">26.0 (50%)</td><td>+4.5</td></tr>
+  <tr><td>AIME'25</td><td>4.9</td><td class="best">11.5 (20%)</td><td>+6.6</td></tr>
+</table>
+
+<p><strong>显存下降</strong>：50% retention 时 peak memory 下降约 47%（Qwen3-8B→4B：72.0GB → 38.1GB）。</p>
+
+<p><strong>Beyond Math — DeepPlanning (Agentic)</strong></p>
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2604_tip_token_importance_in_on_policy_distillation/planner_agentic.png" alt="DeepPlanning agentic results: Q3-only outperforms full OPD">
+  </div>
+</div>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>Q1/Q2/Q3/Q4 分析框架清晰，uncertainty × disagreement 两个维度拆解 token importance</li>
+      <li>Soft-OR 公式简洁直觉强，entropy-only 退化保证兼容性</li>
+      <li>50% 预算全面超过 full-token OPD，显存省 47%</li>
+      <li>Q3-only 在 agentic planning 上甚至超过 full OPD</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>Soft-OR 需要实时计算 teacher-student KL，推理成本仍在</li>
+      <li>主实验集中在 math reasoning，泛化到开放生成待验证</li>
+      <li>Q3 token 数量少、检测依赖 KL，低资源场景可能不稳定</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>token-level importance scoring for OPD。与 EOPD（entropy-aware KL routing）、TSD-KD（token-selective dual KD）互补——TIP 关注"选哪些 token 蒸馏"，EOPD 关注"用什么 KL 蒸馏"，TSD-KD 关注"用什么形式监督"。Q3 correction 在 long-horizon/agentic 场景的启发值得后续跟进。
+</p>
+
+</article></main></body></html>

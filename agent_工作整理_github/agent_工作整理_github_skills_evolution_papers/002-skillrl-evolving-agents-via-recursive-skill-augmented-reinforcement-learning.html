@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2602.08234">
+  <h2>SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2602.08234" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2602.08234.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2602.08234</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>人类专家不会记住每个情境中的每个动作，而是发展出<strong>技能（skills）</strong>——紧凑、可复用的策略，捕捉完成子任务的本质。受此启发，本文提出 SkillRL，通过自动技能发现和递归演化，弥合原始经验与策略提升之间的鸿沟。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>现有 memory-based 方法主要将原始轨迹直接存入外部数据库，存在以下问题：</p>
+<ul><li><strong>冗余和噪声</strong>：原始轨迹冗长，包含探索性动作、回溯和冗余步骤，信息密度低</li><li><strong>缺乏抽象</strong>：仅模仿过去的解决方案，无法蒸馏核心原则或将经验内化为策略</li><li><strong>上下文膨胀</strong>：在有限的 context window 中，原始轨迹占用大量 token 却贡献有限</li><li><strong>静态记忆</strong>：记忆库作为静态资源，无法随 agent 能力增长而演化</li></ul>
+<p>如 Figure 1 所示，raw trajectory memory 在训练中甚至可能因引入噪声而导致性能下降。</p>
+<p>人类专家不会记住每个情境中的每个动作，而是发展出<strong>技能（skills）</strong>——紧凑、可复用的策略，捕捉完成子任务的本质。受此启发，本文提出 SkillRL，通过自动技能发现和递归演化，弥合原始经验与策略提升之间的鸿沟。</p>
+<p>SkillRL 包含三大核心组件：</p>
+<ul><li><strong>Experience-based Skill Distillation</strong>：将冗余轨迹蒸馏为简洁、可操作的知识</li><li><strong>Hierarchical Skill Library (SkillBank)</strong>：分层组织蒸馏出的技能，支持高效检索</li><li><strong>Recursive Skill Evolution</strong>：在 RL 训练中动态精炼技能库，使其与 agent 策略协同演化</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/method.png" alt="SkillRL 总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/fig1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/fig1.png" alt="Pipeline 概览与性能对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/skill_mixed_chart.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2602_skillrl_evolving_agents_via_recursive_skill_augmented_reinforcement_learning/skill_mixed_chart.png" alt="技能库增长"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>环境</strong>：ALFWorld, WebShop, 7 个 search-augmented QA 任务</p>
+<p><strong>模型</strong>：</p>
+<ul><li>Base model: Qwen2.5-7B-Instruct</li><li>Teacher model: OpenAI o3</li></ul>
+<p><strong>超参数</strong>：</p>
+<ul><li>SFT: lr=1e-4, batch=16, 3 epochs, ALFWorld 7500 例 / WebShop 2400 例</li><li>RL: lr=1e-6, batch=64, group size=8, KL coef=0.01, 150 epochs</li><li>Skill retrieval: Top-K=6, validation interval=5 steps, update threshold δ=0.4</li><li>计算资源：8×H100 80GB, 总耗时约 30 小时</li></ul>
+<table class="result-table">
+<tr><th>方法</th><th>ALFWorld</th><th>WebShop</th></tr>
+<tr><td>SkillRL（完整）</td><td class="best">89.9</td><td class="best">72.7</td></tr>
+<tr><td>w/o Hierarchical Structure</td><td>76.8 (-13.1)</td><td>61.4 (-11.3)</td></tr>
+<tr><td>w/o Skill Library (Raw Trajectories)</td><td>61.7 (-28.2)</td><td>50.2 (-22.5)</td></tr>
+<tr><td>w/o Cold-Start SFT</td><td>65.2 (-24.7)</td><td>46.5 (-26.2)</td></tr>
+<tr><td>w/o Dynamic Evolution</td><td>84.4 (-5.5)</td><td>70.3 (-2.4)</td></tr>
+</table>
+<p>核心发现：</p>
+<ul><li><strong>去除技能库（用原始轨迹）导致最大退化</strong>（ALFWorld -28.2%），直接验证了&quot;抽象优于记忆&quot;的核心假设</li><li><strong>Cold-start SFT 极其关键</strong>（-24.7%），base model 需要先学习如何使用技能</li><li><strong>层级结构重要</strong>（-13.1%），通用策略原则提供基础指导</li><li><strong>动态演化贡献 +5.5%</strong>，确保技能库是动态组件而非静态数据库</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>现有 memory-based 方法主要将原始轨迹直接存入外部数据库，存在以下问题：</p>
+<ul><li><strong>冗余和噪声</strong>：原始轨迹冗长，包含探索性动作、回溯和冗余步骤，信息密度低</li><li><strong>缺乏抽象</strong>：仅模仿过去的解决方案，无法蒸馏核心原则或将经验内化为策略</li><li><strong>上下文膨胀</strong>：在有限的 context window 中，原始轨迹占用大量 token 却贡献有限</li><li><strong>静态记忆</strong>：记忆库作为静态资源，无法随 agent 能力增长而演化</li></ul>
+<p>如 Figure 1 所示，raw trajectory memory 在训练中甚至可能因引入噪声而导致性能下降。</p>
+<ul><li><strong>从经验到技能的抽象范式</strong>：首次系统性地将原始轨迹蒸馏为结构化技能，token 压缩 10-20x</li><li><strong>分层技能库设计</strong>：General + Task-Specific 的两层结构兼顾通用性和专业性</li><li><strong>递归演化机制</strong>：技能库随 RL 训练动态增长，形成 agent 与技能库的协同演化</li><li><strong>冷启动 SFT 有效</strong>：解决了&quot;有技能但不会用&quot;的 bootstrapping 问题</li><li><strong>性能显著</strong>：7B 模型超越 GPT-4o/Gemini-2.5-Pro，ALFWorld 89.9% SOTA</li><li><strong>搜索任务泛化好</strong>：训练在 NQ+HotpotQA，OOD 任务表现稳健</li><li><strong>上下文效率高</strong>：更少 token 获得更好性能</li><li><strong>开源代码</strong>：github.com/aiming-lab/SkillRL</li></ul>
+<ul><li><strong>依赖强 teacher 模型</strong>：使用 OpenAI o3 做蒸馏和 SFT 数据生成，成本高且有外部依赖</li><li><strong>验证间隔固定</strong>：每 5 步做一次 validation，演化频率是固定的</li><li><strong>演化上限阈值</strong>：仅在 $Acc(C) &lt; 0.4$ 时触发演化，阈值选择较经验化</li><li><strong>技能可解释性有限</strong>：虽然比原始轨迹紧凑，但技能仍是 LLM 生成的文本，质量依赖 teacher</li><li><strong>评估范围</strong>：主要在 ALFWorld、WebShop 和 search QA 上，未涉及更复杂的软件工程任务</li><li><strong>二值奖励</strong>：使用 0/1 奖励，未探索更细粒度的奖励信号</li><li><strong>技能检索基于语义相似度</strong>：对于复杂任务可能检索到不相关的技能</li></ul>
+<ul><li><strong>技能蒸馏可直接复用</strong>：对任何 agent 训练，用强 teacher 将轨迹蒸馏为结构化技能，比存储原始轨迹更高效...</li></ul>
+</div>
+</article></main></body></html>

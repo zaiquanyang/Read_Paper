@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2508-sparse-dllm-accelerating-diffusion-llms-with-dynamic-cache-eviction">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># Sparse-dLLM: Accelerating Diffusion LLMs with Dynamic Cache Eviction</p>
+<p>## 1. 基本信息</p>
+<ul><li><strong>arXiv ID</strong>: 2508.02558</li><li><strong>URL (abs)</strong>: https://arxiv.org/abs/2508.02558</li><li><strong>URL (pdf)</strong>: https://arxiv.org/pdf/2508.02558.pdf</li><li><strong>主题目录</strong>: diffusion_llm</li><li><strong>总结粒度</strong>: detailed</li><li><strong>作者</strong>: Yuerong Song, Xiaoran Liu, Ruixiao Li, Zhigeng Liu, Zengfeng Huang, Qipeng Guo, Ziwei He, Xipeng Qiu (复旦大学, 上海创新研究院, 上海AI Lab)</li><li><strong>代码仓库</strong>: https://github.com/OpenMOSS/Sparse-dLLM</li><li><strong>发表场所</strong>: AAAI 2026 投稿</li></ul>
+<p>## 2. 背景与动机（详细）</p>
+<p>### 2.1 任务定义与应用场景</p>
+<p>Diffusio...</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>dLLM 面临严重的推理效率瓶颈：</p>
+<ul><li><strong>计算复杂度高</strong>：自回归 LLM 解码复杂度为 O(L)，而 dLLM 每个推理步骤都需要对整个序列（包括 prompt、已生成 token、掩码 token）重新计算 QKV 状态，复杂度高达 O(L²)。</li></ul>
+<ul><li><strong>现有 KV Cache 方案内存开销大</strong>：近期工作（dLLM-Cache、dKV-Cache、Fast-dLLM）将 AR LLM 的 KV Cache 机制适配到 dLLM，利用&quot;相邻解码步骤的 KV 状态几乎相同&quot;的观察，在多个步骤中复用同一份缓存 KV 状态。但这些方法都<strong>存储所有层的完整 KV 表示</strong>，导致显著的内存开销（比 vanilla dLLM 高 10%-30%），严重限制了长上下文场景的实用部署。</li></ul>
+<ul><li><strong>缺少对 dLLM 内部注意力稀疏性的利用</strong>：现有方法仅引入 KV Cache 机制，未对其内部属性进行分析或进一步稀疏化。</li></ul>
+<p>作者对 dLLM 的注意力模式进行了系统分析（Figure 2），发现两个关键特征：</p>
+<ul><li><strong>跨层稀疏性（Sparsity Across Layers）</strong>：dLLM 各层注意力呈现显著稀疏性，表现为局部注意力（邻近 token 关注强）和垂直注意力（所有 query 集中在少数 pivotal tokens 上）两种稳定模式。与自回归模型不同，dLLM 没有对初始 token 的异常关注。</li><li><strong>跨步一致性（Consistency Across Steps）</strong>：虽然 QKV 状态每步重新计算，但获得显著关注的具体 token 在解码步骤间保持显著稳定——低重要性 token 在早期步骤被识别后，整个解码过程中持续保持低相关性。</li></ul>
+<p>这两个观察直接催生了核心策略：<strong>在早期步骤选择性淘汰不重要的 KV cache 条目，仅保留关键子集</strong>。</p>
+<p>Sparse-dLLM 是首个训练无关（training-free）的 dLLM 动态 Cache 淘汰框架，核心包含两大策略：</p>
+<ul><li><strong>动态双向 Cache 淘汰（Dynamic Bidirectional Cache Eviction）</strong>：利用 token 重要性在步骤间的一致性，基于注意力引导的稀疏模式，动态淘汰前缀（prefix）和后缀（suffix）位置的低重要性 KV 条目。</li><li><strong>延迟 Cache 更新（Delayed Cache Updates）</strong>：缓存更新故意延迟一个步骤以提高稳定性。当进入新的解码 block 时，缓存完全清空并刷新。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>实验覆盖 4 个模型：LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-7B-Base、Dream-v0-7B-Instruct，在 7 个基准（MMLU、ARC-C、PIQA、GPQA、GSM8k、Math、HumanEval）上评估准确率、吞吐量和峰值内存。</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| LLaDA-8B-Instruct (vanilla) | 59.24 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 59.80 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 59.96 | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | 58.87 | 2.2× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>59.86</strong> | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| LLaDA-1.5 (vanilla) | 60.90 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 60.40 | 2.3× | 1.1× |</p>
+<p>| + dKV-Cache | 61.02 | 1.4× | 1.2× |</p>
+<p>| + Fast-dLLM | 59.93 | 2.3× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>60.99</strong> | <strong>3.4×</strong> | <strong>1.0×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| Dream-v0-7B-Base (vanilla) | 59.18 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 59.13 | 1.2× | 1.0× |</p>
+<p>| + dKV-Cache | 57.82 | 1.3× | 1.0× |</p>
+<p>| + Fast-dLLM | 58.30 | 2.5× | 1.1× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>59.21</strong> | <strong>3.6×</strong> | <strong>0.9×</strong> |</p>
+<p>| 方法 | 平均准确率 | 平均吞吐加速比 | 平均内存倍数 |</p>
+<p>|------|-----------|-------------|------------|</p>
+<p>| Dream-v0-7B-Instruct (vanilla) | 65.65 | 1.0× | 1.0× |</p>
+<p>| + dLLM-Cache | 65.53 | 1.2× | 1.0× |</p>
+<p>| + dKV-Cache | 65.11 | 1.4× | 1.0× |</p>
+<p>| + Fast-dLLM | 64.08 | 2.6× | 1.2× |</p>
+<p>| <strong>+ Sparse-dLLM (ours)</strong> | <strong>64.36</strong> | <strong>3.6×</strong> | <strong>0.9×</strong> |</p>
+<p><strong>关键发现</strong>：</p>
+<ul><li>Sparse-dLLM 在所有模型和基准上均取得最高吞吐量，Dream 系列加速达 3.6×，LLaDA 系列达 3.4×</li><li>峰值内存与 vanilla dLLM 几乎相同（差异 &lt; 0.5GB），Dream 系列甚至低于 baseline</li><li>性能几乎无损：LLaDA-8B-Instruct 上平均准确率 59.86 vs baseline 59.24，略微提升...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>dLLM 面临严重的推理效率瓶颈：</p>
+<ul><li><strong>计算复杂度高</strong>：自回归 LLM 解码复杂度为 O(L)，而 dLLM 每个推理步骤都需要对整个序列（包括 prompt、已生成 token、掩码 token）重新计算 QKV 状态，复杂度高达 O(L²)。</li></ul>
+<ul><li><strong>现有 KV Cache 方案内存开销大</strong>：近期工作（dLLM-Cache、dKV-Cache、Fast-dLLM）将 AR LLM 的 KV Cache 机制适配到 dLLM，利用&quot;相邻解码步骤的 KV 状态几乎相同&quot;的观察，在多个步骤中复用同一份缓存 KV 状态。但这些方法都<strong>存储所有层的完整 KV 表示</strong>，导致显著的内存开销（比 vanilla dLLM 高 10%-30%），严重限制了长上下文场景的实用部署。</li></ul>
+<ul><li><strong>缺少对 dLLM 内部注意力稀疏性的利用</strong>：现有方法仅引入 KV Cache 机制，未对其内部属性进行分析或进一步稀疏化。</li></ul>
+<ul><li><strong>首个训练无关的动态 Cache 淘汰方案</strong>：不需要额外训练或微调，即插即用，可直接应用于现有 dLLM 推理框架。</li><li><strong>双向稀疏化的创新设计</strong>：充分利用 dLLM 的双向注意力特性，同时淘汰 prefix 和 suffix 中不重要的 KV 条目，区别于所有现有方法。</li><li><strong>极优的效率-内存-精度权衡</strong>：吞吐最高提升 10×（长上下文），内存几乎不增加，精度几乎不损失甚至略有提升。</li><li><strong>充分的理论分析和实验验证</strong>：从注意力稀疏性的系统观察到延迟缓存、pivotal token 语义分析，论证链路完整。覆盖 LLaDA 和 Dream 两大系列 4 个模型，7 个基准 + 长上下文测试。</li><li><strong>实现简洁</strong>：算法逻辑清晰，超参数少（仅 r 和 k），默认配置 (r=0.5, k=3) 在各模型/任务上泛化良好。</li></ul>
+<ul><li><strong>代码任务性能下降</strong>：HumanEval 上 Dream 系列有明显下降（Dream-v0-7B-Instruct 从 57.93 降至 50.00），说明代码生成等需要完整上下文的任务对稀疏化更敏感。</li><li><strong>仅测试到 8k 上下文</strong>：受限于 NVIDIA 4090（48GB），未在更长上下文（32k+）上验证。</li><li><strong>固定 block 长度和保留比率</strong>：所有序列长度采用统一的 r=0.5，未探索自适应保留比率。</li><li><strong>未与 speculative decoding 等方法对比</strong>：仅与 KV Cache 类方法比较，未涉及其他 dLLM 加速范式（如提前退出、推测解码等）。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/main.png" alt="Sparse-dLLM 框架图"></a><figcaption>Sparse-dLLM 框架图</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_llada_TPS_line.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_llada_TPS_line.png" alt="不同上下文长度的效率对比 - LLaDA"></a><figcaption>不同上下文长度的效率对比 - LLaDA</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_dream_TPS_line.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2508_sparse_dllm_accelerating_diffusion_llms_with_dynamic_cache_eviction/sparse_dllm-diff_len_dream_TPS_line.png" alt="不同上下文长度的效率对比 - Dream"></a><figcaption>不同上下文长度的效率对比 - Dream</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>

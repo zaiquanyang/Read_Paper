@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.02910">
+  <h2>CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.02910" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.02910.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/qiancheng0/CreativityBench" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.02910</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>本文聚焦于创造性智能的一个具体形式：<strong>创造性工具使用</strong>（Creative Tool Use）。</p>
+<p>定义：推断和利用物体的 <strong>Affordance</strong>（由其物理属性启用的行动可能性），以新颖且非常规的方式实现目标。</p>
+<p>核心洞察：工具的用途不仅限于其设计目的，更在于其结构和物理属性所能启用的动作。例如，钥匙可以用来撬开密封盒子，因为其尖锐的尖端结构提供了撬开或切割的 affordance。</p>
+<p>创造性工具使用需要：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>本文聚焦于创造性智能的一个具体形式：<strong>创造性工具使用</strong>（Creative Tool Use）。</p>
+<p>定义：推断和利用物体的 <strong>Affordance</strong>（由其物理属性启用的行动可能性），以新颖且非常规的方式实现目标。</p>
+<p>核心洞察：工具的用途不仅限于其设计目的，更在于其结构和物理属性所能启用的动作。例如，钥匙可以用来撬开密封盒子，因为其尖锐的尖端结构提供了撬开或切割的 affordance。</p>
+<p>创造性工具使用需要：</p>
+<ul><li>推理部件级属性（刚性、弹性等）→ 映射到功能 affordance（切割、撬开等）</li><li>发散思维但锚定物理约束</li><li>将已有知识和工具使用经验重新组合为新方案</li></ul>
+<p>CreativityBench 包含两大核心组件：</p>
+<ul><li><strong>Affordance Knowledge Base（KB）</strong>：4K 实体、26K 部件、150K+ affordance 标注</li><li><strong>CreativityBench 任务集</strong>：14K 个 grounding 创造性工具使用任务</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/pipeline.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/pipeline.pdf" alt="Pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/task_sampling_pipeline.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/task_sampling_pipeline.pdf" alt="Task Sampling"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/fig_cluster_grouped_bars.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_creativitybench_evaluating_agent_creative_reasoning_via_affordance_based_tool_repurposing/fig_cluster_grouped_bars.png" alt="簇大小和 Affordance 级别的影响"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>MacGyver</strong>：评估非常规物理问题解决，但不围绕 affordance 结构显式构建</li><li><strong>EscapeBench</strong>：模拟密室环境中的创造性推理，但不建模部件级物理属性</li><li><strong>Creation-MMBench / VisEscape / VillagerBench</strong>：多模态/交互环境中的创造性任务，但强调规划和执行而非 affordance 发现</li></ul>
+<p>共同不足：<strong>不需要模型在部件级物理属性上做 grounding，也不要求显式推理 affordance 涌现机制</strong>。</p>
+<p>在 MacGyver 数据集的 100 个任务上对比 Direct Prompt vs 结构化 Affordance-level CoT（工具清单 → 部件分解 → 物理属性推断 → affordance 推导 → 步骤验证）：</p>
+<table class="result-table">
+<tr><th>维度</th><th>Direct</th><th>Structured CoT</th><th>变化</th></tr>
+<tr><td>Feasibility</td><td>3.44</td><td>3.52</td><td>+0.08</td></tr>
+<tr><td>Physical Grounding</td><td>3.44</td><td>3.54</td><td>+0.10</td></tr>
+<tr><td>Tool Usage</td><td>4.22</td><td>4.31</td><td>+0.09</td></tr>
+<tr><td class="best">Creative Reasoning</td><td>-</td><td>-</td><td class="best">下降</td></tr>
+</table>
+<p>结构化 CoT 改善了 grounding 和过程准确性，但<strong>约束了发散思维</strong>。根本问题不是推理结构缺失，而是缺乏可灵活重组的 grounding affordance 知识。</p>
+<p>采用<strong>逆向工程</strong>过程：从已知 affordance 反向合成场景，确保每个任务有明确的 ground-truth 推理轨迹。</p>
+<p><strong>模型（10 个）</strong>：</p>
+<ul><li>闭源：GPT-5.2、GPT-5 Mini、GPT-5 Nano、Gemini-2.5-Pro、Gemini-2.5-Flash</li><li>开源：Qwen3-32B、Qwen3-14B、Qwen3-4B、Llama-3-70B、Ministral-3-14B</li></ul>
+<p>评估全部 14K 任务。</p>
+<table class="result-table">
+<tr><th>模型</th><th>Gold Correct</th><th>Entity Correct</th><th>$C_u$</th><th>$C_e$</th><th>$C_r$</th><th>Physical G.</th><th>Action F.</th><th>Pred. Corr.</th></tr>
+<tr><td>GPT-5.2</td><td>0.1819</td><td>0.5210</td><td>3.85</td><td>4.24</td><td>4.15</td><td>3.87</td><td class="best">4.39</td><td>3.87</td></tr>
+<tr><td>GPT-5 Mini</td><td>0.1687</td><td>0.4856</td><td class="best">3.89</td><td>4.19</td><td class="best">4.16</td><td class="best">3.88</td><td>4.26</td><td class="best">3.87</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>MacGyver</strong>：评估非常规物理问题解决，但不围绕 affordance 结构显式构建</li><li><strong>EscapeBench</strong>：模拟密室环境中的创造性推理，但不建模部件级物理属性</li><li><strong>Creation-MMBench / VisEscape / VillagerBench</strong>：多模态/交互环境中的创造性任务，但强调规划和执行而非 affordance 发现</li></ul>
+<p>共同不足：<strong>不需要模型在部件级物理属性上做 grounding，也不要求显式推理 affordance 涌现机制</strong>。</p>
+<ul><li><strong>首个大规模 affordance-grounded 创造性 Benchmark</strong>：从&quot;为人类设计&quot;转向&quot;评估 Agent 创造性智能&quot;，填补了三元智力理论中创造性维度的评测空白</li><li><strong>结构化 Affordance KB 极具价值</strong>：4K 实体、150K+ affordance 标注，层次化建模实体→部件→属性→affordance，可复用于训练、评估和轨迹构建</li><li><strong>逆向工程任务构建保证 ground-truth</strong>：从已知 affordance 反向合成场景，确保每个任务有明确的正确答案和推理路径</li><li><strong>多维度细粒度评估</strong>：客观 Tool Usage 指标 + LLM-as-Judge 的 6 维 Likert 评估，区分了&quot;选对工具&quot;和&quot;用对工具&quot;</li><li><strong>深刻的分析发现</strong>：推理能力和创造性发现能力分离、规模饱和、相似干扰物反直觉辅助效应、Interactive 模式的过早承诺问题</li><li><strong>人类研究提供了有价值的参照</strong>：人类因认知负荷低于模型，但 gold 解决方案验证有效</li></ul>
+<ul><li><strong>仅文本模态</strong>：当前 Benchmark 纯文本，未涉及视觉 grounding（看物体图片推断 affordance）</li><li><strong>场景限于室内家居</strong>：8 个场景均为室内环境，未覆盖户外、工业等场景</li><li><strong>LLM-as-Judge 评估偏差</strong>：辅助维度依赖 Gemini-3.1-Flash-Lite 评判，存在 judge 模型特有偏差</li><li><strong>Affordance KB 的 LLM 生成质量</strong>：使用 GPT-5.2 自动扩展标注，可能存在噪声</li><li><strong>人类研究规模有限</strong>：仅 10 人、100 个任务，且人类因认知负荷表现低于模型，难以完全验证 benchmark 难度设计</li><li><strong>未涉及训练改进</strong>：仅评估未提出改进方法，讨论中提到的方向（物理-文本双重推理、foresight governance）有待实现...</li></ul>
+</div>
+</article></main></body></html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SSD: Embarrassingly Simple Self-Distillation Improves Code Generation | opsd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSD 工作整理 — On-Policy Self-Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px;
+    border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0;
+    color: var(--text); border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img {
+    max-width: 100%; max-height: 360px; object-fit: contain;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem;
+  }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.6rem 0; }
+  .pros-cons > div { padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.88rem; }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap { position: fixed; top: 2rem; left: 1rem; z-index: 100; }
+  .toc-btn {
+    display: inline-block; padding: 6px 16px; background: var(--card-bg);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); font-size: 0.82rem; font-weight: 700;
+    color: var(--accent); cursor: pointer;
+  }
+  .toc-panel {
+    display: none; position: absolute; top: 0; left: 0;
+    width: 520px; max-height: calc(100vh - 4rem); overflow-y: auto;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); padding: 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .toc ol { padding-left: 1.2rem; margin: 0; }
+  .toc li { margin-bottom: 0.25rem; font-size: 0.75rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 1px 7px; border-radius: 99px; font-size: 0.65rem; font-weight: 600;
+    margin-right: 0.3rem; vertical-align: middle;
+  }
+  @media (max-width: 640px) { .pros-cons { grid-template-columns: 1fr; } .paper-card { padding: 1.2rem; } }
+  .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--border); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27,39,78,.07); }
+  .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+  .work-list p { margin: 0 0 12px; color: var(--text-secondary); }
+  .work-list ol { margin: 0; padding-left: 1.25rem; }
+  .work-list li { margin: 8px 0; padding-left: 4px; }
+  .work-list a { font-weight: 700; }
+  .work-meta { display: block; margin-top: 2px; color: var(--text-secondary); font-size: .85rem; }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opsd_工作整理_github.html">← 返回 opsd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-ssd">
+<h2>SSD: Embarrassingly Simple Self-Distillation Improves Code Generation</h2>
+<div class="meta-row">
+  <span class="tag">SSD</span>
+  <a href="https://arxiv.org/abs/2604.01193" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.01193.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/apple/ml-ssd" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">Apple MLR · arXiv 2604.01193</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>通过训练时温度与截断配置系统性改写目标分布，使普通交叉熵训练也能诱导非平凡自我提升——压缩无用 tail、保留有价值的 head 探索。方法极简：无验证器、无 RL、无教师、无正确性过滤。</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>用训练时解码配置 $(T_{\text{train}}, \rho_{\text{train}})$ 从冻结基础模型采样，不做执行验证</li>
+  <li>理论分解：support compression（压低外部尾部概率）+ within-support reshaping（保留头内有效探索）</li>
+  <li>有效温度 $T_{\text{eff}} = T_{\text{train}} \cdot T_{\text{eval}}$，最佳工作带约在 1.2 附近</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>Base</th><th>SSD</th><th>Change</th></tr>
+  <tr><td>Qwen3-30B-Instruct LCBv6</td><td>42.4%</td><td class="best">55.3%</td><td>+12.9pp</td></tr>
+  <tr><td>Qwen3-4B-Instruct</td><td>—</td><td>+7.5pp</td><td>—</td></tr>
+</table>
+<p>提升主要集中在中等/困难问题。即使 62% 输出无法提取代码的高温数据仍能带来提升。单纯调温度的解码扫描 vs SSD 差 11.8pp。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>方法极简但收益硬（+12.9pp on 30B）</li><li>提供完整机制叙事：lock/fork、支持压缩、有效温度</li><li>是 OPD/self-distillation 的重要低复杂度对照基线</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>适用性高度依赖代码任务的 lock/fork 结构</li><li>需要仔细调节训练/推理解码超参数</li><li>与 OPD 联系是"邻近机制"而非同一算法族</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>无 reward 自提升的机制型论文，适合作为复杂 RL 方法的低复杂度对照基线。</p>
+</article></main></body></html>

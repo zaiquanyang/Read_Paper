@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATLAS: Agentic or Latent Visual Reasoning? One Word is Enough for Both | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.15198">
+  <h2>ATLAS: Agentic or Latent Visual Reasoning? One Word is Enough for Both</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.15198" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.15198" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.15198</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>ATLAS 基于标准 autoregressive VLM，论文实现上使用 Qwen2.5-VL-7B，并向 tokenizer vocabulary 中加入 5 个 functional tokens。它们与普通文本 token 一样由 next-token prediction 生成，但语义上表示一类内部化视觉操作。
+<p>形式上，ATLAS 将完整词表定义为：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 Vision-Language Models 在复杂视觉推理中如何处理中间视觉状态。很多视觉问题不是“看一眼图然后文字推理”就能解决的，例如几何题需要辅助线，棋盘/游戏状态需要更新，空间关系题需要局部放大、标注、连线或区域定位。现有路线大致有三类，但各自都有明显代价。</p>
+<p>第一类是 unified models，直接生成中间像素级图像。这种方式直观，但需要图像解码和再编码，训练和推理成本都高，还常常需要复杂架构。第二类是 agentic visual reasoning，让模型生成代码或工具调用去操作图像，比如画线、裁剪、标注。这保留了可解释性，但每次操作都要跳出 autoregressive loop，调用外部模块，带来上下文切换、工具执行延迟和长代码输出。第三类是 latent visual reasoning，把中间推理压到隐藏状态或 latent tokens 里，效率更好，但通常依赖额外 latent supervision、重建目标或非标准 recurrent computation，与现有大规模 autoregressive 并行训练不完全兼容。</p>
+<p>ATLAS 的核心想法非常简洁：把一个视觉操作压缩成词表里的一个普通离散 token。这个 token 既像 agentic operation，因为它表示“画线、标注、区域操作、箭头、文本”等可解释动作；又像 latent reasoning unit，因为它不会真的调用外部工具或生成图像，而是在模型内部作为一个紧凑的视觉推理单元。论文标题里“One Word is Enough for Both”说的就是这个：一个“词”同时承担 agentic 和 latent 两种角色。</p>
+<p>从 agentic 角度看，ATLAS 把外部工具调用内部化了。传统 agentic visual reasoning 会生成代码或工具调用，例如裁剪、画线、标注、调用视觉模块；ATLAS 则把这些操作抽象为普通 token，避免工具执行延迟和不可微外循环。但它仍然保留 agentic 的可解释性，因为 <code>&lt;|Line|&gt;</code>、<code>&lt;|Shape|&gt;</code> 这样的 token 明确告诉我们模型在进行哪类视觉操作。</p>
+<p>从 latent 角度看，ATLAS 把中间视觉状态压缩到离散符号，而不是连续 hidden state。它不需要 image reconstruction supervision，也不引入 recurrent latent dependencies，因此更兼容标准 autoregressive parallel training。缺点是 functional token 的表达能力被 5 类粗粒度操作限制，复杂视觉操作可能需要更多 token 类型或组合机制。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>ATLAS 基于标准 autoregressive VLM，论文实现上使用 Qwen2.5-VL-7B，并向 tokenizer vocabulary 中加入 5 个 functional tokens。它们与普通文本 token 一样由 next-token prediction 生成，但语义上表示一类内部化视觉操作。</p>
+<p>形式上，ATLAS 将完整词表定义为：</p>
+<div class="formula-block">\[\mathcal{V} = \mathcal{V}_{\mathrm{text}} \cup \mathcal{V}_{\mathrm{spec}} \cup \mathcal{V}_{\mathrm{func}}\]</div>
+<p>其中 $\mathcal{V}_{\mathrm{text}}$ 是自然语言 token，$\mathcal{V}_{\mathrm{spec}}$ 是原 VLM 的特殊 token，例如 image placeholder，$\mathcal{V}_{\mathrm{func}}$ 是新加入的 functional token 集合：</p>
+<div class="formula-block">\[\mathcal{V}_{\mathrm{func}} = \{\texttt{&lt;|Manip|&gt;},\texttt{&lt;|Shape|&gt;},\texttt{&lt;|Line|&gt;},\texttt{&lt;|Arrow|&gt;},\texttt{&lt;|Text|&gt;}\}\]</div>
+<table class="result-table">
+<tr><th>Functional Token</th><th>对应视觉操作</th><th>直觉作用</th></tr>
+<tr><td><code>&lt;</td><td>Manip</td><td>&gt;</code></td><td>denoise, sharpen, filter, crop, zoom-in</td><td>对图像做内部增强或局部检查</td></tr>
+<tr><td><code>&lt;</td><td>Shape</td><td>&gt;</code></td><td>bounding box, mask, crop, highlight region</td><td>定位区域、标出目标、做面积/空间关系判断</td></tr>
+<tr><td><code>&lt;</td><td>Line</td><td>&gt;</code></td><td>draw line, auxiliary line, separator</td><td>几何构造、结构提示、边界分割</td></tr>
+<tr><td><code>&lt;</td><td>Arrow</td><td>&gt;</code></td><td>direction, motion, force, causal relation</td><td>指示方向、运动、注意力转移</td></tr>
+<tr><td><code>&lt;</td><td>Text</td><td>&gt;</code></td><td>symbolic labels, numbers, annotations</td><td>标注变量、数字、标签，支持多步推导</td></tr>
+</table>
+<p>ATLAS 不真的输出这些操作后的图像，也不监督中间图像。functional token 的学习完全来自 token-level sequence supervision：当推理文本说“现在我添加一条辅助高线”时，下一个 token 可以是 <code>&lt;|Line|&gt;</code>；当推理需要标注数字或符号时，可以生成 <code>&lt;|Text|&gt;</code>。因此它保留了 agentic visual reasoning 的可解释接口，但没有外部工具执行；同时获得 latent reasoning 的紧凑性，但不需要连续 latent state 或 recurrent computation。</p>
+<p>模型输出序列可以写成：</p>
+<div class="formula-block">\[\mathbf{y}=\{y_1,\dots,y_T\}, \quad y_t\in\mathcal{V}\]</div>
+<p>functional token 的 CE 训练与普通 token 一样：</p>
+<div class="formula-block">\[\mathcal{L}_{\mathrm{func}} = -\sum_{y_t\in\mathcal{V}_{\mathrm{func}}}\log p_\theta(y_t\mid\mathbf{x},y_{&lt;t})\]</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/pipe_sep.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/pipe_sep.png" alt="ATLAS overall pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/intro_v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/intro_v4.png" alt="Visual reasoning paradigms comparison"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/lagrpo.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_atlas_agentic_or_latent_visual_reasoning_one_word_is_enough_for_both/lagrpo.png" alt="Latent-Anchored GRPO"></a>
+    </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>ATLAS 基于 Qwen2.5-VL-7B。SFT 阶段冻结 vision encoder，只更新 visual projector 和 language model；RL 阶段继续冻结 vision encoder，优化 aligner 和 language model 1 epoch。RL 数据使用 We-Math 2.0、MMK12 和 ThinkLite，覆盖不同视觉推理场景。评测 benchmark 包括 V*、WeMath 和 BLINK。评测时先用规则脚本解析答案，再使用 Qwen3-VL-235B-A22B-Instruct 作为 deterministic LLM-as-a-judge 验证答案和格式。</p>
+<p>作者将 ATLAS 与五类模型比较：closed-source models、standard VLMs、unified models、agentic visual models、latent visual models。ATLAS 自身比较 SFT、GRPO、LA-GRPO 三个阶段。</p>
+<table class="result-table">
+<tr><th>Method</th><th>V*</th><th>WeMath</th><th>BLINK Avg.</th><th>Art</th><th>Counting</th><th>Forensic</th><th>IQ</th><th>Jigsaw</th><th>Multi-view</th><th>Spatial</th></tr>
+<tr><td>Qwen2.5-VL</td><td>70.2</td><td>36.2</td><td>22.8</td><td>29.9</td><td>58.3</td><td>0.8</td><td>18.7</td><td>31.3</td><td>0.0</td><td>20.3</td></tr>
+<tr><td>V-Thinker</td><td>41.4</td><td>32.5</td><td>35.0</td><td>26.9</td><td>43.3</td><td>19.7</td><td>18.7</td><td>42.0</td><td>51.1</td><td>43.4</td></tr>
+<tr><td>VTS-V</td><td>74.9</td><td>42.8</td><td>51.2</td><td>62.4</td><td>61.7</td><td>32.9</td><td>28.7</td><td>56.1</td><td>49.4</td><td>67.2</td></tr>
+<tr><td>LVR</td><td>77.5</td><td>41.2</td><td>49.4</td><td>59.0</td><td>60.0</td><td>35.6</td><td>25.3</td><td>52.7</td><td>48.1</td><td>65.0</td></tr>
+<tr><td>ATLAS SFT</td><td>77.5</td><td>28.9</td><td>46.0</td><td>50.4</td><td>59.2</td><td>26.5</td><td>26.0</td><td>54.7</td><td>48.1</td><td>57.3</td></tr>
+<tr><td>ATLAS GRPO</td><td>77.9</td><td>40.3</td><td>50.5</td><td>57.3</td><td>61.7</td><td>34.1</td><td>26.0</td><td>57.7</td><td>43.6</td><td>70.6</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>ATLAS 的主要优点是把一个工程上很麻烦的问题变成了 tokenizer-level 的简单改动：新增几个 functional tokens，然后用普通 SFT/GRPO/auxiliary token loss 训练。它保留了标准 VLM 架构，不需要图像生成器、外部工具执行，也不需要连续 latent reasoning 模块。这使得它在效率和可扩展性上很有吸引力。</p>
+<p>它的限制也清楚。第一，functional token 的实际操作是“内部想象”的，并没有真实执行视觉变换，因此在需要精确几何构造或像素级验证的问题上可能不如真实工具可靠。第二，ATLAS-178K 的构造依赖从 image-construction code 中抽取操作并用 Gemini-2.5-Pro polishing，数据管线仍有一定工程成本。第三，目前只用了 5 个 functional tokens，虽然简洁，但可能难以覆盖更复杂的视觉操作空间。第四，reward design 比较敏感，尤其 $r_{\mathrm{func}}$ 如果没有 $p_{\mathrm{spam}}$ 会导致 reward hacking。</p>
+<p>对 agent 方向的启发是：不是所有“agentic action”都必须真的调用外部工具。对于一些频繁、简单、可抽象的操作，可以把 action internalize 成模型词表中的离散 token，让模型在标准生成过程中完成“轻量 agentic reasoning”。这也为更通用的 agent 设计提供了一个思路：外部工具调用可以分层，低成本、常见动作内部化为 functional tokens，高成本、需要真实环境反馈的动作再交给外部工具。</p>
+</div>
+</article></main></body></html>

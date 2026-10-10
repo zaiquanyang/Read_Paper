@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Improving Sampling for Masked Diffusion Models via Information Gain | diffusion_llm_工作整理_training_alignment</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>训练、采样与强化学习 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-card p,
+  .paper-card li {
+    font-size: 0.98rem;
+    color: #24324a;
+  }
+  .paper-card ul {
+    padding-left: 1.2rem;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.95rem 1.05rem;
+    border-radius: 0 14px 14px 0;
+    margin: 1rem 0 1.2rem;
+  }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 1.4rem 0 0.7rem;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.35rem;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .feature-figure {
+    margin: 16px 0 12px;
+    padding: 18px;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+    border: 1px solid #d6e4ff;
+    border-radius: 18px;
+  }
+  .feature-figure img {
+    display: block;
+    width: 100%;
+    max-height: 620px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+  .feature-figure figcaption {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .feature-note {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border-left: 4px solid var(--accent);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 0 12px 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  .result-table th,
+  .result-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .result-table th {
+    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 700;
+  }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_training_alignment.html">← 返回 diffusion_llm_工作整理_training_alignment 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2602-18176">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2602.18176</span><span class="badge">detailed</span></div>
+    <h2>Improving Sampling for Masked Diffusion Models via Information Gain</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2602.18176" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2602.18176.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/yks23/Information-Gain-Sampler" target="_blank" rel="noopener">代码</a> | <a href="../diffusion_llm/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Kaisen Yang, Jayden Teoh, Kaicheng Yang, Yitong Zhang, Alex Lamb</p>
+    <p><strong>机构</strong>：Tsinghua University, Singapore Management University, Shanghai Jiao Tong University, Beihang University</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>Info-Gain Sampler 认为 masked diffusion 的采样器不该只看“当前哪个位置最确定”，而应该看这一步解码会让后续整体不确定性下降多少。于是它把局部 greedy decoding 改成了面向未来的 information-gain 选择。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>很多 masked diffusion sampler 都是两步贪心：先给每个 mask 位置采样候选 token，再按局部 confidence、entropy 或 margin 选出最确定的位置优先解码。这样的策略短视，容易优先处理“看起来简单”的 token，却忽略哪些决策更能减少后续整体搜索难度。</p>
+  <p>作者用单向乘法等 toy case 说明：有些 token 局部不确定性很低，但过早固定会把系统推进错误分支；真正更优的动作，应该优先解开对后续最有信息价值的位置。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>Info-Gain Sampler 的核心不是改模型，而是改“选哪个位置先解码”。它先用模型分布为每个待解码位置生成候选，再估计如果当前释放该位置，接下来整个采样过程的累计不确定性会下降多少，把这个值当作信息增益分数。</p>
+  <ul>
+    <li><strong>从局部置信度到全局收益：</strong>评分目标由“当前 token 最稳”换成“当前 token 是否最能帮后续去不确定”。</li>
+    <li><strong>兼容现有 masked diffusion 模型：</strong>不要求重训，只是在推理时多做一步 look-ahead 估计。</li>
+    <li><strong>更像 planning：</strong>它本质是在采样阶段引入短期前瞻，而不是把解码完全交给一步贪心启发式。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/workflow_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/workflow_v2.png" alt="Info-Gain Sampler workflow"></a>
+    <figcaption>工作流图已经把差异说得很清楚：传统 sampler 只排序“当前谁最确定”，Info-Gain 则显式评估当前动作对未来采样轨迹的影响。</figcaption>
+  </figure>
+  <p class="feature-note">这篇论文最值得保留的不是复杂细节，而是这个视角转换：在 masked diffusion 里，位置选择本身就是 sequential decision problem。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>论文在代码、推理与一般语言生成场景上比较了多种采样器。主结论不是“所有任务都大幅领先”，而是：当任务存在明显的长程依赖和先后解码耦合时，Info-Gain 的优势最稳定，因为它更擅长避免早期局部贪心带来的后续锁死。</p>
+  <ul>
+    <li>在 case study 中，Info-Gain 能明显避开“先解看似容易但信息价值低的 token”这一错误路径。</li>
+    <li>在真实 benchmark 上，它相对纯 confidence / entropy 型采样器表现更稳，尤其适合结构约束强的生成任务。</li>
+    <li>它的收益主要来自采样顺序优化，而不是模型参数变化，因此迁移成本较低。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/toy1-v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2602_improving_sampling_for_masked_diffusion_models_via_information_gain/toy1-v4.png" alt="Info-Gain toy case"></a>
+    <figcaption>这个 toy case 比长表格更能说明论文贡献：Info-Gain 优先解真正影响后续搜索空间的变量，因此整体轨迹比 greedy sampler 更合理。</figcaption>
+  </figure>
+  <p class="feature-note">如果后面还要继续整理这篇卡片，最值得补的一张图会是累积熵轨迹；但在当前页面里，这张 toy case 更容易让读者立刻理解方法直觉。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>把 masked diffusion sampling 从“局部置信度排序”提升到了“面向未来的信息价值排序”。</li>
+    <li><strong>局限：</strong>前瞻式评分会带来额外推理成本，收益大小也依赖任务是否真的存在强顺序耦合。</li>
+    <li><strong>启发：</strong>后续 diffusion 解码器可以继续引入 planning / value estimation 视角，而不是只在 confidence heuristic 上做微调。</li>
+  </ul>
+</article></main></body></html>

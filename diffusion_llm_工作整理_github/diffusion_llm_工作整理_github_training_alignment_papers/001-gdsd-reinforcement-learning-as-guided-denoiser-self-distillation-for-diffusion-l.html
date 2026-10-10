@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GDSD: Reinforcement Learning as Guided Denoiser Self-Distillation for Diffusion Language Models | diffusion_llm_工作整理_training_alignment</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>训练、采样与强化学习 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-card p,
+  .paper-card li {
+    font-size: 0.98rem;
+    color: #24324a;
+  }
+  .paper-card ul {
+    padding-left: 1.2rem;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.95rem 1.05rem;
+    border-radius: 0 14px 14px 0;
+    margin: 1rem 0 1.2rem;
+  }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 1.4rem 0 0.7rem;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.35rem;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .feature-figure {
+    margin: 16px 0 12px;
+    padding: 18px;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+    border: 1px solid #d6e4ff;
+    border-radius: 18px;
+  }
+  .feature-figure img {
+    display: block;
+    width: 100%;
+    max-height: 620px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+  .feature-figure figcaption {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .feature-note {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border-left: 4px solid var(--accent);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 0 12px 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  .result-table th,
+  .result-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .result-table th {
+    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 700;
+  }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_training_alignment.html">← 返回 diffusion_llm_工作整理_training_alignment 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605-29398" data-source="diffusion_llm/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models.md" data-arxiv="2605.29398">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2605.29398</span><span class="badge">GDSD</span><span class="badge">detailed</span></div>
+    <h2>GDSD: Reinforcement Learning as Guided Denoiser Self-Distillation for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2605.29398" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2605.29398.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/GaryBall/GDSD" target="_blank" rel="noopener">GitHub</a> | <a href="../diffusion_llm/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Xiaohang Tang, Keyue Jiang, Che Liu, Qifang Zhao, Xiaoxiao Xu, Sangwoong Yoon, Ilija Bogunovic</p>
+    <p><strong>机构</strong>：UCL, Alibaba Group, Imperial College London, UNIST, University of Basel</p>
+  </div>
+  <div class="summary-box">
+    <strong>核心思想：</strong>GDSD 不再把 ELBO 当作可替代 likelihood 的 RL 中介，而是把 diffusion LLM 的 policy improvement 改写成 advantage-guided denoiser self-distillation。这样它绕开了 surrogate ratio 的系统偏差，也更贴近 diffusion 模型真正优化的去噪对象。
+  </div>
+
+  <h3 class="section-title">问题与动机</h3>
+  <p>此前 dLLM 做 RL 时，常用套路是拿 ELBO 或 Monte Carlo proxy 近似 sequence likelihood，再沿用 PPO / GRPO 风格的 ratio correction。问题在于，这会把 ELBO gap 与 training-inference mismatch 一起放大，最后让 importance ratio 又偏又噪。</p>
+  <p>GDSD 的判断很直接：既然 surrogate ratio 本身就站不稳，不如不再围绕它修补，而是把 RL 目标直接落到去噪 teacher-student 对齐上。</p>
+
+  <h3 class="section-title">方法与框架</h3>
+  <p>作者从 reverse-KL regularized RL 目标出发，把最优策略改写成由 old policy、reference policy 与 advantage 共同诱导的 guided teacher。关键变化不是换个 clipping，而是把 sequence-level policy improvement 转成 denoiser-level matching。</p>
+  <ul>
+    <li><strong>一致 corruption 条件：</strong>当前模型、旧模型与 reference 模型在相同前向噪声下比较。</li>
+    <li><strong>guided teacher：</strong>student 不再拟合 noisy ratio，而是蒸馏一个带 advantage 偏置的去噪 teacher。</li>
+    <li><strong>normalization-free distillation：</strong>实现上用 squared-logit 形式，避免再次退回 softmax ratio 的高噪空间。</li>
+  </ul>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/flow_gdsd.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/flow_gdsd.png" alt="GDSD framework overview"></a>
+    <figcaption>最值得看的方法图：GDSD 不是“更稳地估 ratio”，而是把 RL 信号重新放进 guided denoiser 蒸馏里。</figcaption>
+  </figure>
+  <p class="feature-note">这也是它和很多 ELBO-based 方法最本质的区别：优化接口变了，所以它能同时绕开 TIM 与 surrogate bias。</p>
+
+  <h3 class="section-title">实验与结论</h3>
+  <p>论文在 <code>LLaDA-8B</code> 与 <code>Dream-7B</code> 上测试 planning、math、coding。整体结论很一致：GDSD 在两类 dLLM 上都优于此前 ELBO-based 方法，其中 planning 收益最大，摘要里最高到 <strong>+19.6%</strong>。</p>
+  <table class="result-table">
+    <tr><th>观察</th><th>结论</th></tr>
+    <tr><td>跨模型</td><td>LLaDA-8B 与 Dream-7B 都稳定受益</td></tr>
+    <tr><td>跨任务</td><td>planning / math / coding 普遍提升，不是只在单一 benchmark 生效</td></tr>
+    <tr><td>最强收益</td><td>planning 最突出，符合长程 credit 更受益的直觉</td></tr>
+    <tr><td>训练动态</td><td>reward 曲线更稳，后期退化更轻</td></tr>
+  </table>
+  <figure class="feature-figure">
+    <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/methods_histogram_llada_subplots_best.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2605_gdsd_reinforcement_learning_as_guided_denoiser_self_distillation_for_diffusion_language_models_tex/methods_histogram_llada_subplots_best.png" alt="Main results on LLaDA"></a>
+    <figcaption>主结果图已经足够说明问题：GDSD 的收益是跨任务成立的，而不是某个指标上的偶然波动。</figcaption>
+  </figure>
+  <p class="feature-note">这张图尤其能看出 planning 优势最明显，也最契合“guided denoising 更利于长程决策”的方法直觉。</p>
+  <p>作者还观察到 guidance coefficient <code>\psi</code> 不能太弱，否则 guided self-distillation 会退化成温和模仿；而 TLC 这类 calibration 组件则能继续减轻训练后期抖动。</p>
+
+  <h3 class="section-title">价值、局限与启发</h3>
+  <ul>
+    <li><strong>价值：</strong>把 dLLM RL 的核心矛盾重新表述成“不要再把 ELBO 当 likelihood”。</li>
+    <li><strong>局限：</strong>方法仍然依赖 reward / advantage 质量，本质上没有离开 RL；主要论证也集中在 masked diffusion setting。</li>
+    <li><strong>启发：</strong>后续 diffusion RL 也许更该寻找与 denoiser 对齐的优化接口，而不是继续沿用 AR LLM 的 sequence-level update。</li>
+    <li><strong>验证边界：</strong>当前主要围绕 LLaDA、Dream 等代表性 dLLM，其他变体仍需更多实验支持。</li>
+  </ul>
+</article></main></body></html>

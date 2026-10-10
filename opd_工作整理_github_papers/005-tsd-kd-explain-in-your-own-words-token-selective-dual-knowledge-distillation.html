@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TSD-KD: Explain in Your Own Words — Token-Selective Dual Knowledge Distillation | opd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD 工作整理 — On-Policy Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.2rem 0 0.5rem 0;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li {
+    font-size: 0.92rem;
+    color: #333;
+    margin-bottom: 0.4rem;
+  }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.8rem 0;
+  }
+  .fig-row img {
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0;
+    font-size: 0.88rem;
+  }
+  .result-table th, .result-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 0.6rem 0;
+  }
+  .pros-cons > div {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+  }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap {
+    position: fixed;
+    top: 2rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 480px;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .toc ol {
+    padding-left: 1.2rem;
+    margin: 0;
+  }
+  .toc li {
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+  }
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  @media (max-width: 640px) {
+    .pros-cons { grid-template-columns: 1fr; }
+    .paper-card { padding: 1.2rem; }
+  }
+  @media (max-width: 1400px) {
+    .toc {
+      position: static;
+      width: 100%;
+      max-height: none;
+      margin-bottom: 2rem;
+    }
+    body { padding-left: 1rem; }
+  }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opd_工作整理_github.html">← 返回 opd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-tsd-kd">
+
+<h2>TSD-KD: Explain in Your Own Words — Token-Selective Dual Knowledge Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">TSD-KD</span>
+  <span class="tag" style="background:#fef3c7;color:#92400e;">ICLR 2026</span>
+  <a href="https://arxiv.org/abs/2603.13260" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.13260.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/kmswin1/TSD-KD" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.13260</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>更细粒度、更 student-centric 的 OPD 变体。不要求 student 在每个 token 上模仿 teacher，而是只在关键 token 上施加监督，拆成 <strong>间接偏好蒸馏（teacher 只做 ranking）+ 直接 selective KD（entropy gap gating）+ selective entropy regularization</strong> 三部分。Reasoning 任务上多次实现 student 超越 teacher。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>全 token 监督过重：</strong>标准 OPD/GKD 在 student 生成的每个 token 上都做 KL/JSD 对齐，小模型 capacity 不够，被 teacher 完整分布压住，学不会"用自己的方式"推理。</li>
+  <li><strong>不是所有 token 同等重要：</strong>reasoning 里关键分叉点集中在较早的 token，对 student 最有帮助的不是处处模仿 teacher，而是在困难 token 上获得恰到好处的引导。</li>
+  <li>核心判断：<strong>"对 reasoning student 来说，最好的 teacher 不是时时刻刻都在讲话的 teacher，而是在关键分叉点给一点点高价值提示的 teacher。"</strong></li>
+</ul>
+<p>从 OPD 角度看，它是 <strong>OPD + selective KD + preference-style weak supervision</strong>，而非 RL-style OPD。仍用 on-policy 数据和蒸馏损失，但 token 选择基于 entropy gap，间接监督借 preference modeling 形式。</p>
+
+<h3 class="section-title">方法：Token-Selective Dual KD</h3>
+<ul>
+  <li><strong>1. 间接蒸馏（Indirect）：</strong>student 提出 top-$k$ 候选 token，teacher 只做 preference ranking（Plackett-Luce），不暴露自身完整分布。保留 student 自主表达空间。</li>
+  <li><strong>2. Opener 机制：</strong>高熵 token 集中在 reasoning trace 前部。从序列开头累计 entropy，当前缀累计熵达总熵的 $c\%$（默认 10%）时停下，间接蒸馏只作用于这段 opener。</li>
+  <li><strong>3. 直接蒸馏（Direct）：</strong>entropy gap soft gating——student 高熵 + teacher 低熵时加大蒸馏权重，student 自信时弱化蒸馏。</li>
+  <li><strong>4. Selective entropy minimization：</strong>只在 top-10% 高熵 token 上做 entropy regularization，防止关键 reasoning step 犹豫，又避免过度自信。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/entropy.png" alt="Entropy distribution across token positions">
+  </div>
+</div>
+
+<h3 class="section-title">实验结果</h3>
+<p>主实验 <code>Qwen2.5-14B → 1.5B</code>，泛化 <code>Gemma2-9B → 2B</code>、<code>Qwen3-8B → 1.7B</code>。On-policy 数据来自 UltraInteract prompts。</p>
+
+<table class="result-table">
+  <tr><th>Method</th><th>GSM8K</th><th>GSM-Plus</th><th>MATH</th><th>MBPP</th><th>IFEval</th><th>MMLU-STEM</th></tr>
+  <tr><td>Teacher 14B</td><td>80.3</td><td>59.7</td><td>21.7</td><td>78.9</td><td>85.9</td><td>70.5</td></tr>
+  <tr><td>Student 1.5B</td><td>57.1</td><td>38.8</td><td>16.9</td><td>38.4</td><td>53.1</td><td>49.5</td></tr>
+  <tr><td>MiniLLM</td><td>57.7</td><td>39.7</td><td>17.8</td><td>42.2</td><td>54.7</td><td>48.2</td></tr>
+  <tr><td>GKD</td><td>57.9</td><td>39.9</td><td>18.1</td><td>41.8</td><td>52.3</td><td>47.7</td></tr>
+  <tr><td class="best">TSD-KD</td><td class="best">60.1</td><td class="best">40.5</td><td class="best">26.1</td><td>42.1</td><td class="best">55.2</td><td class="best">50.0</td></tr>
+</table>
+
+<ul>
+  <li><strong>MATH 上 student 超 teacher：</strong>teacher 21.7，TSD-KD student 做到 26.1（+20.3%）。</li>
+  <li><strong>SciQ：</strong>student 甚至超过 teacher（86.4 → 93.0）。</li>
+  <li>Gemma2-2B 上 6 个指标拿 5 个最优；Qwen3-1.7B 上 MATH = 28.0（teacher 22.4）。</li>
+</ul>
+
+<h3 class="section-title">消融要点</h3>
+<ul>
+  <li><strong>三个组件都有效：</strong>从 GKD baseline 逐步加 selective gating → indirect distillation → entropy minimization，MATH 从 18.1 提到 26.1。</li>
+  <li><strong>Opener 比例 $c=10\%$ 最优：</strong>$c=100\%$ 退化为全序列蒸馏，效果反而更差——直接证据表明全 token OPD 不是最优。</li>
+  <li><strong>Top-$k=10$ 最优：</strong>候选太多把 teacher 弱监督变噪声。</li>
+  <li><strong>Selective entropy min 也必须 selective：</strong>对所有 token 都做会过度自信。</li>
+</ul>
+
+<div class="fig-row">
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/top_c.png" alt="Opener ratio ablation">
+  </div>
+  <div class="fig-item">
+    <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPD/assets/arxiv_2603_tsd_kd_token_selective_dual_knowledge_distillation/top_k.png" alt="Top-k ablation">
+  </div>
+</div>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>清楚指出 OPD 里"不是所有 token 都值得 teacher 介入"</li>
+      <li>间接蒸馏设计聪明——teacher 只做 ranking，不强灌 full distribution</li>
+      <li>reasoning 任务极强，多次 student 超 teacher</li>
+      <li>跨模型家族有效，PEFT 下也成立</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>indirect distillation 需 teacher 逐 token rerank top-$k$ 候选，推理成本不低</li>
+      <li>仅验证 reasoning/instruction/code 场景，开放式生成是否有效未知</li>
+      <li>student 超 teacher 有 benchmark contamination 潜在疑问，未深挖</li>
+      <li>不是 RL-style OPD，不直接解决 rollout-level reward 问题</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>token-selective + preference-style OPD。把 OPD 往更细粒度、更选择性、更偏 preference 的方向推进。与 SCOPE（trajectory-level routing）、EOPD（entropy-aware KL routing）、HDPO（privileged self-distillation for cliff prompts）互补。核心启发：(1) OPD 不一定要全 token 对齐；(2) 弱监督比强监督更适合小模型 reasoning；(3) 可拆成 sequence-level guidance（indirect）+ token-level correction（direct）。
+</p>
+
+</article></main></body></html>

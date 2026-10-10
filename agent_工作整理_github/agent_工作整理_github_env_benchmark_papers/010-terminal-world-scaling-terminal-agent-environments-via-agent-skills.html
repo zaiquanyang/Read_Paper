@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Terminal-World: Scaling Terminal-Agent Environments via Agent Skills | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.20876">
+  <h2>Terminal-World: Scaling Terminal-Agent Environments via Agent Skills</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.20876" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.20876.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.20876</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>Terminal-World 的核心贡献，是把 <strong>agent skill</strong> 从“人给 agent 的执行说明”提升为 <strong>terminal-agent 数据合成的中心原语</strong>，并围绕它联合构建任务、环境与轨迹，从而以很低的数据量和成本，训练出比现有 terminal-agent 合成数据方法更强、更高效的模型。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇论文关注的是 <strong>terminal agent 的训练数据瓶颈</strong>。</p>
+<p>和 API agent 不同，terminal agent 不是在固定工具列表里选一个 API 调一下，而是真正在命令行环境中执行 shell 命令、读写文件、安装依赖、跑测试、启动服务、调试环境。作者认为，这类 agent 的训练难点不只是“缺任务”，而是同时缺三样彼此强耦合的东西：</p>
+<ul><li><strong>任务指令</strong>：到底要 agent 完成什么；</li><li><strong>可执行环境</strong>：文件、依赖、初始状态、服务配置是否真实可运行；</li><li><strong>高质量轨迹</strong>：teacher 是否给出了有效、简洁、少走弯路的交互过程。</li></ul>
+<p>已有自动化数据构建方法，大多从某种 <strong>partial source</strong> 出发，比如：</p>
+<ul><li>人工种子关键词或短描述；</li><li>GitHub 仓库；</li><li>单一环境组件。</li></ul>
+<p>然后再让 LLM 去“把剩下的补完”。作者认为这种思路有三个根本问题：</p>
+<ul><li><strong>任务分布受限</strong>：因为起点本身很窄，最后合成出的任务也集中在少数种子分布里；</li><li><strong>环境和任务不对齐</strong>：任务语义和环境不是从一开始共同定义出来的，而是后补的，所以常常 fragile；</li><li><strong>teacher 轨迹低效</strong>：teacher 在没有明确 procedural guidance 的情况下，只能自己探索，容易产生冗余命令和低质量路径。</li></ul>
+<p>论文的核心主张是：<strong>终端任务的数据构造，不应该从“半成品种子”出发，而应该从 agent skill 出发。</strong></p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者把 <strong>agent skill</strong> 当作 terminal-agent 数据合成的中心原语。原因是 skill 天然同时编码了三件事：</p>
+<ul><li><strong>what</strong>：要完成什么能力；</li><li><strong>when</strong>：什么前提条件、环境状态下适用；</li><li><strong>how</strong>：应该怎样执行。</li></ul>
+<p>这恰好对应 terminal-agent 训练样本最需要的三部分：</p>
+<ul><li>任务指令；</li><li>环境构造；</li><li>教师轨迹。</li></ul>
+<p>所以 Terminal-World 的想法不是“先有任务，再补环境，再让 teacher 去试”；而是：</p>
+<p><strong>从 skill 出发，自顶向下联合生成 task instruction、environment blueprint 和 execution guideline，再把它们实例化成可执行 sandbox，并收集 teacher trajectory。</strong></p>
+<p>上图左边是方法总览，右边是性能概览。整篇工作的 pipeline 可以概括成四步：</p>
+<ul><li><strong>Agent Skill Collection</strong></li><li><strong>Task Generation</strong></li><li><strong>Environment Building</strong></li><li><strong>Trajectory Collection</strong></li></ul>
+<p>作者还进一步把 skill 扩展成：</p>
+<ul><li><strong>single skills</strong>：单技能；</li><li><strong>skill teams</strong>：同一子类中的多技能、多角色协作；</li><li><strong>skill graphs</strong>：跨子类技能组合成更长的工作流。</li></ul>
+<p>因此它不是只在“单任务模板”层面扩数据，而是在 <strong>能力组合图</strong> 上扩展 terminal task 空间。</p>
+<p>我认为这篇论文最核心的贡献可以概括为三层：</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/method_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/method_v2.png" alt="Method pipeline"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/intro_v5.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/intro_v5.png" alt="Terminal-World overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/env_trajectory_stats.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_terminal_world_scaling_terminal_agent_environments_via_agent_skills/env_trajectory_stats.png" alt="Data statistics"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文在 6 个 benchmark 上评估：</p>
+<ul><li>Terminal-Bench 2.0</li><li>AIME24</li><li>AIME25</li><li>DABench</li><li>TableBench</li><li>BIRD</li></ul>
+<p>其中 Terminal-Bench 2.0 是 terminal-native 编码 benchmark，其余几个被转换成 terminal-based task。</p>
+<p>主结果表里最值得抓的，是和 Nemotron-Terminal 以及其他 <code>&lt;100B</code> 开源 terminal-agent 模型的对比：</p>
+<table class="result-table">
+<tr><th>Model</th><th>#Train Samples</th><th>TB2.0 P@1</th><th>TB2.0 P@3</th><th>Avg. P@1</th><th>Avg. P@3</th></tr>
+<tr><td>Nemotron-Terminal-8B</td><td>490.5k</td><td>13.5</td><td>21.3</td><td>58.5</td><td>69.3</td></tr>
+<tr><td class="best">Terminal-World-8B</td><td class="best">5.7k</td><td class="best">15.7</td><td class="best">23.6</td><td class="best">63.5</td><td class="best">71.7</td></tr>
+<tr><td>Nemotron-Terminal-14B</td><td>490.5k</td><td>20.2</td><td>24.7</td><td>66.9</td><td>73.2</td></tr>
+<tr><td class="best">Terminal-World-14B</td><td class="best">5.7k</td><td class="best">21.3</td><td class="best">27.0</td><td class="best">66.0</td><td class="best">74.1</td></tr>
+<tr><td>Nemotron-Terminal-32B</td><td>490.5k</td><td>27.0</td><td>37.1</td><td>68.9</td><td>76.0</td></tr>
+<tr><td class="best">Terminal-World-32B</td><td class="best">5.7k</td><td class="best">31.5</td><td class="best">43.8</td><td class="best">69.3</td><td class="best">77.9</td></tr>
+</table>
+<p>我觉得这张表最重要的不是“又提升了几分”，而是两层更深的结论：</p>
+<ul><li><strong>极高的数据效率</strong></li></ul>
+<p>Terminal-World-32B 只用了 <code>5.7k</code> 训练样本，而 Nemotron-Terminal-32B 用了 <code>490.5k</code>。也就是前者只用了后者大约 <code>1.2%</code> 的数据。</p>
+<ul><li><strong>终端能力与跨任务泛化兼得</strong></li></ul>
+<p>论文强调 Nemotron-Terminal 还混入了大量辅助样本，而 Terminal-World 只用 terminal-style trajectories，却仍能在非终端 benchmark 上匹敌甚至超过它。</p>
+<p>这意味着作者构造的 skill-grounded trajectory，不只是“对 terminal bench 刷得准”，还学到了某种更通用的问题解决模式。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>虽然这篇工作很强，但我觉得也有一些自然限制：</p>
+<ul><li><strong>skill source 仍然决定了能力边界</strong></li></ul>
+<p>如果上游技能库本身偏向某些能力，合成出来的 terminal worlds 也会继承这种偏置。</p>
+<ul><li><strong>LLM-as-a-Judge 与 GVR 本身也带来额外偏好</strong></li></ul>
+<p>最终保留下来的任务，可能更偏向易于被 judge / verifier 描述和检查的任务类型。</p>
+<ul><li><strong>目前还是偏 SFT 式利用</strong></li></ul>
+<p>虽然这篇的数据构造对 RL 很有潜力，但论文主要还是展示用这些轨迹做 SFT 的效果。</p>
+<ul><li><strong>环境构建质量对整体很敏感</strong></li></ul>
+<p>如果 sandbox 或 verifier 质量不好，会把噪声传到 teacher trajectory 和 student 学习中。</p>
+<p>这篇工作对 <code>agent</code> 方向很有启发，尤其是你现在经常看的那些 agent RL / agent data synthesis 论文里，它提供了一个很清楚的视角：</p>
+<ul><li><strong>agent 数据的瓶颈不是只有 task instruction</strong></li></ul>
+<p>更关键的是 task、environment、trajectory 三者的联合构造。</p>
+<ul><li><strong>真实技能文档可以成为训练数据原语</strong></li></ul>
+<p>skill 文档比 seed keyword 或 repo 名更“结构化”、更贴近实际工作流。</p>
+<ul><li><strong>persona 是数据多样性的廉价放大器</strong></li></ul>
+<p>对同一技能注入不同 persona，可以很低成本地拓展使用场景。</p>
+<ul><li><strong>失败轨迹不是垃圾</strong></li></ul>
+<p>对 terminal agent 来说，失败过程里的局部正确行为非常有学习价值。</p>
+<p>Terminal-World 的核心贡献，是把 <strong>agent skill</strong> 从“人给 agent 的执行说明”提升为 <strong>terminal-agent 数据合成的中心原语</strong>，并围绕它联合构建任务、环境与轨迹，从而以很低的数据量和成本，训练出比现有 terminal-agent 合成数据方法更强、更高效的模型。</p>
+</div>
+</article></main></body></html>

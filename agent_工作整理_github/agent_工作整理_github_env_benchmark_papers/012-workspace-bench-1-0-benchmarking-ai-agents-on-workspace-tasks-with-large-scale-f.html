@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.03596">
+  <h2>Workspace-Bench 1.0: Benchmarking AI Agents on Workspace Tasks with Large-Scale File Dependencies</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.03596" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.03596.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/OpenDataBox/Workspace-Bench" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.03596</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>Workspace-Bench 填补核心空白：<strong>单个 Agent 知识工作空间的关系结构</strong>。超越静态文件提供，系统评测 workspace reasoning 的六维度能力：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者对 ByteDance Lark 平台上 <strong>154 个真实任务场景</strong> 进行深入分析，发现：</p>
+<ul><li>AI Agent 已能解决 GUI 导航和多轮工具调用等表层任务</li><li>但在处理大规模、碎片化的文档工作空间时严重失败</li><li>商业场景中撰写定制化提案需要跨十多个内容相关文件进行多文件协调</li><li>现有 Agent 频繁出现<strong>关键信息遗漏、逻辑不一致、事实不准确</strong></li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>Workspace-Bench 填补核心空白：<strong>单个 Agent 知识工作空间的关系结构</strong>。超越静态文件提供，系统评测 workspace reasoning 的六维度能力：</p>
+<ul><li>Workspace Exploration（工作空间探索）</li><li>Task-Supporting Files Utilization（任务支撑文件利用）</li><li>Result-Providing Files Utilization（结果提供文件利用）</li><li>Content Relations Understanding（内容关系理解）</li><li>Lineage Tracing（版本溯源）</li><li>Semantic Heterogeneous File Understanding（语义异构文件理解）</li></ul>
+<p>Workspace-Bench 包含三大模块：</p>
+<ul><li><strong>工作空间构建</strong>：5 个角色工作空间，74 种文件类型，20,476 个文件（最大 20GB）</li><li><strong>任务构建与标注</strong>：388 个任务，7,399 条评估 rubric，25 名标注者</li><li><strong>评估框架</strong>：双并行加速 + Agent-as-a-Judge</li></ul>
+<p class="caption-note">完整评估框架：Agent 初始化、双并行加速、多策略文件提取、BFS 回滚、Agent-as-a-Judge</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/Figure5-v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/Figure5-v3.png" alt="评估框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/rubrics_success.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/rubrics_success.png" alt="Rubric Pass Rate"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/ability_config_bubble_collaboration_type_pass70_bubble.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_workspace_bench_10_benchmarking_ai_agents_on_workspace_tasks_with_large_scale_file_dependencies/ability_config_bubble_collaboration_type_pass70_bubble.png" alt="能力维度对比"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>论文将现有 Agent Benchmark 分为四类，逐一分析其局限：</p>
+<p><strong>Prompt-Driven</strong>（如 OneMillion-Bench、CL-Bench）：所有信息嵌入自然语言指令中，零外部文件交互，完全跳过办公工作流的核心媒介。</p>
+<p><strong>Open-Source/Environment-Driven</strong>（如 OSWorld、GAIA、WebArena）：需通过工具与动态环境交互，但主要聚焦 Action Grounding 或 API 编排，忽略本地文件生态系统中的导航与推理。</p>
+<p><strong>Task-File-Driven</strong>（如 OfficeQA-Pro、GDPVal）：引入真实文件处理，但直接将任务相关文件打包提供给 Agent，跳过了从复杂文件系统中独立搜索和筛选信息的挑战。</p>
+<p><strong>Workspace-Relevant</strong>（如 OfficeBench、TheAgentCompany、SWE-bench）：最接近现实，构建了文件系统环境，但存在三大瓶颈：</p>
+<ul><li>单一风格文件系统，缺少角色多样性</li><li>文件格式覆盖 &lt;10 种，缺少 50+ 种真实办公格式</li><li>任务设计缺乏对文件间协同关系的显式评测（聚合、语义关联、版本溯源）</li></ul>
+<p><strong>测试 Agent Harness（4 个）</strong>：</p>
+<ul><li><strong>OpenClaw</strong>：解耦双环执行架构，高层认知规划与底层工具调用分离，结构化知识存储 + 语义路由层实现跨会话共享记忆</li><li><strong>Claude Code</strong>：高密度推理与深度工作空间集成，原生使用 MCP 和 SKILLs，混合状态控制策略（CLAUDE.md + 动态压缩算法）</li><li><strong>LangChain DeepAgent</strong>：基于 LangGraph 持久 DAG 架构的白盒 Harness，解耦控制流与 LLM，内置规划工具（write_todos）确保执行路径透明可追踪</li><li><strong>Hermes</strong>：内置学习循环的开源 Agent，四层解耦记忆引擎（静态身份指令 + 动态状态文件 + SQLite FTS5 档案），自学习机制将试错经验持久化为本地技能库</li></ul>
+<p><strong>测试基础模型（7 个）</strong>：Opus-4.7、GLM-5.1、GPT-5.4、Gemini-3.1-Pro、Kimi-2.5、MiniMax-M2.7、Seed-2.0-Code</p>
+<p><strong>评估设置</strong>：Workspace-Bench-Lite（100 任务），Seed-2.0-Lite 作为 Judge LLM，标准化执行和评估 Prompt。</p>
+<p>28 种配置（4 harness × 7 LLM）的评估结果：</p>
+<ul><li>Pass Rate 范围：<strong>27% ~ 67%</strong></li><li>平均 Pass Rate：<strong>47.4%</strong></li><li>最佳配置：<strong>OpenClaw + Opus-4.7</strong>（~67%），其次是 ClaudeCode + Opus-4.7、Hermes + Opus-4.7</li><li><strong>人类基线：80.7%</strong>，显著超越所有全自动 Agent...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>论文将现有 Agent Benchmark 分为四类，逐一分析其局限：</p>
+<p><strong>Prompt-Driven</strong>（如 OneMillion-Bench、CL-Bench）：所有信息嵌入自然语言指令中，零外部文件交互，完全跳过办公工作流的核心媒介。</p>
+<p><strong>Open-Source/Environment-Driven</strong>（如 OSWorld、GAIA、WebArena）：需通过工具与动态环境交互，但主要聚焦 Action Grounding 或 API 编排，忽略本地文件生态系统中的导航与推理。</p>
+<p><strong>Task-File-Driven</strong>（如 OfficeQA-Pro、GDPVal）：引入真实文件处理，但直接将任务相关文件打包提供给 Agent，跳过了从复杂文件系统中独立搜索和筛选信息的挑战。</p>
+<p><strong>Workspace-Relevant</strong>（如 OfficeBench、TheAgentCompany、SWE-bench）：最接近现实，构建了文件系统环境，但存在三大瓶颈：</p>
+<ul><li>单一风格文件系统，缺少角色多样性</li><li>文件格式覆盖 &lt;10 种，缺少 50+ 种真实办公格式</li><li>任务设计缺乏对文件间协同关系的显式评测（聚合、语义关联、版本溯源）</li></ul>
+<ul><li><strong>首个系统评测 Workspace Learning 的大规模 Benchmark</strong>：填补了从原子化任务到工作空间级依赖推理的评测空白，六维度全面覆盖</li><li><strong>真实规模工作空间</strong>：5 个角色画像、74 种文件类型、20,476 个文件（最大 20GB），远超现有 Benchmark 的规模和多样性</li><li><strong>细粒度评估体系</strong>：7,399 条 rubric（平均每任务 19.1 条），覆盖 Foundation/Process/Result 三种类型，不仅评估最终结果也评估中间决策</li><li><strong>完整的评估基础设施</strong>：双并行加速（工作空间级 + 任务级）、多策略文件提取、并行 BFS 回滚、Agent-as-a-Judge，构成端到端自动化评估流水线</li><li><strong>深度实验分析</strong>：28 种配置 × 5 个发现 × 错误分析，揭示了 Agent 能力瓶颈的多个维度</li><li><strong>Workspace Learning 五阶段理论框架</strong>：从 L0 到 L4 的演进框架和 Data Association Gap 概念，为未来研究提供了清晰的路线图</li><li><strong>Workspace-Bench-Lite</strong>：100 任务子集保持分布一致性，降低 70% 评估成本，便于快速迭代...</li></ul>
+</div>
+</article></main></body></html>

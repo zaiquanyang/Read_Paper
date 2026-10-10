@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Skills-Coach: A Self-Evolving Skill Optimizer via Training-Free GRPO | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604.27488">
+  <h2>Skills-Coach: A Self-Evolving Skill Optimizer via Training-Free GRPO</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.27488" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.27488.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.27488</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>本文提出核心问题：<strong>Agent 能否自主探索现有 skills 的能力边界并主动扩展，实现 skill 自进化？</strong></p>
+<p>将该问题分解为三个子问题：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>当前 skill 生态的根本问题在于：<strong>量大但覆盖碎片化</strong>（abundant volume but fragmented coverage）。</p>
+<p>绝大多数 skills 是个人为解决特定问题而开发的，设计天然聚焦于局部用例，难以系统性覆盖复杂专业任务的全面功能需求。用户在执行多方面任务时仍然面临功能缺口和集成瓶颈。</p>
+<p>本文提出核心问题：<strong>Agent 能否自主探索现有 skills 的能力边界并主动扩展，实现 skill 自进化？</strong></p>
+<p>将该问题分解为三个子问题：</p>
+<ul><li><strong>如何自动生成边界探测任务？</strong> 需要构造具有挑战性和全面性的测试集，既要达到 skill 的能力上限，又要保证系统性</li><li><strong>如何实现 skill 自进化？</strong> 从失败探索中提取模式，动态更新 skill 模块，同时确保与现有 skill 生态的一致性</li><li><strong>如何有效评估 skill 能力？</strong> 构建鲁棒的评估框架，精确量化 skill 在各维度的表现</li></ul>
+<p>Skills-Coach 是一个自动化的 Skill 自进化框架，针对特定 skill，系统地探索其能力边界、分析优化空间、自动生成改进版本，并编译为结构化报告。包含四个核心模块：</p>
+<ul><li><strong>Diverse Task Generation Module（多样化任务生成模块）</strong></li><li><strong>Lightweight Optimization Module（轻量优化模块）</strong></li><li><strong>Comparative Execution Module（对比执行模块）</strong></li><li><strong>Traceable Evaluation Module（可追溯评估模块）</strong></li></ul>
+<p class="caption-note">图：Skills-Coach 框架总览——四个核心模块构成的闭环优化流程</p>
+<p class="caption-note">Skills-Coach 四模块闭环优化流程</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/framework.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/framework.png" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_1.png" alt="Performance"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_skills_coach_a_self_evolving_skill_optimizer_via_training_free_grpo/Figure_2.png" alt="Tasks"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>为评估框架并为社区提供资源，本文引入 <strong>Skill-X</strong> benchmark：</p>
+<ul><li>48 个广泛使用的 skills（来自 ClawHub、Anthropic、Vercel Labs、SkillSh）</li><li>两种类型：29 个 instruction-only skills + 19 个 code-inclusive skills</li><li>覆盖广泛的实际应用场景，从基础数据处理到复杂逻辑交互</li></ul>
+<ul><li>默认 3 个优化 epoch</li><li>每个 skill 生成 12 个训练任务 + 8 个测试任务</li><li>训练集：6 standard + 6 advanced</li><li>测试集：4 standard + 4 advanced</li><li>Training-Free GRPO：每个 epoch 生成 3 个 rollout 变体（group_size=3）</li><li>Auto-Fix：最多 2 轮迭代修复</li><li>优化/修复组件默认使用 Claude Sonnet 4.6</li></ul>
+<table class="result-table">
+<tr><th>Skill 类型</th><th>指标</th><th>原始</th><th>优化后</th><th>提升</th></tr>
+<tr><td class="best">All Skills</td><td>Average Score</td><td>0.378</td><td class="best">0.84</td><td>+0.47 (+124%)</td></tr>
+<tr><td>Pass Rate</td><td>33.59%</td><td class="best">88.02%</td><td>+54.43%</td></tr>
+<tr><td>Standard Task</td><td>43.00%</td><td class="best">87.43%</td><td>+44.43%</td></tr>
+<tr><td>Advanced Task</td><td>32.71%</td><td class="best">81.61%</td><td>+48.90%</td></tr>
+<tr><td class="best">Instruction-only</td><td>Average Score</td><td>0.388</td><td class="best">0.839</td><td>+0.451</td></tr>
+<tr><td>Pass Rate</td><td>37.93%</td><td class="best">91.38%</td><td>+53.45%</td></tr>
+<tr><td class="best">Code-inclusive</td><td>Average Score</td><td>0.343</td><td class="best">0.842</td><td>+0.499</td></tr>
+<tr><td>Pass Rate</td><td>26.97%</td><td class="best">82.89%</td><td>+55.92%</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>平均分从 0.378 提升到 0.84（<strong>124% 相对增长</strong>）</li><li>通过率从 33.59% 飙升到 88.02%（<strong>+54.43%</strong>）</li><li>Code-inclusive skills 获得<strong>最大的相对提升</strong>（+0.499），说明框架对需要复杂逻辑推理的任务特别有效</li><li>Advanced tasks 的改善幅度大于 Standard tasks，表明 Skills-Coach 在处理更具挑战性的问题上有显著优势</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>当前 skill 生态的根本问题在于：<strong>量大但覆盖碎片化</strong>（abundant volume but fragmented coverage）。</p>
+<p>绝大多数 skills 是个人为解决特定问题而开发的，设计天然聚焦于局部用例，难以系统性覆盖复杂专业任务的全面功能需求。用户在执行多方面任务时仍然面临功能缺口和集成瓶颈。</p>
+<ul><li><strong>首个自动化 Skill 自进化框架</strong>：闭环地探索能力边界 → 生成改进 → 对比评估 → 保留决策，无需持续人工干预</li><li><strong>Training-Free GRPO 替代参数优化</strong>：训练时间从小时级降到分钟级，数据需求从数千降到几十，同时避免过拟合</li><li><strong>大规模实证验证</strong>：在 Skill-X 的 48 个 skills 上展示了平均 124% 的性能提升和 +54.43% 的通过率提升</li><li><strong>差异化优化策略</strong>：针对 instruction-only 和 code-inclusive skills 采用不同的优化路径，提高了针对性</li><li><strong>双模式评估（Virtual + Real）</strong>：支持快速原型验证和精确评估</li><li><strong>51 个离散评估指标</strong>：8 维评估体系确保评估的全面性和客观性</li></ul>
+<ul><li><strong>依赖 LLM 生成质量</strong>：任务生成、指令优化、反思修复都依赖 LLM 能力，当 LLM 产生低质量输出时可能影响优化效果</li><li><strong>Virtual Mode 精度有限</strong>：基于关键字匹配和哈希随机数估计任务完成度，可能与真实表现存在偏差</li><li><strong>优化 epoch 数固定为 3</strong>：未探索不同 epoch 数对优化效果的影响，可能存在欠优化或过优化</li><li><strong>单 skill 优化</strong>：当前框架每次优化单个 skill，未涉及 skills 之间的协同优化</li><li><strong>评估维度偏文档化</strong>：51 个指标中有较多偏向文档质量的维度（结构完整性、清晰度等），对实际功能能力的评估可能不够深入</li><li><strong>Skill-X 的 skills 主要来自 Claude 生态</strong>：可能存在平台偏见</li></ul>
+<ul><li><strong>Agent Skill 可以自进化</strong>：通过&quot;生成边界任务 → 执行测试 → 分析失败 → 迭代修复&quot;的闭环，skills 可以自主改进而无需人类干预。这一思路可推广到任何需要持续改进的 Agent 能力模块...</li></ul>
+</div>
+</article></main></body></html>

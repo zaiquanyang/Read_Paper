@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>STDec: Spatio-Temporal Stability Guided Decoding for dLLMs | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604-stdec-spatio-temporal-stability-guided-decoding-for-dllms">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>STDec: Spatio-Temporal Stability Guided Decoding for dLLMs</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2604_stdec_spatio_temporal_stability_guided_decoding_for_dllms.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p># STDec: Spatio-Temporal Stability Guided Decoding for dLLMs</p>
+<p>## 1. 基本信息</p>
+<ul><li><strong>arXiv ID</strong>: 2604.06330</li><li><strong>URL (abs/pdf)</strong>:</li><li><a href="https://arxiv.org/abs/2604.06330" target="_blank" rel="noopener">https://arxiv.org/abs/2604.06330</a></li><li><a href="https://arxiv.org/pdf/2604.06330.pdf" target="_blank" rel="noopener">https://arxiv.org/pdf/2604.06330.pdf</a></li><li><strong>主题目录</strong>: diffusion_llm</li><li><strong>总结粒度</strong>: detailed</li><li><strong>作者</strong>: Yuzhe Chen (Tianjin University), Jiale Cao (Tianjin University), Xuyang Liu (Sichuan University), Jin Xie (Chongqing University), Aiping Yang (Tianjin University), Yanwei Pang (Tianjin Uni...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>现有 dLLM 解码策略几乎都采用<strong>全局置信度阈值</strong>（global confidence threshold）来决定每一步解码哪些 token，主要包括：</p>
+<ul><li><strong>Top-k 策略</strong>（LLaDA, Lumina-DiMOO）：每步选择置信度最高的固定数量 token 解码</li><li><strong>固定阈值策略</strong>（Fast-dLLM）：预定义统一的置信度阈值</li><li><strong>双阈值锚点策略</strong>（LocalLeap）：先用高阈值确定锚点 token，再用低阈值解码锚点周围的 token</li></ul>
+<p>上述策略存在两个关键缺陷：</p>
+<p><strong>(i) 对空间信息的利用不足（Limited usage of spatial information）。</strong> 全局阈值策略完全忽略 token 之间的空间位置关系。虽然 LocalLeap 利用高置信度 token 作为锚点来带动周围 token 的解码，但它并未充分利用已被解码 token 的局部密度信息为每个 masked token 单独调整阈值。</p>
+<p><strong>(ii) 缺乏时序建模（Lack of temporal modeling）。</strong> 现有方法几乎不考虑 token 在历史去噪步骤中被预测的 ID 是否保持一致，遗漏了重要的时序稳定性信号——很多 token 在尚未被正式解码之前，其预测 ID 已经连续多步保持不变。</p>
+<p>作者通过实证分析发现 dLLM 解码过程存在两个强稳定性特征：</p>
+<p><strong>空间稳定性（Spatial Stability）：</strong> 当前步骤被解码的 token 通常出现在已解码 token 的邻域附近。在 HumanEval 和 GSM8K 上，超过 90% 的被解码 token 在半径为 2 的邻域内至少有一个已被解码的邻居。被已解码 token 包围的位置本质上是更容易和更安全的解码候选。</p>
+<p><strong>时序稳定性（Temporal Stability）：</strong> 大量 token 在正式解码之前，其 Top-1 预测 ID 已经连续多步保持不变。接近 95% 的被解码 token 在解码前至少 1 步内 ID 已稳定；即使要求更多步仍有相当比例的 token 提前稳定。关键观察：token ID 首次稳定时的置信度往往低于其被正式解码时的置信度，说明现有高全局阈值策略过度保守，未能充分利用时序稳定性带来的提前解码机会。</p>
+<p>受此启发，STDec 提出将全局阈值替换为 token 自适应阈值（token-adaptive thresholds），利用空间和时间两个维度的稳定性信号，在不牺牲生成质量的前提下大幅提升吞吐量。STDec 是<strong>训练无关（training-free）</strong>的纯解码策略，且可与已有的缓存加速方法（如 dKV-Cache, Prefix-DLM）叠加使用。</p>
+<p>STDec 的核心思想是将传统的全局阈值 tau_t 替换为 token 自适应阈值 tau_t^st = {tau_t^st(i)}_{i=1}^L，每个 masked token 的阈值由其局部空间上下文和跨步时序一致性共同决定。STDec 包含两个核心模块：</p>
+<ul><li><strong>空间感知解码（Spatial-aware Decoding）</strong>：根据周围已解码 token 的密度动态调整阈值</li><li><strong>时序感知解码（Temporal-aware Decoding）</strong>：根据历史 ID 一致性对阈值进行松弛</li></ul>
+<p>最终 token 自适应阈值为两者乘积：tau_t^st(i) = tau_t^s(i) * r_t(i)</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>| 任务 | 方法 | TPS | 加速比 | Score |</p>
+<p>|------|------|-----|--------|-------|</p>
+<p>| <strong>MBPP</strong> | Vanilla Dream | 6.57 | 1.00x | 51.40 |</p>
+<p>| | + Half-Step | 13.11 | 2.00x | 35.80 |</p>
+<p>| | + dKV-Cache | 11.12 | 1.69x | 49.60 |</p>
+<p>| | + Fast-dLLM | 56.88 | 8.66x | 54.80 |</p>
+<p>| | + LocalLeap | 63.65 | 9.69x | 53.60 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>91.16</strong> | <strong>13.88x</strong> | <strong>55.60</strong> |</p>
+<p>| <strong>HumanEval</strong> | Vanilla Dream | 11.82 | 1.00x | 59.15 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>64.50</strong> | <strong>5.46x</strong> | 60.37 |</p>
+<p>| <strong>GPQA</strong> | Vanilla Dream | 6.95 | 1.00x | 32.83 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>193.62</strong> | <strong>27.86x</strong> | 32.83 |</p>
+<p>| <strong>GSM8K</strong> | Vanilla Dream | 4.71 | 1.00x | 83.47 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>23.70</strong> | <strong>5.03x</strong> | 82.34 |</p>
+<p>| <strong>MATH</strong> | Vanilla Dream | 12.67 | 1.00x | 44.64 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>55.15</strong> | <strong>4.35x</strong> | 44.64 |</p>
+<p>| <strong>5-bench 平均</strong> | Vanilla Dream | 8.54 | 1.00x | 54.30 |</p>
+<p>| | + Half-Step | 17.08 | 2.00x | 43.42 |</p>
+<p>| | + dKV-Cache | 12.99 | 1.52x | 52.43 |</p>
+<p>| | + Fast-dLLM | 50.03 | 5.86x | 55.79 |</p>
+<p>| | + LocalLeap | 67.93 | 7.95x | 54.44 |</p>
+<p>| | <strong>+ STDec</strong> | <strong>85.63</strong> | <strong>10.03x</strong> | <strong>55.16</strong> |</p>
+<p><strong>关键发现：</strong> STDec 在所有 benchmark 上实现最高 TPS。平均加速 10.03 倍，平均分数（55.16）甚至略高于 Vanilla（54.30）。Half-Step 虽然速度翻倍但分数从 54.30 暴跌至 43.42。STDec 证明了不只是牺牲质量换速度，而是更好地利用了模型已有的预测能力。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>现有 dLLM 解码策略几乎都采用<strong>全局置信度阈值</strong>（global confidence threshold）来决定每一步解码哪些 token，主要包括：</p>
+<ul><li><strong>Top-k 策略</strong>（LLaDA, Lumina-DiMOO）：每步选择置信度最高的固定数量 token 解码</li><li><strong>固定阈值策略</strong>（Fast-dLLM）：预定义统一的置信度阈值</li><li><strong>双阈值锚点策略</strong>（LocalLeap）：先用高阈值确定锚点 token，再用低阈值解码锚点周围的 token</li></ul>
+<p>上述策略存在两个关键缺陷：</p>
+<p><strong>(i) 对空间信息的利用不足（Limited usage of spatial information）。</strong> 全局阈值策略完全忽略 token 之间的空间位置关系。虽然 LocalLeap 利用高置信度 token 作为锚点来带动周围 token 的解码，但它并未充分利用已被解码 token 的局部密度信息为每个 masked token 单独调整阈值。</p>
+<p><strong>(ii) 缺乏时序建模（Lack of temporal modeling）。</strong> 现有方法几乎不考虑 token 在历史去噪步骤中被预测的 ID 是否保持一致，遗漏了重要的时序稳定性信号——很多 token 在尚未被正式解码之前，其预测 ID 已经连续多步保持不变。</p>
+  </section>
+  
+</article></main></body></html>

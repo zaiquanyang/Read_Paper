@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SparseD: Sparse Attention for Diffusion Language Models | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2509-24014">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2509.24014</span><span class="badge">detailed</span></div>
+    <h2>SparseD: Sparse Attention for Diffusion Language Models</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2509.24014" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2509.24014.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Zeqing Wang, Gongfan Fang, Xinyin Ma, Xingyi Yang, Xinchao Wang</p><p><strong>机构</strong>：National University of Singapore, The Hong Kong Polytechnic University</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>SparseD 是一篇很干净的 DLM sparse attention 论文：它不做 KV cache，而是基于 <strong>head-specific、跨 step 稳定、early-step 敏感</strong> 这三条观察，提出了 <strong>先 full、后 sparse、一次建图、多步复用</strong> 的 attention 稀疏化方案。它最大的价值在于证明了 <strong>DLM 的 attention 确实可以被结构化稀疏化，而且比 AR 的固定稀疏模板更需要“按 head 定制 + 按 step 分阶段使用”</strong>；同时它也恰好反衬出你的研究空间：<strong>如果想更贴近 FlashAttention 原生路径，就需要进一步摆脱对 attention score 本身的依赖。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>这篇工作关注的是 <strong>DLM inference 中 attention 本身的二次复杂度</strong>，而不是 KV cache 的复用问题。</p>
+<p>作者的基本判断是：</p>
+<ul><li>DLM 虽然是并行去噪，但每一步都要对整段上下文做双向 attention。</li><li>随着上下文长度增长，attention 的代价随序列长度二次增长，成为长上下文推理的核心瓶颈。</li><li>AR-LLM 中已经有很多 sparse attention 方法，但这些方法不能直接照搬到 DLM。</li></ul>
+<p>作者认为 AR sparse attention 不适合 DLM，主要因为 DLM 有三个特殊现象：</p>
+<ul><li><strong>Head-specific attention patterns</strong></li><li>不同 attention head 的稀疏结构差异很大。</li><li>有些 head 像 sliding window，有些更像 column / sink / 混合结构。</li><li>所以 AR 里那种固定模板式稀疏模式很难覆盖 DLM。</li></ul>
+<ul><li><strong>Attention similarity across denoising steps</strong></li><li>同一个 head 在不同 denoising step 的 attention pattern 很相似。</li><li>这说明没必要每一步都重新算 sparse pattern。</li></ul>
+<ul><li><strong>Early denoising steps are critical</strong></li><li>在 DLM 里，早期 denoising step 对最终生成质量影响特别大。</li><li>如果过早把 full attention 替换成 sparse attention，会明显掉质量。</li></ul>
+<p>这三个观察直接决定了 SparseD 的设计：</p>
+<ul><li>稀疏模式要 <strong>按 head 定制</strong>。</li><li>稀疏模式要 <strong>一次计算，多步复用</strong>。</li><li>前期要 <strong>先 full attention，再切 sparse attention</strong>。</li></ul>
+<p>这篇论文对你前面关心的“attention-free KV 采样”有几个很直接的启发。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>这篇工作关注的是 <strong>DLM inference 中 attention 本身的二次复杂度</strong>，而不是 KV cache 的复用问题。</p>
+<p>作者的基本判断是：</p>
+<ul><li>DLM 虽然是并行去噪，但每一步都要对整段上下文做双向 attention。</li><li>随着上下文长度增长，attention 的代价随序列长度二次增长，成为长上下文推理的核心瓶颈。</li><li>AR-LLM 中已经有很多 sparse attention 方法，但这些方法不能直接照搬到 DLM。</li></ul>
+<p>作者认为 AR sparse attention 不适合 DLM，主要因为 DLM 有三个特殊现象：</p>
+<ul><li><strong>Head-specific attention patterns</strong></li><li>不同 attention head 的稀疏结构差异很大。</li><li>有些 head 像 sliding window，有些更像 column / sink / 混合结构。</li><li>所以 AR 里那种固定模板式稀疏模式很难覆盖 DLM。</li></ul>
+<ul><li><strong>Attention similarity across denoising steps</strong></li><li>同一个 head 在不同 denoising step 的 attention pattern 很相似。</li><li>这说明没必要每一步都重新算 sparse pattern。</li></ul>
+<ul><li><strong>Early denoising steps are critical</strong></li><li>在 DLM 里，早期 denoising step 对最终生成质量影响特别大。</li><li>如果过早把 full attention 替换成 sparse attention，会明显掉质量。</li></ul>
+<p>这三个观察直接决定了 SparseD 的设计：</p>
+<ul><li>稀疏模式要 <strong>按 head 定制</strong>。</li><li>稀疏模式要 <strong>一次计算，多步复用</strong>。</li><li>前期要 <strong>先 full attention，再切 sparse attention</strong>。</li></ul>
+<p>SparseD 不是做 KV eviction，也不是做 cache reuse，而是直接在 attention 计算图上做稀疏化。</p>
+<p>它的总体流程是：</p>
+<ul><li>在前 <code>skip%</code> 的 denoising steps 使用 full attention。</li><li>在第 <code>T * skip%</code> 步上，计算每个 head 的 sparse attention pattern。</li><li>后续所有 denoising steps 复用这个 sparse pattern。</li></ul>
+<p>对应论文里的三块组件是：</p>
+<ul><li><code>Skipping Sparse</code></li><li><code>Sparse Reusing</code></li><li><code>Isolated Selection</code></li></ul>
+<p>从这篇论文的结果看，原因可能有两点：</p>
+<ul><li>SparseD 仍然在每个 step 计算当前 attention，只是减少连接数，没有直接跳过某些状态更新。</li><li>cache-based 方法在 DLM 里引入了“状态陈旧”问题，长上下文时误差会更明显累计。</li></ul>
+<p>所以作者把 SparseD 定位成：</p>
+<p><strong>相对 lossless，但速度增益没有 cache-based 路线那么激进。</strong></p>
+<p>SparseD 清楚地表明：</p>
+<ul><li>early denoising steps 对 DLM 很敏感</li><li>aggressive sparsification 不应该太早介入</li></ul>
+<p>所以如果你以后做：</p>
+<ul><li>entropy-based KV sampling</li><li>influence-based history retrieval</li><li>uncertainty-guided cache eviction</li></ul>
+<p>也很可能要加一条策略：</p>
+<p><strong>前若干 denoising steps 不做激进采样，等模型进入较稳定阶段后再启用。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文主表如下：</p>
+<p>| 模型/方法 | MMLU | GSM8K | HumanEval | RULER-4k | RULER-8k | Avg. |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|</p>
+<p>| Dream-7B-Instruct | 66.42 | 80.74 | 53.05 | 90.13 | 71.79 | 72.42 |</p>
+<p>| + dKV-Cache | 66.32 | 80.67 | 54.88 | 81.41 | 55.08 | 67.67 |</p>
+<p>| + Fast-dLLM | 65.51 | 78.17 | 48.78 | 81.68 | 55.64 | 65.95 |</p>
+<p>| + Slide Window | 63.45 | 70.20 | 34.76 | 41.46 | 34.36 | 48.84 |</p>
+<p>| + StreamingLLM | 64.19 | 72.86 | 33.54 | 43.94 | 36.36 | 50.17 |</p>
+<p>| + SparseD | 66.34 | 80.29 | 53.05 | 89.76 | 72.47 | 72.38 |</p>
+<p>| LLaDA-1.5 | 64.24 | 80.38 | 40.85 | 90.45 | 60.73 | 67.33 |</p>
+<p>| + dKV-Cache | 63.45 | 79.98 | 40.85 | 88.18 | 57.11 | 65.91 |</p>
+<p>| + Fast-dLLM | 63.17 | 82.64 | 40.24 | 86.64 | 47.76 | 64.09 |</p>
+<p>| + Slide Window | 63.72 | 57.77 | 27.44 | 39.20 | 36.32 | 44.89 |</p>
+<p>| + StreamingLLM | 63.52 | 52.01 | 37.20 | 40.39 | 36.62 | 45.94 |</p>
+<p>| + SparseD | 64.14 | 79.80 | 40.85 | 90.89 | 62.44 | 67.62 |</p>
+<p>作者的核心结论基本成立：</p>
+<ul><li>SparseD 相比原始模型几乎无损。</li><li>比 AR 稀疏方法稳很多。</li><li>比 dKV-Cache / Fast-dLLM 在长上下文下更稳。</li></ul>
+<p>尤其在 <code>RULER-8k</code> 上：</p>
+<ul><li>Dream-7B-Instruct:</li><li>原始模型 <code>71.79</code></li><li>SparseD <code>72.47</code></li><li>dKV-Cache <code>55.08</code></li><li>Fast-dLLM <code>55.64</code></li></ul>
+<ul><li>LLaDA-1.5:</li><li>原始模型 <code>60.73</code></li><li>SparseD <code>62.44</code></li><li>dKV-Cache <code>57.11</code></li><li>Fast-dLLM <code>47.76</code></li></ul>
+<p>这说明：</p>
+<p><strong>SparseD 在长上下文 DLM 上的“lossless”程度，明显强于当时的 cache-based 路线。</strong></p>
+<p>论文在 <code>T=128</code> 和更大步数下都测了延迟。</p>
+<p>主要结果：</p>
+<ul><li>在 <code>4k</code>、<code>8k</code> 长度下，SparseD 与 FlashAttention 接近。</li><li>在 <code>16k+</code> 以上，SparseD 开始明显更快。</li><li>在 <code>64k</code> 上：</li><li>Dream-7B-Instruct: <code>1.23x</code> speedup over FlashAttention</li><li>LLaDA-1.5: <code>1.25x</code> speedup over FlashAttention</li><li>在 <code>64k</code> + <code>1024 steps</code> 上：</li><li>Dream-7B-Instruct: <code>1.50x</code>...</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>这篇论文对你前面关心的“attention-free KV 采样”有几个很直接的启发。</p>
+<ul><li>问题定义非常清晰</li><li>不去和 cache-based 方法抢同一个点，而是直指 DLM 中 attention 本身的代价。</li></ul>
+<ul><li>三个 observation 很扎实</li><li>head-specific</li><li>cross-step similarity</li><li>early-step sensitivity</li></ul>
+<ul><li>方法设计和 observation 对得很紧</li><li>skipping sparse 对应 early-step sensitivity</li><li>sparse reusing 对应 cross-step similarity</li><li>isolated selection 对应 prefill/gen 不平衡</li></ul>
+<ul><li>实验结论有说服力</li><li>相对 AR sparse methods，精度明显更稳</li><li>相对 cache-based DLM acceleration，在长上下文下更稳</li></ul>
+<ul><li>工程上有现实感</li><li>明确使用 FlashAttention + FlexAttention 混合后端</li><li>使用 block-wise 选择而不是过度理想化的点状稀疏</li></ul>
+<p>这篇论文自己的 limitation 写得比较克制，但结合方法本身看，局限比较明确：</p>
+<ul><li><strong>仍依赖 attention score</strong></li><li>这意味着它没有摆脱 attention-map extraction 这件事。</li><li>如果目标是尽量保持全程 FlashAttention-like 的高效路径，这仍然不够理想。</li></ul>
+<ul><li><strong>需要更灵活的 sparse backend</strong></li><li>它后半段切到 FlexAttention。</li><li>这让它更实用，但也说明它不是“零改动兼容现有 FlashAttention”。</li></ul>
+<ul><li><strong>加速幅度是中等，不是极端激进</strong></li><li>最好结果约 <code>1.5x</code>。</li><li>对某些场景这已经很好，但如果用户期待 <code>3x-10x</code>，这篇路线不是那种风格。</li></ul>
+<ul><li><strong>依赖 attention pattern 跨 step 稳定</strong></li><li>虽然平均上成立，但 appendix 也承认存在少数 corner case。</li><li>如果未来遇到更强 reasoning 型 dLLM，pattern 稳定性可能会下降。</li></ul>
+<ul><li><strong>没有和 attention-free 稀疏标准比较</strong></li><li>没有把 logits-based / entropy-based / influence-based 方案纳入比较。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/SparseD.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/SparseD.png" alt="SparseD 框架"></a><figcaption>SparseD 框架</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/attention_analysis.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/attention_analysis.png" alt="LLaDA-1.5 attention 分析"></a><figcaption>LLaDA-1.5 attention 分析</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/32_steps.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_sparsed_sparse_attention_for_diffusion_language_models/32_steps.png" alt="32 steps 下 early-step 敏感性"></a><figcaption>32 steps 下 early-step 敏感性</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ToolCUA: Towards Optimal GUI-Tool Path Orchestration for Computer Use Agents | GUI_Agent</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GUI Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+    --text: #172033;
+    --text-secondary: #586174;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --accent-light: #e8f0ff;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #dbe3ef;
+    --shadow: 0 10px 30px rgba(29, 78, 216, 0.08);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34rem),
+      linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #eef3fb 100%);
+    color: var(--text);
+    line-height: 1.72;
+    padding: 2rem 1rem 4rem;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2.2rem 1.5rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #101828;
+    margin-bottom: 0.45rem;
+  }
+  header p { color: var(--text-secondary); font-size: 0.98rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc-wrap {
+    position: fixed;
+    top: 1.5rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 7px 16px;
+    background: var(--card-bg);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(520px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.9rem; margin: 0.4rem 0 0.5rem; }
+  .toc-panel ol { padding-left: 1.2rem; }
+  .toc-panel li { margin-bottom: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+    margin: 1.4rem 0 2rem;
+  }
+  .overview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .overview-card h3 { font-size: 0.98rem; margin-bottom: 0.35rem; color: var(--accent-strong); }
+  .overview-card p { color: var(--text-secondary); font-size: 0.86rem; }
+  .paper-card {
+    width: min(980px, 100%);
+    margin: 0 auto 1.6rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    border: 1px solid var(--border);
+  }
+  .paper-card h2 {
+    font-size: 1.32rem;
+    font-weight: 800;
+    margin-bottom: 0.55rem;
+    line-height: 1.38;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.83rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-light);
+  }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid #e6edf7;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin: 0.8rem 0;
+  }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 0.45rem;
+    color: var(--text);
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #2f3a4c; margin-bottom: 0.35rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .figure-showcase {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: #f8fbff;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .figure-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--accent-strong);
+    margin-bottom: 0.6rem;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+  .figure-link {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .figure-link.figure-primary { grid-column: 1 / -1; }
+  .figure-link img {
+    width: 100%;
+    max-height: 390px;
+    object-fit: contain;
+    display: block;
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.7rem 0;
+    font-size: 0.86rem;
+  }
+  .result-table th, .result-table td {
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 800; }
+  .result-table td:first-child { text-align: left; }
+  .best { font-weight: 800; color: var(--accent-strong); }
+  .note-box {
+    background: #fff7ed;
+    border-left: 4px solid #f97316;
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    margin: 1rem 0 1.5rem;
+    color: #4a3218;
+    font-size: 0.92rem;
+  }
+  @media (max-width: 900px) {
+    body { padding-top: 1rem; }
+    .toc-wrap { position: static; margin: 0 auto 1rem; width: min(980px, 100%); }
+    .toc-btn { display: none; }
+    .toc-panel { display: block; position: static; width: 100%; max-height: none; }
+    .overview-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .overview-grid, .figure-grid { grid-template-columns: 1fr; }
+    .figure-link.figure-primary { grid-column: auto; }
+    .paper-card { padding: 1.2rem; }
+  }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../GUI_Agent.html">← 返回 GUI_Agent 论文列表</a></div><main class="container"><article id="toolcua" class="paper-card">
+    <h2>ToolCUA: Towards Optimal GUI-Tool Path Orchestration for Computer Use Agents</h2>
+    <div class="meta-row">
+      <a href="../agent/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents.md">本地总结</a>
+      <a href="https://github.com/X-PLUG/ToolCUA">Code</a>
+      <span class="tag">GUI-tool hybrid</span><span class="tag">MCP tools</span><span class="tag">online agentic RL</span>
+    </div>
+    <div class="summary-box">
+      ToolCUA 的核心判断很锋利：给 agent 工具不等于 agent 会用工具。难点不是“会不会调用”，而是“什么时候该用工具，什么时候必须回到 GUI grounding”。
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">核心机制</h3>
+      <ul>
+        <li>从成功 pure-GUI trajectories 出发，合成 trajectory-aware tool library 和 GUI-tool interleaved trajectories。</li>
+        <li>next-state grounding：工具调用后预测的状态必须和原 GUI 轨迹中的后续 screenshot 对齐，避免幻想 API。</li>
+        <li>Tool-Bootstrapped GUI RFT：先 warmup SFT，再在 GUI/tool critical switching steps 上做单轮 RL。</li>
+        <li>Online Agentic RL：用 Tool-Efficient Path Reward 鼓励合适工具与更短路径，而不是鼓励工具调用越多越好。</li>
+      </ul>
+    </div>
+    <div class="section-panel">
+      <h3 class="section-title">关键结论</h3>
+      <p>预实验显示，很多强模型加入工具后成功率反而下降：小模型 underuse，大模型 overuse。ToolCUA-8B 在 OSWorld-MCP 上通过混合路径编排提升到约 46.85%，同时减少平均步骤。它和 OSExpert 很互补：OSExpert 发现技能，ToolCUA 学会在 GUI-tool 空间里编排技能。</p>
+    </div>
+    <div class="figure-showcase">
+      <div class="figure-title">关键图示</div>
+      <div class="figure-grid">
+        <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/method_overview2.png" alt="ToolCUA method overview">
+        </a>
+        <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" target="_blank" rel="noopener">
+          <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_toolcua_towards_optimal_gui_tool_path_orchestration_for_computer_use_agents_tex/main_teaser_new0512.png" alt="ToolCUA teaser">
+        </a>
+      </div>
+    </div>
+  </article></main></body></html>

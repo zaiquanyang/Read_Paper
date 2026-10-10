@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ClawGym: A Scalable Framework for Building Effective Claw Agents | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604.26904">
+  <h2>ClawGym: A Scalable Framework for Building Effective Claw Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.26904" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.26904.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.26904</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者提出 <strong>ClawGym</strong>，一个数据驱动的框架，系统性地统一了 Claw-style 个人智能体的任务合成、训练和评测。核心创新在于<strong>双路径数据合成策略</strong>：自上而下的 persona 驱动路径 + 自下而上的 skill 接地路径，配合自动环境构建和混合验证机制。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>尽管 OpenClaw 等系统能力令人印象深刻，自主智能体在日常数字任务中仍表现不佳，对较小 LLM 尤为明显。核心瓶颈在于：</p>
+<ul><li><strong>个性化需求多样</strong>：不同职业、工作流和日常生活对任务分布的定义提出了挑战</li><li><strong>长时程可验证性困难</strong>：涉及文件操作序列、工具调用、工作区更新和中间验证，自动化评估非平凡</li><li><strong>环境接地要求</strong>：需要真实模拟具体的文件系统和工作区 artifact，难以大规模仿制</li></ul>
+<p>现有工作在训练算法（ClawR1, MetaClaw）和评测基准（PinchBench 等）方面有所进展，但<strong>缺乏一个系统性的框架来统一任务合成、轨迹收集、智能体训练和评测</strong>。</p>
+<p>作者提出 <strong>ClawGym</strong>，一个数据驱动的框架，系统性地统一了 Claw-style 个人智能体的任务合成、训练和评测。核心创新在于<strong>双路径数据合成策略</strong>：自上而下的 persona 驱动路径 + 自下而上的 skill 接地路径，配合自动环境构建和混合验证机制。</p>
+<p>ClawGym 框架包含三大组件：</p>
+<ul><li><strong>ClawGym-SynData</strong>：13.5K 合成训练任务的数据集</li><li><strong>ClawGym-Agents</strong>：通过黑盒 rollout 收集高质量轨迹并训练的智能体家族</li><li><strong>ClawGym-Bench</strong>：200 个经人工-LLM 协作审核的高质量评测实例</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/ClawGym-Main-0429.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/ClawGym-Main-0429.png" alt="ClawGym 总体框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/category_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/category_distribution.png" alt="场景类别分布"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/action_distribution.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_clawgym_a_scalable_framework_for_building_effective_claw_agents/action_distribution.png" alt="操作分布"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>主要评测结果（PinchBench + ClawGym-Bench）：</p>
+<table class="result-table">
+<tr><th>模型</th><th>PinchBench</th><th>P&amp;C</th><th>S&amp;A</th><th>A&amp;R</th><th>C&amp;D</th><th>P&amp;K</th><th>SD</th><th>Avg</th></tr>
+<tr><td class="best">Proprietary Frontier</td></tr>
+<tr><td>Claude-4.7-Opus</td><td>79.40</td><td>73.02</td><td>74.28</td><td>80.14</td><td>80.98</td><td>81.04</td><td>82.04</td><td class="best">77.81</td></tr>
+<tr><td>Claude-4.6-Sonnet</td><td>79.30</td><td>70.44</td><td>68.04</td><td>76.27</td><td>74.59</td><td>74.21</td><td>73.40</td><td>72.40</td></tr>
+<tr><td>GPT-5.4</td><td>68.30</td><td class="best">76.00</td><td>66.56</td><td>73.83</td><td>76.19</td><td>68.51</td><td>82.40</td><td>73.49</td></tr>
+<tr><td>Gemini-3-Flash</td><td class="best">88.70</td><td>68.70</td><td>68.06</td><td>68.89</td><td>78.87</td><td>80.68</td><td class="best">84.04</td><td>73.50</td></tr>
+<tr><td class="best">Open-Weight Frontier</td></tr>
+<tr><td>GLM-5.1</td><td>76.40</td><td>70.95</td><td>64.11</td><td>71.71</td><td>75.99</td><td>74.09</td><td>73.86</td><td class="best">71.12</td></tr>
+<tr><td>Qwen3.5-Plus</td><td>78.70</td><td>67.34</td><td>66.56</td><td>74.27</td><td>73.07</td><td>71.79</td><td>72.10</td><td>70.35</td></tr>
+<tr><td class="best">Compact Models</td></tr>
+<tr><td>Qwen3-8B</td><td>54.50</td><td>37.46</td><td>29.06</td><td>30.40</td><td>41.12</td><td>44.47</td><td>30.69</td><td>35.02</td></tr>
+<tr><td>Qwen3-30A3B</td><td>55.60</td><td>42.47</td><td>42.09</td><td>45.04</td><td>51.95</td><td>45.98</td><td>46.24</td><td>45.11</td></tr>
+<tr><td class="best">ClawGym-Agents</td></tr>
+<tr><td>ClawGym-4B</td><td>76.40</td><td>45.21</td><td>46.60</td><td>47.51</td><td>48.99</td><td>52.25</td><td>48.27</td><td>47.73</td></tr>
+<tr><td>ClawGym-8B</td><td>75.70</td><td>49.47</td><td>46.83</td><td>46.35</td><td>55.37</td><td>52.29</td><td>54.78</td><td>50.24</td></tr>
+<tr><td class="best">ClawGym-30A3B</td><td class="best">86.00</td><td>52.98</td><td>50.97</td><td class="best">64.64</td><td class="best">61.46</td><td>57.90</td><td>56.13</td><td class="best">56.82</td></tr>
+</table>
+<p>核心发现：...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>尽管 OpenClaw 等系统能力令人印象深刻，自主智能体在日常数字任务中仍表现不佳，对较小 LLM 尤为明显。核心瓶颈在于：</p>
+<ul><li><strong>个性化需求多样</strong>：不同职业、工作流和日常生活对任务分布的定义提出了挑战</li><li><strong>长时程可验证性困难</strong>：涉及文件操作序列、工具调用、工作区更新和中间验证，自动化评估非平凡</li><li><strong>环境接地要求</strong>：需要真实模拟具体的文件系统和工作区 artifact，难以大规模仿制</li></ul>
+<p>现有工作在训练算法（ClawR1, MetaClaw）和评测基准（PinchBench 等）方面有所进展，但<strong>缺乏一个系统性的框架来统一任务合成、轨迹收集、智能体训练和评测</strong>。</p>
+<ul><li><strong>端到端系统性框架</strong>：首次将任务合成、轨迹收集、智能体训练和评测统一在一个框架中</li><li><strong>双路径互补合成</strong>：persona-driven 保证场景多样性，skill-grounded 保证操作接地性，实验验证了混合策略的协同效果</li><li><strong>可扩展性强</strong>：自动化合成管线使得大规模数据生成成为可能（30K skill → 16K → 13.5K 任务）</li><li><strong>混合验证机制</strong>：代码+Rubric 的验证方式兼顾了确定性和定性需求</li><li><strong>泛化能力好</strong>：在内部 ClawGym-Bench 和外部 PinchBench 上均展示显著提升</li><li><strong>开源精神</strong>：承诺开源代码、数据和基准</li></ul>
+<ul><li><strong>与闭源前沿模型仍有差距</strong>：ClawGym-30A3B 平均分 56.82 vs Claude-4.7-Opus 77.81</li><li><strong>最佳 reward 阈值是经验选择</strong>：0.5 的阈值通过实验确定，缺乏理论依据</li><li><strong>RL 探索有限</strong>：RL 管线仅做了初步实验，效果提升相对有限</li><li><strong>执行可行性评分相对较低</strong>：人工评估中 Execution Feasibility 得分 3.50（满分 5），反映某些任务的环境假设较复杂</li><li><strong>teacher 模型依赖</strong>：轨迹收集依赖 MiniMax-M2.5 和 GLM-5.1，可能引入 teacher 偏见</li><li><strong>评测覆盖范围</strong>：200 个评测实例虽然经过严格筛选，但规模仍然有限</li></ul>
+<ul><li><strong>双路径合成策略可复用</strong>：对于任何需要环境接地的 agent 数据合成，persona-driven + skill-grounded 的互补策略是一个通用范式</li><li><strong>混合验证机制</strong>：code-based (0.7) + rubric-based (0.3) 的加权组合在很多 agent 评测场景中可直接采用...</li></ul>
+</div>
+</article></main></body></html>

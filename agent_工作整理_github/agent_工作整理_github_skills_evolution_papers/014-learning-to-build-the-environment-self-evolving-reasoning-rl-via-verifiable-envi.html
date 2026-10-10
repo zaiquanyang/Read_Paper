@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Learning to Build the Environment: Self-Evolving Reasoning RL via Verifiable Environment Synthesis | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.14392">
+  <h2>Learning to Build the Environment: Self-Evolving Reasoning RL via Verifiable Environment Synthesis</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.14392" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.14392" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.14392</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇工作最重要的贡献，是把 self-improvement 从“生成更多题”提升到了“生成可复用的训练环境”。<code>EvoEnv</code> 证明了：只要 environment 具备 <strong>stable solve--verify asymmetry</strong>，模型就有可能在 zero-data reasoning RL 中持续获得有效的 frontier-level reward，而不是被固定分布或 policy-coupled pseudo-label 很快耗尽训练信号。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>作者指出，很多 self-improvement / zero-data RL 工作都把问题看成：</p>
+<ul><li>生成更多 question</li><li>生成更多 rationale</li><li>生成更多 hard example</li><li>或者用 self-consistency / self-reward 给这些样本打标签</li></ul>
+<p>但这种思路有两个结构性问题：</p>
+<p>作者在 appendix 里做了一张很有价值的定位表。它区分不同工作的两个轴：</p>
+<ul><li>self-improvement 合成的基本单位是什么</li><li>reward source 是否稳定，还是和当前 policy 耦合</li></ul>
+<p>在这个框架下：</p>
+<ul><li>R-Zero / SeRL / SQLM 一类工作：生成的是单个 problem 或 instruction，reward 更 policy-coupled</li><li>AZR / SCA / Agent0 一类：有 executable grounding，但往往是 per-instance verifier</li><li>RLVE：环境级训练对象，但环境是 hand-crafted</li><li>EnvScaler / AutoWebWorld 一类：也是 environment synthesis，但更偏 offline pipeline / tool sandbox</li></ul>
+<p>EvoEnv 的独特点是：</p>
+<ul><li>合成单位是 <strong>reusable environment</strong></li><li>reward source 是 <strong>frozen Python execution</strong></li><li>环境 admission 是 <strong>on-policy + solver-calibrated + novelty-controlled</strong></li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者提出一个很强的 thesis：</p>
+<p><strong>self-improvement 的基本单位不该是单个 problem，而应该是 environment。</strong></p>
+<p>也就是说，模型不只是生成一道题，而是生成一个可执行环境。这个环境里至少包含：</p>
+<ul><li>sampler：采样 latent task instance</li><li>oracle：生成 reference answer</li><li>renderer：把 instance 渲染成自然语言 prompt</li><li>scorer：对 solver 的回答打分</li></ul>
+<p>这样一个 environment 一旦通过验证并进入环境池，它就不再依赖模型当前采样答案，而是通过执行代码提供稳定 reward。</p>
+<p><code>EvoEnv</code> 是一个 <strong>single-policy dual-role</strong> 框架：</p>
+<ul><li>同一个 policy 既充当 generator，又充当 solver</li><li>generator 负责提议新的 Python environments</li><li>solver 负责在被接受的 environment pool 中解题</li></ul>
+<p>环境不是生成出来就直接用，而是只有在通过多层 admission 之后，才会进入 active pool。</p>
+<p>作者强调，环境进入 pool 之前必须满足四类约束：</p>
+<ul><li>可执行</li><li>语义对齐</li><li>难度贴近当前 solver 前沿</li><li>环境池足够多样，不发生模板坍缩</li></ul>
+<ul><li>Qwen3-4B-Instruct: <code>49.2 -&gt; 53.1</code></li><li>Qwen3-4B-Thinking: <code>72.4 -&gt; 74.8</code></li><li>Nemotron-Cascade-8B: <code>71.0 -&gt; 73.2</code></li></ul>
+<p>这说明方法不是只对某个 model family 偶然有效。</p>
+<p>作者在 appendix 里做了一张很有价值的定位表。它区分不同工作的两个轴：</p>
+<ul><li>self-improvement 合成的基本单位是什么</li><li>reward source 是否稳定，还是和当前 policy 耦合</li></ul>
+<p>在这个框架下：</p>
+<ul><li>R-Zero / SeRL / SQLM 一类工作：生成的是单个 problem 或 instruction，reward 更 policy-coupled</li><li>AZR / SCA / Agent0 一类：有 executable grounding，但往往是 per-instance verifier</li><li>RLVE：环境级训练对象，但环境是 hand-crafted</li><li>EnvScaler / AutoWebWorld 一类：也是 environment synthesis，但更偏 offline pipeline / tool sandbox</li></ul>
+<p>EvoEnv 的独特点是：</p>
+<ul><li>合成单位是 <strong>reusable environment</strong></li><li>reward source 是 <strong>frozen Python execution</strong></li><li>环境 admission 是 <strong>on-policy + solver-calibrated + novelty-controlled</strong></li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_figure_v1.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_figure_v1.png" alt="EvoEnv overview"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_exp.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/main_exp.png" alt="Training dynamics"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/fig_ablation_data.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_openhands_lm_rl_when_less_is_more_in_agentic_reinforcement_learning/fig_ablation_data.png" alt="Data audit"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>共 8 个 benchmark：</p>
+<ul><li>AIME 2024</li><li>AIME 2025</li><li>AMC 2023</li><li>HMMT Feb 2025</li><li>Beyond-AIME</li><li>Brumo 2025</li><li>GPQA Diamond</li><li>LiveCodeBench v6</li></ul>
+<p>这里的重点是：</p>
+<p>训练完全来自自生成 environment，而不是 benchmark 对应数据。</p>
+<table class="result-table">
+<tr><th>Base Model</th><th>Method</th><th>AIME&#x27;24</th><th>AIME&#x27;25</th><th>AMC&#x27;23</th><th>HMMT</th><th>B-AIME</th><th>Brumo</th><th>GPQA</th><th>LCB</th><th>Avg</th></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>Untrained</td><td>58.8</td><td>44.0</td><td>87.5</td><td>30.0</td><td>32.0</td><td>56.5</td><td>52.5</td><td>32.6</td><td>49.2</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>R-Zero</td><td>55.0</td><td>43.3</td><td>87.5</td><td>26.5</td><td>27.0</td><td>55.2</td><td>54.0</td><td>33.5</td><td>47.8</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>DAPO</td><td>50.0</td><td>44.8</td><td>92.5</td><td>19.8</td><td>22.2</td><td>47.1</td><td>56.1</td><td>33.5</td><td>45.8</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>RLVE</td><td>57.1</td><td>44.3</td><td>92.5</td><td>27.7</td><td>32.8</td><td>57.9</td><td>57.1</td><td>32.6</td><td>50.3</td></tr>
+<tr><td>Qwen3-4B-Instruct</td><td>EvoEnv</td><td>61.9</td><td>52.5</td><td>95.0</td><td>30.0</td><td>33.6</td><td>61.2</td><td>55.0</td><td>35.5</td><td>53.1</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>Untrained</td><td>86.7</td><td>78.8</td><td>97.5</td><td>56.9</td><td>53.1</td><td>81.9</td><td>65.2</td><td>59.0</td><td>72.4</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>R-Zero</td><td>84.2</td><td>80.6</td><td>97.5</td><td>53.5</td><td>52.9</td><td>79.6</td><td>67.2</td><td>59.0</td><td>71.8</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>DAPO</td><td>74.0</td><td>65.4</td><td>97.5</td><td>48.8</td><td>45.8</td><td>68.3</td><td>64.6</td><td>54.0</td><td>64.8</td></tr>
+<tr><td>Qwen3-4B-Thinking</td><td>RLVE</td><td>81.9</td><td>75.0</td><td>95.0</td><td>51.5</td><td>49.6</td><td>75.8</td><td>67.7</td><td>57.3</td><td>69.2</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>EvoEnv 训练时只依赖自生成 environment，但对外部 benchmark 仍有提升，例如在 Qwen3-4B-Thinking 上：</p>
+<ul><li>GPQA: <code>65.2 -&gt; 70.2</code></li><li>LiveCodeBench: <code>59.0 -&gt; 63.2</code></li></ul>
+<p>这说明它学到的不是单纯的 template memorization，而是更 transferable 的 reasoning behavior。</p>
+<p>虽然这篇实验设定更偏 reasoning RL，不是典型 tool-use agent，但它对 <code>agent</code> 方向很有启发。</p>
+<p>这篇工作也有比较明显的边界。</p>
+<p>这篇工作最重要的贡献，是把 self-improvement 从“生成更多题”提升到了“生成可复用的训练环境”。<code>EvoEnv</code> 证明了：只要 environment 具备 <strong>stable solve--verify asymmetry</strong>，模型就有可能在 zero-data reasoning RL 中持续获得有效的 frontier-level reward，而不是被固定分布或 policy-coupled pseudo-label 很快耗尽训练信号。</p>
+</div>
+</article></main></body></html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MMSkills: Towards Multimodal Skills for General Visual Agents | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.13527">
+  <h2>MMSkills: Towards Multimodal Skills for General Visual Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.13527" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.13527.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.13527</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最核心的贡献，是把 visual agent 的 skill 从“文本步骤”升级成“带有状态判别与多视角视觉证据的多模态 procedure package”，再通过 branch loading 避免上下文污染，让这些 skill 真正在 GUI 和游戏环境里变成可调用、可验证、可迁移的外部知识单元。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇工作的核心问题是: 现有 agent 的“skill”大多是文本 prompt、代码片段、执行脚本或抽象动作模板，但对于真正依赖视觉感知的 agent，这类 skill 只告诉模型“做什么”，却没有充分编码“当前画面是否处在该 skill 应该被调用的状态”“应该观察哪些视觉线索”“什么时候可以验证已经完成”。因此，传统 text-only skill 很难稳定支持 GUI agent、game agent 这类需要持续看图决策的系统。</p>
+<p>作者把这一缺口概括为 <code>multimodal procedural knowledge</code>。也就是说，视觉 agent 需要复用的不只是步骤文本，还包括与步骤绑定的视觉状态、局部证据、状态转移前后对比，以及完成验证线索。文章的目标不是再做一个更大的 memory bank，而是提出一套适合 visual agent 的可复用技能表示、自动生成流程以及推理时的调用机制。</p>
+<p>从问题设定上，这篇文章比“长时记忆”“经验回放”更聚焦于 <code>skill packaging</code>。它关心的不是把历史轨迹完整存下来，而是从公开轨迹中抽取出可迁移的、结构化的、多模态 procedural unit，并在运行时以低污染方式送给主 agent 使用。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的方法 <code>MMSkills</code> 由三部分组成:</p>
+<ul><li><code>Multimodal Skill Package</code>: 定义视觉 agent skill 的结构化表示。</li><li><code>Skill Generation Pipeline</code>: 从公开的、非测试集轨迹中自动生成 skill 库。</li><li><code>Branch-loaded Multimodal Skill Agent</code>: 在推理时通过“分支加载”方式调用 skill，避免把整包多模态内容直接塞进主上下文。</li></ul>
+<p>上图对应论文的总框架图。它非常清楚地表达了作者的主张: skill 不再只是文本 procedure，而是“文本 procedure + 状态卡片 + 多视角关键帧”；这些 skill 由 Generator 从公开轨迹中抽出来；运行时主 agent 不直接吃完整 skill，而是先开一个 branch 去筛选相关 state card 和 visual evidence，再把压缩后的 guidance 返回主 agent。</p>
+<p>作者先给出整体执行范式。Generator 把公开轨迹集合 $\mathcal{T}=\{\tau_i\}$ 映射成 skill 库 $\mathcal{M}=\{M_i\}_{i=1}^{N}$。测试任务开始前，系统会根据 instruction 先召回候选 skill 集合 $\mathcal{C}_I \subset \mathcal{M}$。在线执行时，主 agent 有两种模式:</p>
+<div class="formula-block">\[\begin{aligned} \text{direct}: \quad &amp; A_t = \pi_{\text{main}}(O_t,H_t,\mathcal{C}_I), \\ \text{branch}: \quad &amp; G_t = \text{Branch}(O_t,H_t,M_t), \quad A_t = \pi_{\text{main}}(O_t,H_t,\mathcal{C}_I,G_t). \end{aligned}\]</div>
+<p>这里 $O_t$ 是当前视觉观测，$H_t$ 是短历史，$M_t \in \mathcal{C}_I$ 是当前选择咨询的 skill，$G_t$ 是 branch 返回的压缩指导信号。关键点在于: branch 不直接替主 agent 执行动作，而是输出结构化 guidance，再由主 agent 结合实时画面决定最终动作。</p>
+<p>branch 输出被写成:</p>
+<div class="formula-block">\[G_t = (\text{applicable}_t,\text{subgoal}_t,\text{plan}_t,\text{do\_not\_do}_t,\text{verify}_t)\]</div>
+<p>这 5 个字段分别对应:</p>
+<ul><li>当前 skill 是否适用</li><li>当前局部子目标是什么</li><li>skill-conditioned 计划是什么</li><li>当前不该做什么</li><li>如何验证已经完成</li></ul>
+<p>这比简单把一段长 procedure 塞回主上下文更像“受控中间推理接口”。</p>
+</div>
+<div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/full_figure.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/full_figure.png" alt="MMSkills 方法总览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_ablation_results.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_ablation_results.png" alt="MMSkills 消融结果"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_behavior_shift.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_mmskills_towards_multimodal_skills_for_general_visual_agents/fig_behavior_shift.png" alt="MMSkills 行为变化分析"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在 4 个 visual-agent benchmark 上评测:</p>
+<ul><li><code>OSWorld</code>: Ubuntu GUI agent benchmark</li><li><code>macOSWorld</code>: macOS GUI benchmark</li><li><code>VAB-Minecraft</code>: VisualAgentBench 中的 Minecraft 子集</li><li><code>Super Mario Bros</code>: LMGame-Bench 中的游戏环境</li></ul>
+<p>比较的条件主要有 3 种:</p>
+<ul><li><code>No skill</code></li><li><code>Text-only skill</code></li><li><code>MMSkills</code></li></ul>
+<p>其中 text-only skill 也使用 branch 机制，只是没有 state cards 和 images。这个设置很关键，因为它说明“branch loading 本身”也是一个可分离的贡献点。</p>
+<p>模型方面覆盖了较强和较弱的多模态模型，包括:</p>
+<ul><li>Gemini 3.1 Pro</li><li>Gemini 3 Flash</li><li>Qwen3-VL-235B-A22B-Thinking</li><li>GLM-5V-Turbo</li><li>Kimi-K2.6</li><li>Qwen3-VL-8B-Instruct</li></ul>
+<p>GUI 设置里，OSWorld 和 macOSWorld 的最大交互预算都是 20 步。所有 skill 都只从 <code>non-test trajectories</code> 提取，避免测试集污染。</p>
+<p>下面先给出最关键的主结果表。OSWorld 上，MMSkills 对所有模型家族都带来整体提升。</p>
+<table class="result-table">
+<tr><th>Base model</th><th>No skill</th><th>Text-only</th><th>MMSkills</th></tr>
+<tr><td>Gemini 3.1 Pro</td><td>44.08</td><td>40.76</td><td class="best">50.11</td></tr>
+<tr><td>Gemini 3 Flash</td><td>36.65</td><td>40.27</td><td class="best">47.97</td></tr>
+<tr><td>Qwen3-VL-235B</td><td>21.34</td><td>28.57</td><td class="best">39.17</td></tr>
+<tr><td>GLM-5V</td><td>28.71</td><td>36.61</td><td class="best">38.51</td></tr>
+<tr><td>Kimi-K2.6</td><td>34.98</td><td>39.66</td><td class="best">46.59</td></tr>
+<tr><td>Qwen3-VL-8B-Instruct</td><td>10.78</td><td>14.93</td><td class="best">25.40</td></tr>
+</table>
+<p>可以看到两个很重要的现象:</p>
+<ul><li><code>MMSkills</code> 基本稳定优于 <code>No skill</code></li><li><code>Text-only skill</code> 虽然有时也有帮助，但远不如 MMSkills 稳定</li></ul>
+<p>特别是较弱模型增益更大。比如 Qwen3-VL-8B-Instruct 在 OSWorld 上从 <code>10.78</code> 提升到 <code>25.40</code>，说明外部多模态 procedural knowledge 确实能补足弱模型自身的内部先验不足。</p>
+<p>辅助 benchmark 也呈现相同趋势:</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇文章虽然很强，但仍有几个明显局限。</p>
+<p>如果把这篇工作放回你现在的 <code>agent</code> 方向阅读脉络里，我觉得最有用的启发有 4 个。</p>
+<ul><li>可以把 agent skill 从纯文本模板升级为 <code>procedure + state card + visual cue</code> 的结构。</li><li>如果你后面做 GUI/code-use/desktop 类型 agent，<code>when_not_to_use</code> 和 <code>verification_cue</code> 两个字段非常值得保留，它们能显著减少误调用和错误完成判断。</li><li>branch loading 这个思想可以迁移到别的外部模块上，不只是 skill。比如 memory、tool docs、UI exemplars 也可以先在 branch 中阅读，再把 distilled guidance 回传主链。</li><li>如果你后面想做 reward 或 verifier 设计，文章里的 <code>before/after</code> 视图和 <code>verification_cue</code> 很适合转成局部状态判别器或图像级判分信号。</li></ul>
+<p>这篇论文最核心的贡献，是把 visual agent 的 skill 从“文本步骤”升级成“带有状态判别与多视角视觉证据的多模态 procedure package”，再通过 branch loading 避免上下文污染，让这些 skill 真正在 GUI 和游戏环境里变成可调用、可验证、可迁移的外部知识单元。</p>
+</div>
+</article></main></body></html>

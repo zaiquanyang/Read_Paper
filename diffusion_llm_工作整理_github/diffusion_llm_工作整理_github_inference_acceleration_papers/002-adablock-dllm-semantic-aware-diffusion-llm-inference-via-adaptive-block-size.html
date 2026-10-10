@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AdaBlock-dLLM: Semantic-Aware Diffusion LLM Inference via Adaptive Block Size | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2509-adablock-dllm-semantic-aware-diffusion-llm-inference-via-adaptive-block-size">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">detailed</span></div>
+    <h2>AdaBlock-dLLM: Semantic-Aware Diffusion LLM Inference via Adaptive Block Size</h2>
+    <div class="paper-links"><a href="../diffusion_llm/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>*Figure 1: 左侧展示固定 block 大小的两个问题，右侧展示 AdaBlock 如何解决。*</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>*Figure 1: 左侧展示固定 block 大小的两个问题，右侧展示 AdaBlock 如何解决。*</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>本文首次系统性地挑战 semi-AR 解码中的<strong>固定 block 大小</strong>设置，识别出两个根本性问题：</p>
+<p><strong>问题一：Late Decoding Overhead（延迟解码开销）</strong></p>
+<ul><li>当固定 block 较小时，当前 block 外存在高置信度 token 本可立即解码，但受限于 block 边界必须等待下一轮</li><li>被延迟的高置信度 token 需要额外的去噪计算，造成不必要的算力开销</li><li>一个完整语义单元（如一个简单句子）可能被分割到多个 block 中</li></ul>
+<p><strong>问题二：Premature Decoding Error（过早解码错误）</strong></p>
+<ul><li>Block 级自回归约束要求采样器在进入下一 block 前必须解码当前 block 内所有 MASK 位置</li><li>这迫使采样器在当前 block 内提交低置信度 token，而非推迟它们以等待更高置信度的位置</li><li>过早提交的错误 token 通过 block 级自回归依赖传播到后续步骤，导致系统性误差</li><li>在推理任务（如 GSM8K 数学推理）中尤为严重</li></ul>
+<p>VB 区域的置信度波动和宽度差异表明，固定 block 大小无法适应不同样本的解码需求。小 block 导致延迟解码，大 block 迫使过早提交低置信度 token。需要一种能够在运行时感知语义边界、动态调整 block 大小的调度策略。</p>
+<p>AdaBlock-dLLM 是一个<strong>训练无关（training-free）、即插即用（plug-and-play）</strong>的自适应 block 大小调度器，在进入每个 block 的第一个 token 采样之前，动态确定当前 block 大小，使得 block 边界与<strong>语义步骤（semantic steps）</strong>对齐。</p>
+<p>核心思想：利用语义分隔 token（如换行符 <code>\n</code>、句号、逗号）的置信度信号来判断语义步骤边界——当模型对某个分隔 token 有高置信度预测时，说明它&quot;确信&quot;此处应该是语义单元的终点。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>以 LLaDA-Instruct 在 GSM8K 上为例（B_0=32）：</p>
+<p>| 方法 | GSM8K Acc. (%) | HumanEval Acc. (%) | MATH Acc. (%) |</p>
+<p>|------|---------------|-------------------|---------------|</p>
+<p>| Vanilla | 76.7 | 43.9 | 36.9 |</p>
+<p>| Dynamic (Fast-dLLM) | 77.6 | 43.9 | 36.9 |</p>
+<p>| <strong>+Ada (AdaBlock)</strong> | <strong>80.6</strong> (+3.0) | 43.3 (-0.6) | 37.3 (+0.4) |</p>
+<p>| +Cache (Fast-dLLM) | 74.5 | 46.3 | 35.8 |</p>
+<p>| <strong>+Ada+Cache</strong> | <strong>78.5</strong> (+4.0) | 46.3 (0.0) | 35.3 (-0.5) |</p>
+<p>关键结果：</p>
+<ul><li>GSM8K 上 LLaDA-Instruct <strong>最高提升 5.3%</strong>（B_0=64 时 +Ada+Cache 从 75.4 提升到 80.7）</li><li><strong>KV Cache 场景下提升更显著</strong>：Cache 本身引入近似误差导致精度下降，AdaBlock 通过增强 block 内语义局部性、减少 block 间依赖性来弥补这一损失</li><li>跨 LLaDA-Instruct、LLaDA-1.5、Dream-Base 三个模型，多数配置获得正收益</li></ul>
+<p>以 LLaDA-Instruct GSM8K 为例（生成预算 L=512，无 Cache）：</p>
+<p>| B_0 | Vanilla Acc./TPS | Dynamic Acc./TPS | +Ada Acc./TPS |</p>
+<p>|-----|-----------------|-----------------|---------------|</p>
+<p>| 4 | 80.9 / 16.1 | 81.2 / 43.0 | <strong>81.6</strong> / <strong>51.3</strong> |</p>
+<p>| 8 | 80.5 / 16.1 | 80.6 / 60.0 | <strong>81.8</strong> / <strong>63.9</strong> |</p>
+<p>| 16 | 78.8 / 16.1 | 79.1 / 74.7 | <strong>80.6</strong> / 73.9 |</p>
+<p>| 32 | 76.8 / 16.1 | 77.6 / 85.0 | <strong>80.6</strong> / 83.5 |</p>
+<p>| 64 | 76.8 / 16.1 | 77.3 / 89.4 | <strong>79.5</strong> / 87.9 |</p>
+<p>| 128 | 71.0 / 16.0 | 70.7 / 81.2 | <strong>72.8</strong> / 80.6 |</p>
+<p>关键发现：</p>
+<ul><li>小 B_0（4, 8）时 AdaBlock 同时提升精度和吞吐（有效缓解延迟解码开销）</li><li>大 B_0（16, 32, 64, 128）时精度提升显著，吞吐仅有微小下降（~1-2 TPS）</li><li>TPS × NFE 乘积在所有方法/block 大小下几乎恒定（~8.2 × 10³），说明吞吐与 NFE 呈近似反比</li><li>增大 B_0 最初提升吞吐（缓解延迟解码），但过大时吞吐反而下降（block 内语义凝聚力减弱，动态采样每步解码 token 减少）</li></ul>
+<p>| 模型 | τ_D=0.3 | τ_D=0.5 | τ_D=0.7 |</p>
+<p>|------|---------|---------|---------|</p>
+<p>| LLaDA-Instruct | <strong>80.59</strong> | 79.08 | 77.94 |</p>
+<p>| Dream-Base | 75.66 | <strong>75.74</strong> | <strong>75.74</strong> |...</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>本文首次系统性地挑战 semi-AR 解码中的<strong>固定 block 大小</strong>设置，识别出两个根本性问题：</p>
+<p><strong>问题一：Late Decoding Overhead（延迟解码开销）</strong></p>
+<ul><li>当固定 block 较小时，当前 block 外存在高置信度 token 本可立即解码，但受限于 block 边界必须等待下一轮</li><li>被延迟的高置信度 token 需要额外的去噪计算，造成不必要的算力开销</li><li>一个完整语义单元（如一个简单句子）可能被分割到多个 block 中</li></ul>
+<p><strong>问题二：Premature Decoding Error（过早解码错误）</strong></p>
+<ul><li>Block 级自回归约束要求采样器在进入下一 block 前必须解码当前 block 内所有 MASK 位置</li><li>这迫使采样器在当前 block 内提交低置信度 token，而非推迟它们以等待更高置信度的位置</li><li>过早提交的错误 token 通过 block 级自回归依赖传播到后续步骤，导致系统性误差</li><li>在推理任务（如 GSM8K 数学推理）中尤为严重</li></ul>
+<ul><li><strong>首次系统性挑战固定 block 大小</strong>：在此之前，semi-AR 解码的 block 大小选择被默认为固定超参数，本文首次分析其根本缺陷并提出自适应方案。</li><li><strong>训练无关、即插即用</strong>：不需要任何额外训练或微调，可直接插入现有的 Fast-dLLM 等 semi-AR 解码管线。</li><li><strong>置信度动态分析深刻</strong>：波动带（VB）、置信度局部性、全局自回归倾向等概念为理解 dLLM 解码行为提供了有价值的分析框架。</li><li><strong>与 KV Cache 方法协同增效</strong>：在 Cache 场景下增益更大（最高 5.3%），因为 AdaBlock 降低了 Cache 近似误差的影响。</li><li><strong>跨模型/任务泛化好</strong>：LLaDA-8B-Instruct、LLaDA-1.5、Dream-7B 上均有正收益；覆盖数学推理、代码生成、指令遵循等多类任务。</li><li><strong>实现简单、计算开销极小</strong>：仅需在每 block 首步额外检查分隔 token 置信度，几乎不引入额外延迟。</li></ul>
+<ul><li><strong>小生成预算场景（如选择题）收益有限</strong>：semi-AR 解码本身在这种场景下优势不大，AdaBlock 的改进空间也受限。</li><li><strong>受限于去噪器质量</strong>：当去噪器预测分布不可靠时，自适应 block 大小无法恢复质量。</li><li><strong>Dream 系列改进幅度小于 LLaDA</strong>：对从 AR 适配而来的 dLLM，局部随机性弱，VB 方差大，语义步骤信号较弱。</li><li><strong>分隔符和阈值需手动设定</strong>：当前使用固定的 D 和 τ_D，未来需要自动化的分隔 token 选择和阈值调整机制。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/confidence_pattern_band_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/confidence_pattern_band_p0.png" alt="置信度模式的三个区域"></a><figcaption>置信度模式的三个区域</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/all_acc_tps_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/all_acc_tps_p0.png" alt="Accuracy vs Throughput 散点图"></a><figcaption>Accuracy vs Throughput 散点图</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/Intro_case_p0.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2509_adablock_dllm_semantic_aware_diffusion_llm_inference_via_adaptive_block_size/Intro_case_p0.png" alt="两种根本问题与 AdaBlock 解决方案"></a><figcaption>两种根本问题与 AdaBlock 解决方案</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>

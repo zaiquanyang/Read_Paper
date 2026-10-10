@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Meta-Harness: End-to-End Optimization of Model Harnesses | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2603.28052">
+  <h2>Meta-Harness: End-to-End Optimization of Model Harnesses</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2603.28052" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.28052" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.28052</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>附录最后给了不少非常实用的经验，我觉得值得记：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>很多人默认“harness 很重要”，但仍把它当工程经验；这篇则把它形式化成了明确的 outer-loop search problem。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>整体流程如下图所示。</p>
+<p>外层循环非常简单：</p>
+<ul><li>proposer 读取 filesystem 中所有历史候选 harness 的代码、分数和执行日志；</li><li>proposer 写出新的 harness 候选；</li><li>系统评估这个 harness；</li><li>把新代码、得分和执行轨迹再写回 filesystem；</li><li>重复迭代。</li></ul>
+<p>注意这里最关键的点不是“做了 evolution”，而是 proposer 有能力主动浏览一个持续增长的经验库，而不是被动吃一段预先压缩好的 prompt。</p>
+<p>Meta-Harness 和很多 optimizer 最本质的区别不是有没有 Pareto frontier，也不是有没有 population，而是：</p>
+<ul><li>它把完整历史暴露给 proposer；</li><li>proposer 可以跨很多旧候选去看原始代码和 execution trace；</li><li>proposer 不必局限于某个 parent，也不必只看最近一步。</li></ul>
+<p>附录里给了一个很有说服力的统计：</p>
+<ul><li>在 TerminalBench-2 的一次搜索中，proposer 每轮中位数读取 82 个文件；</li><li>其中 41% 是 prior harness source code；</li><li>40% 是 execution traces；</li><li>只有 6% 是 score/summary files。</li></ul>
+<p>这说明 proposer 并不是“装作能看 filesystem，实际上只在本地小修小补”，而是真的大量使用原始历史进行非马尔可夫式诊断。</p>
+<p>作者刻意把 outer loop 设计得非常简洁，只保留：</p>
+<ul><li>population；</li><li>evaluation；</li><li>logging；</li><li>Pareto frontier。</li></ul>
+<p>它没有像很多方法那样手工设计：</p>
+<ul><li>parent selection heuristics；</li><li>mutation operator；</li><li>critique schema；</li><li>reflection template。</li></ul>
+<p>作者的观点是：这类控制结构越多，越像在把“如何诊断和改 harness”重新手工编码一次。Meta-Harness 反而把这些判断交给 proposer agent 自己做。</p>
+<p>这背后的隐含立场很明确：</p>
+<ul><li>如果 coding agent 足够强，外循环应尽量 minimal；</li><li>真正重要的是让 agent 访问足够丰富的 raw experience；</li><li>agent 自己会学会怎样从这些经验里形成因果假设。</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/autoharness_v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/autoharness_v3.png" alt="Meta-Harness loop"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/learning_curves_simple.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_meta_harness_end_to_end_optimization_of_model_harnesses/learning_curves_simple.png" alt="Learning curves"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在三个任务域上验证：</p>
+<ul><li>在线文本分类</li><li>检索增强数学推理</li><li>agentic coding（TerminalBench-2）</li></ul>
+<p>这三个域共享的核心不是任务本身，而是都存在“harness 设计空间”：</p>
+<ul><li>文本分类里，harness 决定 memory 如何组织；</li><li>数学推理里，harness 决定 retrieval policy；</li><li>代码 agent 里，harness 决定启动信息、状态流和完成逻辑。</li></ul>
+<table class="result-table">
+<tr><th>Harness</th><th>USPTO</th><th>S2D</th><th>Law</th><th>Avg Acc</th><th>Ctx(k)</th></tr>
+<tr><td>Zero-Shot</td><td>12.0</td><td>63.2</td><td>7.0</td><td>27.4</td><td>0</td></tr>
+<tr><td>Few-Shot (all)</td><td>15.0</td><td>78.3</td><td>29.0</td><td>40.8</td><td>12.3</td></tr>
+<tr><td>MCE</td><td>14.0</td><td>83.0</td><td>23.0</td><td>40.0</td><td>28.5</td></tr>
+<tr><td>ACE</td><td class="best">16.0</td><td>77.8</td><td>29.0</td><td>40.9</td><td>50.8</td></tr>
+<tr><td class="best">Meta-Harness</td><td>14.0</td><td class="best">86.8</td><td class="best">45.0</td><td class="best">48.6</td><td>11.4</td></tr>
+</table>
+<p>最关键的结果是：</p>
+<ul><li>比 ACE 高 <code>+7.7</code> 个点；</li><li>比 MCE 高 <code>+8.6</code> 个点；</li><li>只用了 <code>11.4k</code> context tokens，而 ACE 用了 <code>50.8k</code>。</li></ul>
+<p>也就是说，它不是靠“喂更多上下文”变强，而是靠发现了更有效的 harness。</p>
+<table class="result-table">
+<tr><th>Method</th><th>GPT-5.4n</th><th>GPT-5.4m</th><th>Gem-3.1FL</th><th>Gem-3F</th><th>GPT-20B</th><th>Avg</th></tr>
+<tr><td>No Retriever</td><td>23.0</td><td>28.8</td><td>28.6</td><td>42.6</td><td>47.6</td><td>34.1</td></tr>
+<tr><td>Dense Retrieval (k=5)</td><td>31.1</td><td>28.3</td><td>37.1</td><td>47.2</td><td>46.7</td><td>38.1</td></tr>
+<tr><td>BM25 Retrieval</td><td>30.2</td><td>29.2</td><td>32.8</td><td>46.6</td><td>48.9</td><td>37.5</td></tr>
+<tr><td class="best">Meta-Harness</td><td class="best">31.7</td><td class="best">30.4</td><td class="best">34.9</td><td>46.3</td><td class="best">50.6</td><td class="best">38.8</td></tr>
+</table>
+<p>最重要的结论是：</p>
+<ul><li>相比 no retriever，平均提升 <code>+4.7</code>；</li><li>对全部 5 个 held-out model 都有正增益；</li><li>平均上优于 BM25、dense retrieval、random few-shot。</li></ul>
+<p>也就是说，这里优化的重点不是“加一个更强 retriever”，而是“搜索对数学推理更合适的 retrieval policy / harness”。...</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>如果把这篇放到 <code>agent</code> 主题下，我觉得它最重要的启发是：</p>
+<ul><li>agent 的提升不一定来自更强模型，也可以来自更强 harness；</li><li>harness 自身可以作为一等公民被自动搜索，而不是只能靠人手工写；</li><li>对 agent system 来说，execution traces 往往比 summary 更值钱；</li><li>coding agent 不仅可以 solve task，也可以当 “system optimizer”，去反过来优化自己运行的那套外部程序；</li><li>未来很可能出现“模型权重 + harness 代码 + memory 结构”一起 co-design / co-evolve 的范式。</li></ul>
+<p>附录最后给了不少非常实用的经验，我觉得值得记：</p>
+<ul><li>skill text 非常重要；</li><li>search set 要足够难，不然没东西可优化；</li><li>日志要 machine-readable、便于 grep；</li><li>最好提供小 CLI 帮 proposer 看历史；</li><li>full eval 前要做 lightweight validation。</li></ul>
+<p>这些建议都很 agent engineering，而不是纯理论。</p>
+<p>这篇工作最大的价值，在于它把“代码级 agent harness 本身可以被自动搜索优化”这件事做成了一个可信、可执行、跨任务域的范式。它不是简单把 LLM 用来写 prompt，而是让 coding agent 真正通过 filesystem 访问原始经验，去做程序级别的诊断、归因和改写。</p>
+<p>如果只记三句话，我会记：</p>
+<ul><li><code>harness</code> 和 <code>model weights</code> 一样重要，甚至在某些 benchmark 上更重要；</li><li>对 harness engineering 来说，execution traces 这种原始经验比压缩 summary 更关键；</li><li>足够强的 coding agent，已经可以开始自动做 “system-level agent optimization” 了。</li></ul>
+</div>
+</article></main></body></html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>DepCap: Adaptive Block-Wise Parallel Decoding for Efficient Diffusion LM Inference | diffusion_llm_工作整理_inference_acceleration</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推理加速、缓存与并行解码 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_inference_acceleration.html">← 返回 diffusion_llm_工作整理_inference_acceleration 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604-15750">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2604.15750</span><span class="badge">detailed</span></div>
+    <h2>DepCap: Adaptive Block-Wise Parallel Decoding for Efficient Diffusion LM Inference</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2604.15750" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2604.15750.pdf" target="_blank" rel="noopener">pdf</a> | <a href="https://github.com/X-Xia0828/DepCap" target="_blank" rel="noopener">https://github.com/X-Xia0828/DepCap</a> | <a href="../diffusion_llm/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    <p><strong>作者</strong>：Xiang Xia, Wuyang Zhang, Jiazheng Liu, Cheng Yan, Yanyong Zhang</p><p><strong>机构</strong>：University of Science and Technology of China; Institute of Artificial Intelligence, Hefei Comprehensive National Science Center</p>
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>DepCap 是一个 training-free 的 block-wise DLM 推理加速框架：它用上一个 decoded block 对未来位置预测分布的 KL 变化来动态决定下一个 block 的边界，并用 conflict score 过滤当前 block 内可安全并行提交的 token，从而在 LLaDA/Dream 等 DLM 和 GSM8K、Math-500、MBPP、HumanEval 等任务上获得更好的 speed-quality trade-off，最高报告 <code>5.63x</code> speedup，且可与现有 KV-cache 技术叠加。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>Diffusion Language Models (DLMs) 的潜力在于可以并行更新多个 token，并对整段序列进行 global refinement。为了把这种并行潜力转化为实际推理速度，近年的 DLM inference 通常采用 block-wise decoding：把待生成序列切成若干 block，按 block 顺序解码，每个 block 内再做扩散式并行更新。</p>
+<p>但 block-wise DLM inference 有两个关键决策：</p>
+<ul><li>下一个 block 应该扩多长，也就是 block boundary 如何决定。</li><li>当前 block 内哪些 masked positions 可以安全地并行解码。</li></ul>
+<p>已有方法在这两点上都偏保守或不够匹配 DLM 的动态特征：</p>
+<ul><li>Fast-dLLM 等方法多用固定 block size，忽略不同样本、不同生成阶段的依赖范围变化。</li><li>AdaBlock、Swordsman、GeoBlock 等动态 block 方法主要依赖当前 step 的语义符号、entropy 或 attention 几何信号，没有充分利用多步 denoising 中“上一个 decoded block 对未来位置的影响”。</li><li>confidence-based parallel decoding 只看单点 confidence，高 confidence 并不保证多个 token 可以同时提交，因为它们之间可能存在相互依赖或冲突。</li></ul>
+<p>DepCap 的核心观点是：block-wise DLM 的两个决策需要不同、更合适的信号。block boundary 应该用跨 step 的 last-block influence；block 内并行提交应该用 token-level conflict signal。</p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>DepCap 是一个 training-free、plug-and-play 的 DLM 推理框架，由两个模块组成：</p>
+<ul><li><code>DepGA-Block</code>: Dependency-Guided Adaptive Block Partitioning，用上一个 decoded block 对未来位置预测分布的影响，动态决定下一个 block 的边界。</li><li><code>CAP-Decoding</code>: Conflict-Aware Parallel Decoding，在当前 block 内筛选 conflict-free token subset，避免把互相依赖或冲突的 token 同时解码。</li></ul>
+<p>图中左侧是传统 block-wise DLM：固定 block size，并用 confidence-only parallel decoding。右侧是 DepCap：先用 last-block influence 和 predictive uncertainty 决定 block boundary，再用 conflict-aware 策略过滤当前 block 内可并行提交的 token。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>评测模型：</p>
+<ul><li><code>LLaDA-8B-Instruct</code></li><li><code>Dream-v0-base-7B</code></li><li><code>LLaDA-1.5</code></li></ul>
+<p>评测任务：</p>
+<ul><li><code>GSM8K</code>，5-shot</li><li><code>Math-500</code>，4-shot</li><li><code>MBPP</code>，3-shot</li><li><code>HumanEval</code>，0-shot</li></ul>
+<p>指标：</p>
+<ul><li><code>Acc</code>: 任务准确率</li><li><code>TPS</code>: tokens per second，越高越快</li><li><code>NFE</code>: number of function evaluations，越低表示 denoising 调用越少</li></ul>
+<p>默认超参：</p>
+<ul><li>generation length <code>L_gen = 256</code></li><li>DepGA-Block: <code>lambda=1.2</code>, <code>L_min=8</code>, <code>L_max=128</code></li><li>CAP-Decoding: <code>tau_low=0.8</code>, <code>tau_high=0.95</code>, <code>gamma=-16.0</code></li><li>confidence baseline threshold: <code>0.9</code></li><li>fixed block sizes: <code>{16, 32, 64}</code></li><li>硬件: single NVIDIA A100 40GB</li><li>benchmark framework: <code>lm-eval</code></li></ul>
+<p>论文的主结果表很大，覆盖三类 backbone 和四个任务。关键结论如下。</p>
+<p>论文把 DepCap 拆成两个模块来分析：</p>
+<ul><li><code>Confidence + DepGA-Block</code>: 只替换 block partitioning，不用 CAP-Decoding。</li><li><code>CAP-Decoding + fixed block</code>: 只替换 block 内 parallel decoding，不用 adaptive block。</li><li><code>DepGA-Block + CAP-Decoding</code>: full DepCap。</li></ul>
+<p>结论：</p>
+<ul><li>DepGA-Block 更偏向提升 accuracy/稳定性，因为它用 last-block influence 控制 block 边界，避免过早扩到高不确定区域。</li><li>CAP-Decoding 更偏向提升 speed，因为它比 confidence-only 更敢于并行提交 token，但通过 conflict filtering 控制风险。</li><li>两者结合时，通常得到最佳 overall speed-quality trade-off。</li></ul>
+<p>也就是说，DepCap 的两个模块不是重复贡献，而是分别解决外层 block boundary 和内层 token subset selection。</p>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <ul><li>问题拆解准确：block-wise DLM inference 的瓶颈被拆成 block boundary 和 within-block parallel subset 两个决策。</li><li>DepGA-Block 使用 cross-step signal，比只看当前 step 的 entropy/confidence 更贴合 diffusion iterative denoising 的动态。</li><li>CAP-Decoding 明确处理 token conflict，弥补 confidence-only 的不足。</li><li>Training-free，可插到多个 DLM backbone 上，也能与 prefix/dual cache 结合。</li><li>实验覆盖 reasoning 和 coding tasks，且包括 LLaDA、Dream、LLaDA-1.5 多个模型。</li><li>附录给出了信息论解释和较完整的超参数敏感性分析。</li></ul>
+<ul><li>理论部分只是信息论解释和近似，没有严格 bound。作者也在 discussion 中承认需要更强形式化保证。</li><li>DepGA-Block 的 implemented score 是理论 expected influence 的 sample/approximation，依赖 logits 前后变化是否能稳定反映真实 dependency。</li><li>在 Dream 系列上，full DepCap 不总是 accuracy 最优，部分任务存在 accuracy drop。</li><li>主表很大但缺少显著性分析、多 seed 方差和更细的失败案例。</li><li>方法主要针对 block-wise decoding；作者提到 sliding-window diffusion decoding 是未来方向，当前还没有覆盖。</li><li>CAP-Decoding 的 conflict score 是轻量 heuristic，是否能泛化到更长上下文、更复杂语义依赖仍需验证。</li></ul>
+<p>DepCap 和前面读过的 DIP 有很强的互补性：</p>
+<ul><li>DIP 关注动态 context/examples 什么时候插入；</li><li>DepCap 关注生成区域如何自适应分块，以及 block 内哪些 token 可以并行提交。</li></ul>
+<p>两者都在利用 DLM 不是严格 left-to-right 的特点，把“固定推理计划”改成“基于中间状态的动态调度”。后续可以考虑：</p>
+<ul><li>把 last-block influence 扩展到 dynamic context scheduling：判断新插入 example 是否真的改变未来 token distribution。...</li></ul>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/depcap_framework_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/depcap_framework_v2.png" alt="DepCap framework"></a><figcaption>DepCap framework</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/cache_tradeoff_q2_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_depcap_adaptive_block_wise_parallel_decoding_for_efficient_diffusion_lm_inference/cache_tradeoff_q2_v2.png" alt="Cache tradeoff"></a><figcaption>Cache tradeoff</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>

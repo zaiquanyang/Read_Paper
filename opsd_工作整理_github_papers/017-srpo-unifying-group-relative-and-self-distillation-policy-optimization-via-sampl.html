@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SRPO: Unifying Group-Relative and Self-Distillation Policy Optimization via Sample Routing | opsd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSD 工作整理 — On-Policy Self-Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px;
+    border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0;
+    color: var(--text); border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img {
+    max-width: 100%; max-height: 360px; object-fit: contain;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem;
+  }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.6rem 0; }
+  .pros-cons > div { padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.88rem; }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap { position: fixed; top: 2rem; left: 1rem; z-index: 100; }
+  .toc-btn {
+    display: inline-block; padding: 6px 16px; background: var(--card-bg);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); font-size: 0.82rem; font-weight: 700;
+    color: var(--accent); cursor: pointer;
+  }
+  .toc-panel {
+    display: none; position: absolute; top: 0; left: 0;
+    width: 520px; max-height: calc(100vh - 4rem); overflow-y: auto;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 1px solid var(--border); padding: 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .toc ol { padding-left: 1.2rem; margin: 0; }
+  .toc li { margin-bottom: 0.25rem; font-size: 0.75rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+    padding: 1px 7px; border-radius: 99px; font-size: 0.65rem; font-weight: 600;
+    margin-right: 0.3rem; vertical-align: middle;
+  }
+  @media (max-width: 640px) { .pros-cons { grid-template-columns: 1fr; } .paper-card { padding: 1.2rem; } }
+  .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--border); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27,39,78,.07); }
+  .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+  .work-list p { margin: 0 0 12px; color: var(--text-secondary); }
+  .work-list ol { margin: 0; padding-left: 1.25rem; }
+  .work-list li { margin: 8px 0; padding-left: 4px; }
+  .work-list a { font-weight: 700; }
+  .work-meta { display: block; margin-top: 2px; color: var(--text-secondary); font-size: .85rem; }
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opsd_工作整理_github.html">← 返回 opsd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-srpo">
+<h2>SRPO: Unifying Group-Relative and Self-Distillation Policy Optimization via Sample Routing</h2>
+<div class="meta-row">
+  <span class="tag">SRPO</span>
+  <a href="https://arxiv.org/abs/2604.02288" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.02288.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.02288</span>
+</div>
+<div class="summary-box"><strong>核心思想：</strong>对每个 rollout 做样本级路由：正确样本走 GRPO 分支，错误且有教师信息的走 SDPO 分支，配合基于教师熵的动态加权，统一 GRPO 的稳定性和 SDPO 的高效细粒度纠错。</div>
+<div class="fig-row">
+  <div class="fig-item"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/OPSD/assets/arxiv_2604_unifying_group_relative_and_self_distillation_policy_optimization_via_sample_routing/method.png" alt="SRPO method"></div>
+</div>
+<h3 class="section-title">方法</h3>
+<ul>
+  <li>样本路由：正确 → GRPO；错误有教师信息 → SDPO；错误无信息 → 回退 GRPO</li>
+  <li>Dynamic-Weighted SDPO：基于教师 token 熵的动态加权，熵低权重高</li>
+  <li>自动课程学习：早期错误多→SDPO 占比大；后期正确多→GRPO 占主导</li>
+</ul>
+<h3 class="section-title">实验结果</h3>
+<table class="result-table">
+  <tr><th>Model</th><th>GRPO</th><th>SDPO</th><th class="best">SRPO</th></tr>
+  <tr><td>Qwen3-8B avg</td><td>74.0</td><td>71.1</td><td class="best">77.4 (+3.4)</td></tr>
+  <tr><td>Qwen3-4B avg</td><td>69.7</td><td>66.7</td><td class="best">74.2 (+4.5)</td></tr>
+</table>
+<p>后期计算成本更低：10h 时 SRPO 每步 75.8s vs GRPO 91.5s（快 17.2%）。</p>
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros"><h4>优点</h4><ul><li>问题定义精准：明确指出 SDPO 崩溃的两个原因</li><li>路由规则简单但有效，不需额外混合超参数</li><li>后期成本更低（正确样本增多→教师计算减少）</li></ul></div>
+  <div class="cons"><h4>局限</h4><ul><li>教师信息依赖同组正确兄弟 rollout，一组全错时无法触发 SDPO</li><li>适用范围还局限在五个基准</li><li>动态权重只看熵，未来可结合更多可靠性指标</li></ul></div>
+</div>
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;"><strong>定位：</strong>把"什么时候蒸馏、什么时候不蒸馏"讲得非常具体的样本级路由方法，统一 GRPO 与 SDPO。</p>
+</article></main></body></html>

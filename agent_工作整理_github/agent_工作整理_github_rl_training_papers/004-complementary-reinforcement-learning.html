@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Complementary Reinforcement Learning | agent_工作整理_rl_training</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent RL Training — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_rl_training.html">← 返回 agent_工作整理_rl_training 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2603.17621">
+  <h2>Complementary Reinforcement Learning</h2>
+
+<div class="meta-row">
+  <span class="tag">llm</span>
+  <a href="https://arxiv.org/abs/2603.17621" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.17621.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.17621</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>现有利用经验的方法存在一个根本问题：<strong>将经验视为静态资源</strong>。</p>
+<ul><li><strong>离线经验</strong>：预先从历史轨迹构建经验库，训练中保持不变。初始有优势，但随着 actor 能力增长，经验逐渐过时（stale），收益衰减。</li><li><strong>静态在线经验</strong>：训练过程中由固定提取器动态维护经验库，但提取器不更新。无法适应 actor 的演化，导致分布错位（distributional misalignment），经验与 actor 当前能力脱节。</li><li><strong>自反思方法</strong>：依赖模型自身生成反思，但弱模型容易产生幻觉，不可靠。</li><li><strong>复杂启发式方法</strong>：多阶段检索、专门数据结构等，增加了工程复杂度。</li></ul>
+<p>关键洞察：经验提取和 agent 学习应该<strong>协同演化（co-evolve）</strong>，而非各自独立处理。</p>
+<ul><li><strong>Actor-Extractor Co-Evolution</strong>：actor 和 extractor 必须在训练中互相适应，持续塑造彼此</li><li><strong>Experience Consolidation</strong>：经验库必须自动构建和维护，蒸馏可迁移经验，解决冲突和冗余</li><li><strong>Training-Distillation Coordination</strong>：actor 训练和经验蒸馏必须高效协调，不能引入阻塞延迟</li></ul>
+<p>Complementary RL 包含两个互补模型：</p>
+<ul><li><strong>Actor</strong> $\pi_{\theta}$：与环境交互，通过 outcome-based reward 优化，受检索到的经验指导</li><li><strong>Experience Extractor</strong> $\pi_{\phi}$：从轨迹中蒸馏经验，维护持续演化的经验库 $\mathcal{M}$</li></ul>
+<p>两者都通过 RL 优化：actor 用结果奖励，extractor 用其蒸馏经验对 actor 成功的效用作为奖励。</p>
+<p>为了避免 actor 训练被经验蒸馏阻塞，设计了<strong>完全异步</strong>的双轨架构：</p>
+<p><strong>主训练循环（Primary Training Loop）</strong>：</p>
+<ul><li>Actor $\pi_{\theta}$ 持续与环境交互收集 rollout</li><li>通过 outcome-based reward 优化策略</li></ul>
+<p><strong>后台轨道（Background Track）</strong>：</p>
+<ul><li>Experience extractor $\pi_{\phi}$ 处理完成的轨迹</li><li>蒸馏经验并向 $\mathcal{M}$ 发出结构化操作</li></ul>
+<p>两者通过集中式 <strong>ExperienceManager</strong> $\mathcal{H}$ 协调，承担两个角色：</p>
+<p><strong>1. Experience Consolidation（经验巩固）</strong>：</p>
+<ul><li>$\mathcal{H}$ 维护内部队列 $\mathcal{Q}$ 接收蒸馏请求</li><li>后台进程持续出队并转发给 $\pi_{\phi}$ 蒸馏</li><li>$\pi_{\phi}$ 发出三种结构化操作：<strong>Add</strong>（新增）、<strong>Update</strong>（更新）、<strong>Return</strong>（无操作）</li><li>在 writer lock 下应用操作，防止状态冲突</li><li><strong>Periodic Merge</strong>：定期触发合并操作，处理 group-based RL 中同一任务并行产生的冗余经验</li></ul>
+<p><strong>2. Experience Retrieval（经验检索）</strong>：</p>
+<ul><li>查询批处理：$\mathcal{H}$ 将并发查询累积为 micro-batch</li><li>Embedding 缓存：group-based RL 中多个环境共享相同任务描述，缓存命中率高</li><li>并行搜索：$W$ 个并行搜索 worker 在 reader lock 下执行语义相似度搜索...</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/method_ablation.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/method_ablation.png" alt="方法消融：不同 advantage 估计设计对比"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/overview.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/overview.png" alt="Complementary RL 概览"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/Figure-Leading.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2603_complementary_reinforcement_learning/Figure-Leading.png" alt="Leading Figure：性能对比与协同演化范式"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>环境</strong>：MiniHack Room, WebShop, ALFWorld, SWE-Bench</p>
+<p><strong>模型配置</strong>：</p>
+<ul><li>Actor $\pi_{\theta}$：Qwen2.5-7B-Instruct（SWE-Bench 用 Qwen3-4B-Instruct-2507）</li><li>Experience Extractor $\pi_{\phi}$：Qwen3-4B-Thinking-2507</li><li>Embedding 模型：Qwen3-Embedding-0.6B</li></ul>
+<p><strong>训练配置</strong>：AdamW, lr=1e-6, 不使用 KL 正则化，4 个并行搜索 worker + 4 个并行 embedding worker</p>
+<p>Complementary RL 在所有四个任务上<strong>一致优于无经验 baseline</strong>：</p>
+<ul><li>MiniHack Room 和 ALFWorld（需策略探索和环境理解）：获得 <strong>1.3x</strong> 性能优势</li><li>SWE-Bench：获得 <strong>+3.0%</strong> 提升</li></ul>
+<p><strong>效率提升</strong>：Complementary RL 不仅成功率更高，而且完成任务需要的动作更少：</p>
+<ul><li>MiniHack Room：<strong>1.5x</strong> 更少动作</li><li>ALFWorld：<strong>2x</strong> 更少动作</li></ul>
+<p><strong>多任务评估性能</strong>：</p>
+<table class="result-table">
+<tr><th>方法</th><th>MiniHack Room</th><th>WebShop</th><th>ALFWorld</th><th>Avg.</th></tr>
+<tr><td>Baseline</td><td>0.68</td><td>0.81</td><td>0.72</td><td>0.75</td></tr>
+<tr><td>Static Online Exp. (w/ exp.)</td><td>0.41</td><td>0.67</td><td>0.69</td><td>0.59</td></tr>
+<tr><td>Static Online Exp. (w/o exp.)</td><td>0.39</td><td>0.59</td><td>0.64</td><td>0.54</td></tr>
+<tr><td>Exp. Only</td><td>0.49</td><td>0.37</td><td>0.13</td><td>0.33</td></tr>
+<tr><td class="best">Comp. RL (w/ exp.)</td><td class="best">0.78</td><td class="best">0.87</td><td class="best">0.82</td><td class="best">0.82</td></tr>
+<tr><td class="best">Comp. RL (w/o exp.)</td><td class="best">0.75</td><td class="best">0.84</td><td class="best">0.74</td><td class="best">0.78</td></tr>
+</table>
+<p>核心发现：</p>
+<ul><li><strong>Static Online Exp. 即使在测试时使用经验也低于 baseline</strong>（差距 &gt;10%），原因是分布错位——固定提取器无法适应演化中的 actor</li><li><strong>Complementary RL 在有/无经验测试时均一致优于 baseline</strong>（平均 +7% 和 +2%），说明协同演化训练将有用经验内化到了 actor 自身</li><li><strong>仅训练 extractor（Exp. Only）效果差</strong>（Avg. 0.33），说明经验质量本身不足以弥补 actor 基础能力的不足...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>现有利用经验的方法存在一个根本问题：<strong>将经验视为静态资源</strong>。</p>
+<ul><li><strong>离线经验</strong>：预先从历史轨迹构建经验库，训练中保持不变。初始有优势，但随着 actor 能力增长，经验逐渐过时（stale），收益衰减。</li><li><strong>静态在线经验</strong>：训练过程中由固定提取器动态维护经验库，但提取器不更新。无法适应 actor 的演化，导致分布错位（distributional misalignment），经验与 actor 当前能力脱节。</li><li><strong>自反思方法</strong>：依赖模型自身生成反思，但弱模型容易产生幻觉，不可靠。</li><li><strong>复杂启发式方法</strong>：多阶段检索、专门数据结构等，增加了工程复杂度。</li></ul>
+<p>关键洞察：经验提取和 agent 学习应该<strong>协同演化（co-evolve）</strong>，而非各自独立处理。</p>
+<ul><li><strong>协同演化范式</strong>：首次在 RL 训练中实现 actor 与经验提取器的联合优化，两者形成闭合的互相增强循环</li><li><strong>子组 advantage 估计</strong>：experience-guided/experience-free 分组 + 组内独立 advantage 计算，有效防止 over-reliance 和 advantage 偏差</li><li><strong>完全异步架构</strong>：actor 训练和经验蒸馏解耦，不引入阻塞延迟</li><li><strong>模块化设计</strong>：ExperienceManager 统一管理经验的增删改查，并发控制清晰</li><li><strong>实用性强</strong>：无 KL 正则化、无额外 SFT 阶段、无复杂启发式，训练配置精简</li><li><strong>任务扩展性好</strong>：3-task 到 6-task 混合，收益从 +6.6% 增长到 +8.1%</li><li><strong>丰富的经验分析</strong>：展示了蒸馏出的结构化经验，具有可解释性</li></ul>
+<ul><li><strong>Self-Distillation 集成失败</strong>：自蒸馏后期训练崩溃，原因未完全调查清楚</li><li><strong>Actor-Critic 增加延迟</strong>：虽然提升早期表现，但引入非平凡延迟开销，不适合默认启用</li><li><strong>提取器 off-policy 问题严重</strong>：蒸馏的经验可能在很久之后才被检索，policy lag 大，需要专门的稳定性技巧</li><li><strong>评估环境有限</strong>：主要在 MiniHack、WebShop、ALFWorld 和 SWE-Bench 上评估，工业级场景验证不足</li><li><strong>辅助奖励探索失败</strong>：困惑度降低奖励的五种归一化策略均未奏效</li><li><strong>Extractor 必须独立参数</strong>：共享参数导致梯度冲突，增加了显存开销...</li></ul>
+</div>
+</article></main></body></html>

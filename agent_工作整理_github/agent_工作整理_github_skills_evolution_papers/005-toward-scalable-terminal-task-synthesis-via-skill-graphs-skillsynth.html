@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Toward Scalable Terminal Task Synthesis via Skill Graphs (SkillSynth) | agent_工作整理_skills_evolution</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills & Self-Evolution — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_skills_evolution.html">← 返回 agent_工作整理_skills_evolution 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604.25727">
+  <h2>Toward Scalable Terminal Task Synthesis via Skill Graphs (SkillSynth)</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2604.25727" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2604.25727.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2604.25727</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>从学习目标的分解（Equation 3）可以明确看出：策略的可学习区域受限于训练数据在场景-技能联合空间的支持。因此，<strong>最大化训练数据在 $\{(\sigma, \kappa)\}$ 条件积空间的密集覆盖</strong>是关键目标。</p>
+<p>本文提出 SkillSynth：通过<strong>场景中介的技能图 (scenario-mediated skill graph)</strong> 来控制轨迹多样性，从图中采样路径作为真实工作流的抽象，再通过多 Agent harness 将其实例化为可执行任务。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p><strong>终端 Agent 任务</strong>：$\tau = (\mathcal{E}, s_0, g, V)$，Agent 从初始状态 $s_0$ 在环境 $\mathcal{E}$ 中达成目标 $g$。</p>
+<p><strong>场景与技能抽象</strong>：</p>
+<ul><li><strong>场景 (Scenario)</strong> $\sigma_t$：决策点上观察的语义抽象，是到该步交互历史的充分统计量</li><li><strong>技能 (Skill)</strong> $\kappa_t$：在一个场景下应用的动作子序列，产生到下一个场景的可预测转移：$\kappa_t: \sigma_{t-1} \to \sigma_t$</li><li>低层轨迹 $\zeta$ 被提升为<strong>执行轨迹</strong>：$\xi = (\sigma_0, \kappa_1, \sigma_1, ..., \kappa_L, \sigma_L)$</li></ul>
+<p><strong>学习目标</strong>：</p>
+<div class="formula-block">\[\mathcal{J}(\pi) = \sum_{\sigma \in \Omega} p_{\mathcal{D}}(\sigma|g) \sum_{\kappa \in \mathcal{K}_\sigma} p_{\mathcal{D}}(\kappa|\sigma,g) \log \pi(\kappa|\sigma,g)\]</div>
+<p>这个分解明确显示：$p_{\mathcal{D}}(\sigma|g) = 0$ 的场景不可观测，$p_{\mathcal{D}}(\kappa|\sigma,g) = 0$ 的技能未被练习。因此需要训练数据在 $\{(\sigma, \kappa)\}$ 上密集覆盖——这直接驱动了本文的技能图构建方法。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>为了理解什么使训练轨迹有用，需要看 Terminal Agent 如何工作：Agent 通过逐步与一系列中间<strong>场景 (scenarios)</strong> 交互来执行，在每个场景应用一个<strong>技能 (skill)</strong> 来推进任务。因此执行轨迹由两个维度联合表征：遍历的场景和运用的技能。</p>
+<p>现有工作主要沿以下路径扩展：</p>
+<ul><li><strong>LLM 生成分类法扩大领域覆盖</strong>（Endless Terminals、TermiGen、Nemotron-Terminal）：往往偏离真实世界使用模式</li><li><strong>从 GitHub 仓库派生任务</strong>（CLIGym、SWE-Universal）：局限于软件工程领域（issue 修复、功能开发）</li></ul>
+<p>这些方法提供了<strong>有限的对底层场景和技能组合的显式控制</strong>。如 Figure 1 所示，生成的轨迹在场景覆盖和技能使用上存在冗余：不同任务实例常暴露 Agent 到重叠的场景并复用相似的技能。</p>
+<p>从学习目标的分解（Equation 3）可以明确看出：策略的可学习区域受限于训练数据在场景-技能联合空间的支持。因此，<strong>最大化训练数据在 $\{(\sigma, \kappa)\}$ 条件积空间的密集覆盖</strong>是关键目标。</p>
+<p>本文提出 SkillSynth：通过<strong>场景中介的技能图 (scenario-mediated skill graph)</strong> 来控制轨迹多样性，从图中采样路径作为真实工作流的抽象，再通过多 Agent harness 将其实例化为可执行任务。</p>
+<p>SkillSynth 的任务合成分三个阶段：</p>
+<ul><li><strong>构建技能图</strong>：场景为节点，技能为有向边（从前置条件场景指向后置条件场景）</li><li><strong>图引导路径采样</strong>：从图中采样有向路径，指定需要顺序执行的技能组合及其遍历的场景</li><li><strong>多 Agent Harness 实例化</strong>：将采样路径转化为具体的可执行任务实例（自然语言指令 + 初始文件系统快照 + 容器化环境 + 验证脚本 + Oracle 解答）</li></ul>
+<p class="caption-note">SkillSynth 三阶段框架：技能图构建 → 图引导路径采样 → 多 Agent Harness 实例化</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/main_v3.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/main_v3.pdf" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/Building_Graph.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/Building_Graph.pdf" alt="Building Graph"></a>
+    </div>
+    <div class="fig-item">
+      <a href="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/category_distribution_sorted_bar_gradient.pdf" target="_blank" rel="noopener"><img src="../agent/assets/arxiv_2604_toward_scalable_terminal_task_synthesis_via_skill_graphs/category_distribution_sorted_bar_gradient.pdf" alt="Category Distribution"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <ul><li><strong>训练数据</strong>：用 MiniMax M2.7 作为教师模型，对 3,560 个合成任务采样 3 条轨迹（共 10,680 条），保留成功和失败轨迹</li><li><strong>训练方式</strong>：Qwen3 系列（8B/14B/32B）全参数 SFT，学习率 2e-5，5 epochs</li><li><strong>评估基准</strong>：Terminal-Bench 1.0（80 任务）和 2.0（89 任务），均报告 3 次独立运行均值 + 95% 置信区间</li><li><strong>Agent scaffold</strong>：Terminus 2，单无头终端交互</li></ul>
+<table class="result-table">
+<tr><th>模型</th><th>TB 1.0</th><th>TB 2.0</th></tr>
+<tr><td class="best">Proprietary</td></tr>
+<tr><td>GPT-5.3-Codex</td><td>--</td><td>64.7 ± 2.7</td></tr>
+<tr><td>Claude Opus 4.6</td><td>--</td><td>62.9 ± 2.7</td></tr>
+<tr><td>Claude Opus 4.5</td><td>--</td><td>57.8 ± 2.5</td></tr>
+<tr><td>Claude Sonnet 4.5</td><td>51.0 ± 1.6</td><td>42.8 ± 2.8</td></tr>
+<tr><td>Claude Opus 4.1</td><td>43.8 ± 2.8</td><td>38.0 ± 2.6</td></tr>
+<tr><td>GPT-5</td><td>41.3 ± 2.2</td><td>35.2 ± 3.1</td></tr>
+<tr><td class="best">Open-Source</td></tr>
+<tr><td>GLM 5</td><td>--</td><td>52.4 ± 2.6</td></tr>
+<tr><td>DeepSeek-V3.2</td><td>--</td><td>39.6 ± 2.8</td></tr>
+<tr><td>Qwen 3 Coder 480B</td><td>--</td><td>23.9 ± 2.8</td></tr>
+<tr><td class="best">Ours</td></tr>
+<tr><td>Qwen3-8B + SkillSynth</td><td>17.1 ± 1.8</td><td>13.5 ± 2.8</td></tr>
+<tr><td>Qwen3-14B + SkillSynth</td><td>22.9 ± 1.8</td><td>19.9 ± 1.6</td></tr>
+<tr><td class="best">Qwen3-32B + SkillSynth</td><td class="best">33.8 ± 3.1</td><td class="best">29.6 ± 1.6</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>Qwen3-32B + SkillSynth 在 TB 2.0 上超越 <strong>Qwen 3 Coder 480B</strong>（29.6 vs 23.9），说明针对性数据构建和领域训练可以让小模型有效提升</li><li>所有三个规模的模型均在各自基线上有提升，增益随模型规模增大</li><li>性能随规模线性提升：8B→14B→32B</li></ul>
+<table class="result-table">
+<tr><th>策略</th><th>0/3</th><th>1/3</th><th>2/3</th><th>3/3</th><th>TB 1.0</th><th>TB 2.0</th></tr>
+<tr><td>Single-skill</td><td>16%</td><td>23%</td><td>34%</td><td>27%</td><td>25.4</td><td>21.3</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>为了理解什么使训练轨迹有用，需要看 Terminal Agent 如何工作：Agent 通过逐步与一系列中间<strong>场景 (scenarios)</strong> 交互来执行，在每个场景应用一个<strong>技能 (skill)</strong> 来推进任务。因此执行轨迹由两个维度联合表征：遍历的场景和运用的技能。</p>
+<p>现有工作主要沿以下路径扩展：</p>
+<ul><li><strong>LLM 生成分类法扩大领域覆盖</strong>（Endless Terminals、TermiGen、Nemotron-Terminal）：往往偏离真实世界使用模式</li><li><strong>从 GitHub 仓库派生任务</strong>（CLIGym、SWE-Universal）：局限于软件工程领域（issue 修复、功能开发）</li></ul>
+<p>这些方法提供了<strong>有限的对底层场景和技能组合的显式控制</strong>。如 Figure 1 所示，生成的轨迹在场景覆盖和技能使用上存在冗余：不同任务实例常暴露 Agent 到重叠的场景并复用相似的技能。</p>
+<ul><li><strong>首次将技能图用于可控终端任务合成</strong>：通过场景中介的技能图显式控制轨迹在场景×技能空间的多样性，而非仅扩展任务数量</li><li><strong>理论支撑扎实</strong>：从学习目标分解推导出覆盖准则（$\Omega \times \mathcal{K}$ 均匀覆盖），逆频采样直接优化该准则</li><li><strong>高质量大规模合成</strong>：95.7% Oracle 通过率，92.0% 双验证通过率，单次运行产出 3,560 个可用任务，每任务仅 $27.3</li><li><strong>实际工业验证</strong>：合成任务已用于训练混元 Hy3 Preview，证实了工业级有效性</li><li><strong>图的可扩展性</strong>：随着社区贡献更多 skills，图持续扩展，支持持续合成</li></ul>
+<ul><li><strong>依赖初始 Skill 来源质量</strong>：从 ClawHub 和 GitHub 收集的 skills 可能有偏差，覆盖不均匀</li><li><strong>场景推断依赖 LLM 质量</strong>：前置/后置条件场景的推断质量受 LLM 能力限制，可能引入噪声</li><li><strong>路径采样限于链式结构</strong>：当前只采样链式路径，未来可扩展到子图采样（并行执行多技能），增加任务复杂度</li><li><strong>Harness 修复有天花板</strong>：文件系统快照损坏等严重错误无法通过修复恢复，存在修复下限</li><li><strong>评估仅限于 Terminal-Bench</strong>：未在其他 agent 基准（如 SWE-bench、WebArena）上验证泛化性...</li></ul>
+</div>
+</article></main></body></html>

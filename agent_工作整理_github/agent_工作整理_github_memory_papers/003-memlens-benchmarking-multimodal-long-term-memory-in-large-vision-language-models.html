@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models | agent_工作整理_memory</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Memory — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_memory.html">← 返回 agent_工作整理_memory 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.14906">
+  <h2>MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.14906" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.14906.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/xrenaf/MEMLENS" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.14906</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这一部分当前还没有补到更细的整理。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>MemLens 关注的是 agent 场景里非常核心但经常被简化的问题：一个多模态助手经过很多轮、多 session 的交互后，能不能记住过去的图文证据、更新用户状态、跨 session 推理，并在证据缺失时拒答？</p>
+<p>作者认为当前有两条主流路线。第一是 long-context LVLM，把完整图文历史直接塞进模型上下文窗口，让模型通过长上下文 attention 自己找证据。第二是 memory-augmented agent，把历史压缩、索引、存入外部 memory store，查询时检索相关内容再回答。问题是，之前没有一个 benchmark 能在同一多模态、多 session、长度可控的设置下系统比较这两条路线，而且很多所谓多模态记忆 benchmark 存在 text-only shortcut，即不看图也能答对。</p>
+<p>这篇论文的核心贡献就是提出 MemLens：789 个问题，覆盖五类 memory abilities，提供 32K、64K、128K、256K 四档标准上下文长度，并且显式要求很多问题必须依赖视觉证据。作者评估了 27 个 LVLM 和 7 个 memory-augmented agents，最后结论很直接：long-context LVLM 短上下文更强，但上下文变长会退化；memory agent 长度更稳定，但因为存储时压缩图像而丢失视觉细节；两者都没有真正解决多模态长期记忆。</p>
+<p>MemLens 最重要的质量控制是防止 text-only shortcut。作者使用 entity abstraction：先选择一个视觉 anchor，比如 Golden Gate Bridge，然后把文本里的实体名替换为“the bridge shown in <code>&lt;image&gt;</code>”。这样文本保留事实上下文，但实体身份必须从图像识别出来。</p>
+<p>跨模态验证结果很强：</p>
+<table class="result-table">
+<tr><th>Model</th><th>Input</th><th>Overall</th><th>IE</th><th>MSR</th><th>TR</th><th>KU</th><th>Delta</th></tr>
+<tr><td>GPT-5.4</td><td>With evidence image</td><td>93.13</td><td>94.31</td><td>100.00</td><td>96.91</td><td>75.86</td><td>-</td></tr>
+<tr><td>GPT-5.4</td><td>W/o evidence image</td><td>1.74</td><td>0.41</td><td>0.00</td><td>5.15</td><td>0.00</td><td>-91.39</td></tr>
+<tr><td>Gemini-3.1-Pro</td><td>With evidence image</td><td>89.42</td><td>89.02</td><td>90.21</td><td>96.19</td><td>82.24</td><td>-</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p class="placeholder-note">这一部分当前还没有补到更细的整理。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/pipeline.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/pipeline.png" alt="MemLens 构造流程"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/composition_donut.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/composition_donut.png" alt="MemLens 与已有 benchmark 的差异和题型分布"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/ie_entity_candidates.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_memlens_benchmarking_multimodal_long_term_memory_in_large_vision_language_models/ie_entity_candidates.png" alt="IE-Entity 示例"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>MemLens 的构造流程分四步：先模拟 topic-grounded 的多模态对话 session；再构造必须依赖视觉内容的问题；然后把 evidence facts 包进自然的 evidence sessions；最后按时间顺序把 evidence、haystack 和 filler sessions 混合，生成不同长度的 conversation history。</p>
+<p>上图展示了代表性 13 个 LVLM 和 6 个 agents 的 per-type accuracy。一个重要现象是：32K 下很多 frontier LVLM 差距很小，但到 128K 后排序明显变化，部分开源强模型掉分超过 13%，而 Gemini-3.1-Pro 更稳。</p>
+<table class="result-table">
+<tr><th>Model</th><th>32K Ov.</th><th>64K Ov.</th><th>128K Ov.</th><th>关键观察</th></tr>
+<tr><td>Qwen3.5-122B-A10B</td><td>58.68</td><td>55.89</td><td>45.50</td><td>32K 最强，但长上下文退化明显</td></tr>
+<tr><td>Qwen3-VL-30B (I)</td><td>55.01</td><td>49.81</td><td>44.23</td><td>短上下文强，AR 和 KU 随长度下滑</td></tr>
+<tr><td>Kimi-K2.5</td><td>54.88</td><td>53.99</td><td>51.99</td><td>MSR 最强之一，长上下文相对稳</td></tr>
+<tr><td>Gemini-3.1-Pro</td><td>54.10</td><td>52.99</td><td>51.99</td><td>128K 保持最好，整体仅降 2.11</td></tr>
+<tr><td>Qwen3-VL-235B (I)</td><td>53.23</td><td>50.82</td><td>47.66</td><td>TR/AR 强，MSR 弱</td></tr>
+<tr><td>GPT-5.4</td><td>52.72</td><td>52.34</td><td>49.56</td><td>per-answer accuracy 高，但较保守</td></tr>
+<tr><td>GLM-4.6V</td><td>52.34</td><td>49.05</td><td>39.04</td><td>TR 强，但 AR 长上下文崩得明显</td></tr>
+<tr><td>Qwen3.5-27B</td><td>52.98</td><td>46.13</td><td>40.68</td><td>长上下文退化明显</td></tr>
+</table>
+<p>论文强调，最强 LVLM 在 32K 也只有 58.68%，说明 MemLens 不是“刷满型”benchmark。MSR 尤其难：32K 上只有 Kimi-K2.5 达到 44.06%，Gemini-3.1-Pro 为 32.17%，多数系统低于 30%。这意味着跨 session 聚合是当前系统的明显上限。</p>
+<table class="result-table">
+<tr><th>Agent</th><th>32K Ov.</th><th>64K Ov.</th><th>128K Ov.</th><th>256K Ov.</th><th>关键观察</th></tr>
+<tr><td>MemAgent-7B</td><td>32.82</td><td>25.64</td><td>28.21</td><td>24.62</td><td>32K 最高，但 AR 很弱</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>这篇工作的局限主要有四类。</p>
+<p>第一，MemLens 是 synthetic multi-session dialogue，虽然 filler 来自 ShareGPT/UltraChat，evidence sessions 经过人工审查，但仍不等同真实用户长期对话分布。</p>
+<p>第二，agent 与 direct LVLM 的输入接口不完全对称。Direct LVLM 看原始图像，而许多 memory agents 只能看 BLIP-2 captions 或 embeddings。因此论文比较的是“当前公开 agent pipeline 的实际表现”，不是 memory-augmented architecture 的理论上限。</p>
+<p>第三，评测依赖 LLM-as-Judge，尽管做了交叉验证，但全量 73,784 次 judge calls 中人工/交叉验证只覆盖一部分。</p>
+<p>第四，数据集使用 4,695 张 public web images。作者有 negative-content filtering、watermark/stock-logo filtering、隐私策略、per-image provenance、takedown mechanism 和 frozen version tags，但这类 web-sourced image benchmark 天然存在版权与分布偏差问题。</p>
+<p>MemLens 给 agent 方向的启发很明确：长期记忆不能只做“文本摘要 + 向量检索”。对于多模态 agent，memory store 必须保留足够的视觉证据，至少要能在查询时回到原图或高保真视觉片段，而不是只保存 caption 或低维 embedding。</p>
+<p>另一个启发是，long-context attention 和 external memory 不是替代关系。Long-context LVLM 能直接 grounding 原图，但会随上下文变长退化；memory agent 长度稳定，但存储压缩导致视觉失真。下一代架构更可能是 hybrid：短期/中期用 long-context attention 保留原始图文，长期用结构化 memory 做索引和筛选，但 retrieval 返回的应该是可重新视觉 grounding 的 evidence package。...</p>
+</div>
+</article></main></body></html>

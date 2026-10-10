@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Contexts are Never Long Enough: Structured Reasoning for Scalable Question Answering over Long Document Sets | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets">
+  <h2>Contexts are Never Long Enough: Structured Reasoning for Scalable Question Answering over Long Document Sets</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://github.com/stanford-oval/sliders" target="_blank">Code</a>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者的核心判断是：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>长文档、多文档问答在金融、法律、科研分析等场景非常常见，但即便前沿模型已经支持百万 token 上下文，真实文档集合依然会很快超出上下文窗口。常见做法是：</p>
+<ul><li>把文档切成 chunk。</li><li>在 chunk 上分别抽取或回答。</li><li>再把 chunk 级结果聚合成最终答案。</li></ul>
+<p>作者认为这里有一个根本性问题，称为 <strong>aggregation bottleneck</strong>：</p>
+<ul><li>chunking 虽然缓解了“放不进上下文”的问题；</li><li>但随着 chunk 数量增多，系统仍然需要对越来越多的 chunk 级中间结果做二次聚合与推理；</li><li>这其实又把问题重新变回了“长上下文整合问题”。</li></ul>
+<p>也就是说，很多 long-context 方法并没有真正摆脱长度瓶颈，只是把瓶颈从“原始文档”转移到了“chunk 输出的聚合层”。</p>
+<p>这张图对应论文最重要的动机：</p>
+<ul><li>传统 chunk-based pipeline 把原文切碎后，虽然局部处理更容易；</li><li>但下游还是要把大量局部结果重新拼起来；</li><li>随着文档数和 chunk 数上涨，聚合层的负担会迅速膨胀；</li><li>SLIDERS 的做法是把这些局部信息沉淀到结构化表中，让后续推理在数据库上进行，而不是继续在文本上“拼接后再读”。</li></ul>
+<p>“aggregation bottleneck” 这个概念很强，因为它解释了为什么很多方法在工程上看似做了分治，实质上仍然没有解决可扩展推理。</p>
+<p>当问题需要强主观判断、模糊语义解释、开放式写作时，数据库表示未必能完整承载所有信息。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的核心判断是：</p>
+<ul><li>真正需要扩展的不是一次性喂给模型的文本长度；</li><li>而是系统持久化、组织、查询和整合证据的能力。</li></ul>
+<p>所以他们把任务从：</p>
+<ul><li>“让 LLM 在超长文本里直接找答案”</li></ul>
+<p>改写成：</p>
+<ul><li>“让 LLM 先把文本转换成结构化数据库，再在数据库上做程序化推理”。</li></ul>
+<p>这意味着：</p>
+<ul><li>文本负责提供原始证据；</li><li>关系数据库负责保存显式状态；</li><li>SQL 负责执行聚合、过滤、比较、算术与跨文档整合；</li><li>LLM 更像一个 agent，负责 schema 设计、抽取、纠错、查询生成与多轮工具调用。</li></ul>
+<p>作者把整个方法拆成五个任务，这也是论文最值得关注的地方。</p>
+<p>作者比较了：</p>
+<ul><li>RAG</li><li>LongRAG</li><li>GraphRAG</li><li>直接使用 frontier LLM</li><li>DocETL</li><li>Chain of Agents</li><li>RLM</li><li>SLIDERS</li></ul>
+<p>这使得论文不仅和传统检索问答比，也和更偏 agent / decomposition / scaffold 的系统比。</p>
+<p>SLIDERS 用 Qwen3.5 122B-A10B 做底座时，context-bounded benchmark 平均也能达到 75.26，显著高于直接把同一模型当 basemodel 使用时的 61.44。</p>
+<p>这表明收益主要来自 <strong>框架设计</strong>，而不是单靠更强闭源模型。</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/main_funnel.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/main_funnel.png" alt="aggregation bottleneck"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/methodology_color.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2604_contexts_are_never_long_enough_structured_reasoning_for_scalable_question_answering_over_long_document_sets/methodology_color.png" alt="SLIDERS pipeline"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Models</th><th>LLMs</th><th>FB</th><th>Loong</th><th>Oolong</th><th>Avg.</th><th>WC</th><th>FQ</th></tr>
+<tr><td>RAG</td><td>Qwen3-4B + GPT-4.1</td><td>62.67</td><td>54.35</td><td>11.32</td><td>42.77</td><td>31.41</td><td>5.00</td></tr>
+<tr><td>LongRAG</td><td>Qwen3-4B + GPT-4.1</td><td>72.00</td><td>59.10</td><td>22.00</td><td>51.03</td><td>43.20</td><td>28.87</td></tr>
+<tr><td>GraphRAG</td><td>Qwen3-4B + GPT-4.1</td><td>75.33</td><td>61.28</td><td>22.00</td><td>52.87</td><td>48.59</td><td>未报告</td></tr>
+<tr><td>Basemodel</td><td>GPT-4.1</td><td>82.00</td><td>76.74</td><td>45.56</td><td>68.69</td><td>不适用</td><td>不适用</td></tr>
+<tr><td>Basemodel</td><td>Qwen3.5 122B-A10B</td><td>84.67</td><td>74.78</td><td>24.89</td><td>61.44</td><td>不适用</td><td>不适用</td></tr>
+<tr><td>DocETL</td><td>GPT-4.1</td><td>63.33</td><td>75.03</td><td>49.00</td><td>62.44</td><td>54.26</td><td>未报告</td></tr>
+<tr><td>Chain of Agent</td><td>GPT-5 + GPT-5-mini</td><td>71.30</td><td>54.46</td><td>17.11</td><td>47.62</td><td>未报告</td><td>未报告</td></tr>
+<tr><td>RLM</td><td>GPT-5 + GPT-5-mini</td><td>75.33</td><td>72.64</td><td>51.42</td><td>66.46</td><td>59.80</td><td>未报告</td></tr>
+<tr><td class="best">SLIDERS</td><td class="best">GPT-4.1 + GPT-4.1-mini</td><td class="best">89.33</td><td class="best">78.57</td><td>64.67</td><td class="best">75.56</td><td class="best">78.91</td><td>55.22</td></tr>
+<tr><td class="best">SLIDERS</td><td class="best">Qwen3.5 122B-A10B</td><td>82.10</td><td>75.70</td><td class="best">68.00</td><td>75.26</td><td>76.92</td><td class="best">60.18</td></tr>
+</table>
+<p>这点非常关键。SLIDERS 并不是只在超长输入下才有意义。即使在 FinanceBench、Loong、Oolong 这些还能放进强模型上下文的任务上，它也依旧优于直接用 GPT-4.1。</p>
+<p>论文给出的结论是：</p>
+<ul><li>相比 GPT-4.1 直接读长上下文，SLIDERS 平均高 <strong>6.6 个点</strong>；</li><li>在 Oolong 这种聚合压力大的任务上，结构化推理优势尤其明显。</li></ul>
+<p>这说明作者抓住的不是单纯“上下文不够长”的问题，而是“跨片段聚合、比较、算术、全局一致性维护”本来就不适合纯 free-form 文本推理。</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <p>我认为这篇工作的主要贡献可以概括为 4 点：</p>
+<ul><li><strong>提出 aggregation bottleneck 这一问题表述</strong></li></ul>
+<p>很多 long-context/chunk-based 方法的真正瓶颈被说清楚了。</p>
+<ul><li><strong>提出 SLIDERS 这一结构化推理框架</strong></li></ul>
+<p>把长文档问答改写为数据库构建与 SQL 推理问题。</p>
+<ul><li><strong>把 reconciliation 做成系统核心模块</strong></li></ul>
+<p>尤其强调 provenance、rationale、metadata 在全局一致化中的作用。</p>
+<ul><li><strong>构建 ultra-long benchmark</strong></li></ul>
+<p>WikiCeleb100 和 FinQ100 让论文真正评到了现有 context window 之外。</p>
+<p>相比把中间结果保留成摘要文本、scratchpad 或递归 prompt，数据库是一种更稳定、更可计算、更可审计的状态表示。</p>
+<p>如果你近期关注的是 agent、长上下文、tool-use 或 memory，这篇论文很值得记住，原因在于它给出了一条很明确的路线：</p>
+</div>
+</article></main></body></html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>HDPO: Hybrid Distillation Policy Optimization via Privileged Self-Distillation | opd_工作整理</title><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD 工作整理 — On-Policy Distillation 论文精读</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2d6cdf;
+    --accent-light: #e8f0fe;
+    --tag-bg: #eef2ff;
+    --tag-text: #3730a3;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  .paper-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .summary-box {
+    background: #f0f7ff;
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.2rem 0 0.5rem 0;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li {
+    font-size: 0.92rem;
+    color: #333;
+    margin-bottom: 0.4rem;
+  }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.8rem 0;
+  }
+  .fig-row img {
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0;
+    font-size: 0.88rem;
+  }
+  .result-table th, .result-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 0.6rem 0;
+  }
+  .pros-cons > div {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+  }
+  .pros-cons .pros { background: #f0fdf4; border-left: 3px solid #22c55e; }
+  .pros-cons .cons { background: #fef2f2; border-left: 3px solid #ef4444; }
+  .pros-cons h4 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .toc-wrap {
+    position: fixed;
+    top: 2rem;
+    left: 1rem;
+    z-index: 100;
+  }
+  .toc-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .toc-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 480px;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.2rem;
+  }
+  .toc-wrap:hover .toc-btn { display: none; }
+  .toc-wrap:hover .toc-panel { display: block; }
+  .toc-panel h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .toc ol {
+    padding-left: 1.2rem;
+    margin: 0;
+  }
+  .toc li {
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+  }
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  @media (max-width: 640px) {
+    .pros-cons { grid-template-columns: 1fr; }
+    .paper-card { padding: 1.2rem; }
+  }
+  @media (max-width: 1400px) {
+    .toc {
+      position: static;
+      width: 100%;
+      max-height: none;
+      margin-bottom: 2rem;
+    }
+    body { padding-left: 1rem; }
+  }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../opd_工作整理_github.html">← 返回 opd_工作整理 论文列表</a></div><main class="container"><article class="paper-card" id="card-hdpo">
+
+<h2>HDPO: Hybrid Distillation Policy Optimization via Privileged Self-Distillation</h2>
+
+<div class="meta-row">
+  <span class="tag">HDPO</span>
+  <a href="https://arxiv.org/abs/2603.23871" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2603.23871.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2603.23871</span>
+</div>
+
+<div class="summary-box">
+  <strong>核心思想：</strong>RL 训练中的 cliff prompts（所有 rollout 都失败、梯度为零）形成学习死区。HDPO 不回避 cliff，而是让同一个模型在 privileged context（附加 ground truth）下生成 teacher 轨迹，筛选正确样本后用 JSD 蒸馏给 student——直接给 RL 无梯度区域补学习信号，同时揭示 coverage 与 greedy accuracy 之间可调的权衡。
+</div>
+
+<h3 class="section-title">问题与动机</h3>
+<ul>
+  <li><strong>Cliff prompts 问题：</strong>某个 prompt 上所有 rollout 都失败 → reward 全为 0 → advantage 无方差 → 梯度消失。最难、最需要学习的样本反而拿不到训练信号。</li>
+  <li>已有解法（curriculum / hint / replay / PRM / RL+SFT 交替）普遍需要额外模块或调度器，工程复杂度高。</li>
+  <li>核心问题：<strong>"RL 在 cliff prompts 上零梯度时，能否不依赖外部教师模型，仍给模型可靠的学习信号？"</strong></li>
+</ul>
+<p>从 OPD 角度看，HDPO 是一种 <strong>on-policy distillation for failure regions</strong>——distill 对象是 cliff prompts，teacher 是 privileged version of self，蒸馏目标是给 RL 无梯度区域补信号，损失函数用 JSD 做更偏 mode covering。</p>
+
+<h3 class="section-title">方法：Privileged Self-Distillation</h3>
+<ul>
+  <li><strong>Step 1 — 标准 GRPO rollout：</strong>student 看原始题目 $x$，正常采样并更新 $\mathcal{L}_{\mathrm{GRPO}}$。</li>
+  <li><strong>Step 2 — 定位 cliff prompts：</strong>所有 rollout 都失败的 prompt 集合 $\mathcal{C}$。</li>
+  <li><strong>Step 3 — Privileged teacher 采样：</strong>对每个 $x \in \mathcal{C}$，将 ground truth $y^*$ 拼入输入，让同一模型生成 teacher rollout，只保留正确轨迹 $\mathcal{T}$。</li>
+  <li><strong>Step 4 — JSD 蒸馏：</strong>在 teacher 正确轨迹上计算 token-level JSD，作为辅助损失。</li>
+</ul>
+<p>联合目标：</p>
+\[
+\mathcal{L}_{\mathrm{HDPO}}(\theta) = \mathcal{L}_{\mathrm{GRPO}}(\theta) + \lambda \cdot \mathcal{L}_{\mathrm{JSD}}(\theta)
+\]
+<p>选 JSD 而非 KL 的动机是 <strong>mode covering</strong>——扩大对多种正确策略的覆盖，提升 pass@$k$。teacher 和 student 共享参数，差别仅在输入是否含 privileged information，realizability gap 更小。</p>
+
+<h3 class="section-title">实验结果</h3>
+<p>基座 <code>Qwen2.5-Math-1.5B-Instruct</code>，数据集 <code>OpenMathInstruct-2</code>，GRPO $G=16$，2000 步。</p>
+
+<table class="result-table">
+  <tr><th>Method</th><th>pass@1</th><th>pass@4</th><th>pass@8</th></tr>
+  <tr><td>GRPO Baseline</td><td class="best">0.6519</td><td>0.7749</td><td>0.8228</td></tr>
+  <tr><td>HDPO (frozen, $\lambda\!=\!0.01$)</td><td class="best">0.6519</td><td>0.7812</td><td>0.8218</td></tr>
+  <tr><td>HDPO (frozen, $\lambda\!=\!0.1$)</td><td>0.6304</td><td>0.7812</td><td class="best">0.8398</td></tr>
+  <tr><td>HDPO (drifting, $\lambda\!=\!0.01$)</td><td>0.6514</td><td class="best">0.7861</td><td>0.8271</td></tr>
+  <tr><td>HDPO (drifting, $\lambda\!=\!0.1$)</td><td>0.6294</td><td>0.7856</td><td>0.8364</td></tr>
+</table>
+
+<ul>
+  <li><strong>低 $\lambda$：</strong>coverage 提升但 greedy accuracy 基本不掉（drifting $\lambda\!=\!0.01$：pass@4 +1.1%，pass@1 持平）。</li>
+  <li><strong>高 $\lambda$：</strong>pass@8 显著提升但 pass@1 下降约 2–3%——exploration-exploitation 权衡。</li>
+  <li><strong>Drifting teacher</strong> 在低 $\lambda$ 下更好（realizability gap 更小），frozen teacher 在高 $\lambda$ 下提供更多 signal diversity。</li>
+</ul>
+
+<h3 class="section-title">优点与局限</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>优点</h4>
+    <ul>
+      <li>精准命中 RL 的零梯度死区，问题定义准确</li>
+      <li>无需额外 teacher model / replay buffer / PRM / 多阶段切换</li>
+      <li>same-model privileged distillation 设定干净，理论可解释</li>
+      <li>明确展示 coverage vs. greedy accuracy 的可控权衡</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>局限</h4>
+    <ul>
+      <li>依赖 ground truth 作为 privileged information，仅适用可判定答案任务</li>
+      <li>实验规模窄：1.5B 模型、1 个数据集、1 类任务</li>
+      <li>覆盖提升幅度不算大，对 run-to-run variance 敏感</li>
+      <li>额外计算开销真实存在（privileged generation + JSD 计算）</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem;">
+  <strong>定位：</strong>针对 RL failure region 的 privileged self-distillation。与 SCOPE（trajectory-level signal routing）、EOPD（token-level KL routing）、LSM（token-level supervision granularity）互补。启发：teacher 不必更强只需信息更全；JSD 适合 coverage-oriented distillation；"expand then sharpen"两阶段训练值得跟进。
+</p>
+
+</article></main></body></html>

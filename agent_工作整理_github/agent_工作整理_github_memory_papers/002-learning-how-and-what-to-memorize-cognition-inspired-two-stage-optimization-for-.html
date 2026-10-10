@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Learning How and What to Memorize: Cognition-Inspired Two-Stage Optimization for Evolving Memory | agent_工作整理_memory</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Memory — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_memory.html">← 返回 agent_工作整理_memory 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.00702">
+  <h2>Learning How and What to Memorize: Cognition-Inspired Two-Stage Optimization for Evolving Memory</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.00702" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.00702.pdf" target="_blank">PDF</a>
+  <a href="https://github.com/Applied-Machine-Learning-Lab/ACL2026_MemCoE" target="_blank">Code</a>
+  <span style="color:var(--text-secondary)">arXiv 2605.00702</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p class="caption-note">上：有限上下文窗口下 Agent 无法捕获偏好。下：受前额叶→海马体启发，解耦记忆为 Memory Guideline（组织）→ Agent Memory（更新）</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <ul><li><strong>静态工作流方法</strong>（Mem0、A-Mem、LightMem 等）：依赖手工设计的提取规则和更新模板，无法从交互反馈中学习，难以适应动态用户行为</li><li><strong>RL-based 记忆 Agent</strong>（MemAgent、MEM-α 等）：将记忆操作建模为序列决策问题并用 RL 优化，但：</li><li>仅依赖<strong>稀疏的结果级奖励</strong>（最终答案正确性），缺乏过程级监督</li><li>记忆更新涉及自由形式的编辑（写什么/忘什么），动作空间巨大</li><li>长程优化困难，训练不稳定，数据需求大</li></ul>
+<p>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+<ul><li><strong>前额叶区域（Prefrontal regions）</strong>：根据当前上下文动态选择和配置合适的图式，塑造期望和注意力优先级 → 对应 <strong>How</strong>：记忆应该如何被组织</li><li><strong>海马体区域（Hippocampus regions）</strong>：实例化图式，编码具体的经历细节 → 对应 <strong>What</strong>：应该存储和更新什么信息</li></ul>
+<p>这种分离的优势：维持一个<strong>稳定的图式级组织先验</strong>来引导注意力和结构化，同时允许海马体系统在该框架内灵活编码上下文特定的经历细节。</p>
+<p>核心问题：</p>
+<p>&gt; 能否构建一个基于图式的 Agent 记忆系统，其组织和更新机制以类似于人类大脑的方式演化？</p>
+<p>MemCoE 是一个两阶段优化框架：</p>
+<ul><li><strong>Stage 1: Memory Guideline Induction (MGI)</strong>（模块 ♣）：优化全局自然语言指导方针（模拟前额叶）</li><li><strong>Stage 2: Guideline-Aligned Memory Policy Optimization (GMPO)</strong>（模块 ♠）：在固定指导方针下优化记忆演化策略（模拟海马体）</li></ul>
+<p class="caption-note">图：MemCoE 两阶段优化框架——MGI 迭代精炼自然语言指导方针，GMPO 使用指导方针定义结构化过程奖励并执行多轮 GRPO</p>
+<p class="caption-note">上：有限上下文窗口下 Agent 无法捕获偏好。下：受前额叶→海马体启发，解耦记忆为 Memory Guideline（组织）→ Agent Memory（更新）</p>
+<p class="caption-note">MemCoE 两阶段优化框架</p>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/method.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/method.png" alt="方法框架"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/efficiency_tradeoff.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/efficiency_tradeoff.png" alt="Efficiency"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/intro.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_learning_how_and_what_to_memorize_cognition_inspired_two_stage_optimization_for_evolving_memory/intro.png" alt="Intro"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p><strong>三个个性化记忆 Benchmark</strong>：</p>
+<table class="result-table">
+<tr><th>Benchmark</th><th>评估维度</th><th>指标</th><th>规模</th></tr>
+<tr><td>PersonaMem</td><td>长期偏好演化（32K/128K）</td><td>Accuracy</td><td>589~2,727 QA pairs</td></tr>
+<tr><td>PrefEval</td><td>显式/隐式偏好（Explicit/Implicit）</td><td>Accuracy</td><td>各 1,000 样本</td></tr>
+<tr><td>PersonaBench</td><td>噪声下的个性化检索 QA</td><td>F1</td><td>6 用户, 263 queries</td></tr>
+</table>
+<p><strong>Baselines</strong>：LongContext、RAG、Mem0、A-Mem、LightMem、MemAgent、MEM-α</p>
+<p><strong>实现细节</strong>：主干 LLM 为 Qwen2.5-7B-Instruct，训练数据从 PersonaMem 采样 300 例，4×A6000 GPU</p>
+<table class="result-table">
+<tr><th>Method</th><th>PersonaMem 32K</th><th>PersonaMem 128K</th><th>PrefEval Explicit</th><th>PrefEval Implicit</th><th>PersonaBench w/o Noise</th><th>Overall</th></tr>
+<tr><td>Long Context</td><td>34.36</td><td>25.05</td><td>31.70</td><td>30.80</td><td>29.00</td><td>26.90</td></tr>
+<tr><td>RAG</td><td>48.67</td><td>38.90</td><td>47.80</td><td>32.40</td><td>29.09</td><td>36.68</td></tr>
+<tr><td>Mem0</td><td>48.53</td><td>39.67</td><td>57.60</td><td>46.40</td><td>17.60</td><td>38.23</td></tr>
+<tr><td>A-Mem</td><td>48.26</td><td>38.22</td><td>62.30</td><td>52.80</td><td>30.32</td><td>42.64</td></tr>
+<tr><td>LightMem</td><td>50.72</td><td>39.93</td><td>64.20</td><td>54.80</td><td>19.08</td><td>41.21</td></tr>
+<tr><td>MemAgent</td><td>53.58</td><td>43.59</td><td>72.30</td><td>63.60</td><td>20.05</td><td>45.00</td></tr>
+<tr><td>MEM-α</td><td>53.37</td><td>42.86</td><td>71.90</td><td>62.50</td><td>19.92</td><td>44.19</td></tr>
+<tr><td class="best">MemCoE (Ours)</td><td class="best">57.06</td><td class="best">47.24</td><td class="best">81.30</td><td class="best">69.90</td><td class="best">32.27</td><td class="best">52.02</td></tr>
+</table>
+<p><strong>关键发现</strong>：</p>
+<ul><li>MemCoE 在所有 8 个评估设置上均取得最佳性能，Overall 得分 52.02 远超第二名 MemAgent（45.00）</li><li>PrefEval Explicit 上提升最大：81.30 vs 72.30（+9.0pp），说明指导方针对偏好保留有显著帮助</li><li>PersonaBench（噪声环境）上 MemCoE 也最强（32.27），展示了对噪声的鲁棒性...</li></ul>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>静态工作流方法</strong>（Mem0、A-Mem、LightMem 等）：依赖手工设计的提取规则和更新模板，无法从交互反馈中学习，难以适应动态用户行为</li><li><strong>RL-based 记忆 Agent</strong>（MemAgent、MEM-α 等）：将记忆操作建模为序列决策问题并用 RL 优化，但：</li><li>仅依赖<strong>稀疏的结果级奖励</strong>（最终答案正确性），缺乏过程级监督</li><li>记忆更新涉及自由形式的编辑（写什么/忘什么），动作空间巨大</li><li>长程优化困难，训练不稳定，数据需求大</li></ul>
+<p>受<strong>记忆图式理论（Memory Schema Theory）</strong> 启发，本文提出将记忆机制解耦为两个维度：</p>
+<ul><li><strong>前额叶区域（Prefrontal regions）</strong>：根据当前上下文动态选择和配置合适的图式，塑造期望和注意力优先级 → 对应 <strong>How</strong>：记忆应该如何被组织</li><li><strong>海马体区域（Hippocampus regions）</strong>：实例化图式，编码具体的经历细节 → 对应 <strong>What</strong>：应该存储和更新什么信息</li></ul>
+<p>这种分离的优势：维持一个<strong>稳定的图式级组织先验</strong>来引导注意力和结构化，同时允许海马体系统在该框架内灵活编码上下文特定的经历细节。</p>
+<p>核心问题：</p>
+<p>&gt; 能否构建一个基于图式的 Agent 记忆系统，其组织和更新机制以类似于人类大脑的方式演化？</p>
+<ul><li><strong>认知科学启发的优雅解耦</strong>：将记忆机制分解为&quot;如何组织&quot;（MGI）和&quot;存储什么&quot;（GMPO），受前额叶-海马体功能分工启发，设计有理论基础</li><li><strong>文本梯度的创新运用</strong>：将对比反馈解释为文本梯度，批次级聚合产生稳定的全局指导方针，这是一种新颖的 prompt 优化范式</li><li><strong>密集过程级奖励</strong>：指导方针对齐奖励提供了比稀疏结果奖励更丰富的监督信号，有效约束了 GMPO 的动作空间</li><li><strong>指导方针的强迁移性</strong>：在一个 LLM 上优化的指导方针可迁移到其他 LLM（包括 GPT-5），说明捕获了模型无关的记忆更新原则</li><li><strong>全面的实验验证</strong>：在 3 个 benchmark、8 个设置上一致优于所有 baseline，Overall 得分 52.02 vs 第二名 45.00</li><li><strong>效率前沿</strong>：性能最佳的同时推理速度较快，将提取/更新/遗忘内化到演化过程中</li><li><strong>偏好保留的长期优势</strong>：多轮演化后偏好保留率（~74%）远超 MemAgent（~51%），优势随轮次累积...</li></ul>
+</div>
+</article></main></body></html>

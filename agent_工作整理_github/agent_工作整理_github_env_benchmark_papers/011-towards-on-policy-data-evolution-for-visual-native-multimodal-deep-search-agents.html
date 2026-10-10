@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Towards On-Policy Data Evolution for Visual-Native Multimodal Deep Search Agents | agent_工作整理_env_benchmark</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Environments & Benchmarks — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_env_benchmark.html">← 返回 agent_工作整理_env_benchmark 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2605.10832">
+  <h2>Towards On-Policy Data Evolution for Visual-Native Multimodal Deep Search Agents</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2605.10832" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2605.10832.pdf" target="_blank">PDF</a>
+  <span class="meta-muted">Code: 论文源码里未看到明确公开仓库链接</span>
+  <span style="color:var(--text-secondary)">arXiv 2605.10832</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>作者的主张不是只改模型，也不是只改数据，而是把问题看成一个 <strong>workspace + data generator + policy</strong> 的协同设计问题：</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>这篇 paper 关注的是 <strong>multimodal deep search agent</strong>。这类 agent 不是只做单轮 VQA，也不是简单把图像喂给模型直接回答，而是要在开放世界里连续调用工具，完成：</p>
+<ul><li>search</li><li>browse / visit</li><li>visual search</li><li>image manipulation</li><li>computation</li></ul>
+<p>最后再把跨模态证据汇总成 grounded answer。</p>
+<p>作者认为当前多模态 deep search 系统有两个核心瓶颈：</p>
+<ul><li><strong>中间视觉证据不会“留在工作区里”继续被后续工具消费</strong></li><li>搜索、浏览、裁剪、旋转这些工具虽然会返回图像，但很多现有系统把这些图像当作“一次性观察结果”</li><li>后续工具不能像处理文本上下文那样继续引用这些中间图像</li><li>所以 agent 的视觉链式推理经常被截断在原始输入图像上</li></ul>
+<ul><li><strong>训练数据构建是静态 recipe，不会随着 agent 能力变化而自适应</strong></li><li>现有做法大多先设计好一个数据合成流程，再规模化生成</li><li>但 target agent 训练到不同阶段，需要的数据难度、能力覆盖、轨迹模式并不一样</li><li>静态合成很难对齐当前 policy 的 learning frontier</li></ul>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+    <p>作者的主张不是只改模型，也不是只改数据，而是把问题看成一个 <strong>workspace + data generator + policy</strong> 的协同设计问题：</p>
+<ul><li>在交互层面，先造一个 <strong>visual-native harness</strong></li><li>在数据层面，再用 <strong>ODE</strong> 做闭环、按 policy 状态演化的数据构造</li></ul>
+<p>换句话说，这篇文章的切入点很 agentic：它不是单纯提高模型视觉能力，而是提高 agent 使用视觉证据工作的能力，以及让训练数据随着 agent 的短板动态演化。</p>
+<p>论文方法由两部分组成：</p>
+<ul><li><strong>Visual-Native Agent Harness</strong></li><li>给 agent 一个支持持久化视觉状态的工作区</li><li>核心是 image bank reference protocol</li></ul>
+<ul><li><strong>ODE: On-policy Data Evolution</strong></li><li>用当前 rollout 的反馈反过来更新下一轮的数据生成配置</li><li>同时支持 SFT 数据和 RL 数据</li></ul>
+<p>图里左边是 visual-native harness，右边是 ODE 闭环。这个总图基本概括了全文。</p>
+<p>这里的“on-policy”不是传统意义上的只说 RL，而是说：</p>
+<ul><li>数据是否保留</li><li>难度是否上调/下调</li><li>哪个阶段该怎么修改</li></ul>
+<p>都由 <strong>当前 rollout policy 暴露出的失败模式</strong> 来决定。</p>
+<p>因此它不是静态 recipe，也不是纯人工数据工程，而是 policy-conditioned data generator。</p>
+<p>这点很漂亮。很多工作会把 SFT data curation 和 RL task generation 分成两套系统，而本文是在同一套框架下做 mode-specific rubric 和 policy-specific adaptation。</p>
+<ul><li><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" target="_blank" rel="noopener">shijue_nips_main.png</a></li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/shijue_nips_main.png" alt="Framework"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/harness_analysis_fig3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/harness_analysis_fig3.png" alt="Harness Ablation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/static_vs_evolution_fig.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2605_towards_on_policy_data_evolution_for_visual_native_multimodal_deep_search_agents/static_vs_evolution_fig.png" alt="Static vs Evolution"></a>
+    </div>
+    </div>
+    </div>
+  
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+    <p>作者在 8 个 benchmark 上评测：</p>
+<ul><li>MMBC</li><li>HLE-VL</li><li>BC-VL</li><li>VDR</li><li>MMSearch</li><li>MMSearch+</li><li>SimpleVQA</li><li>FVQA</li></ul>
+<p>这些 benchmark 横跨 multimodal browsing、visual deep research、fact-based VQA 等不同场景。</p>
+<table class="result-table">
+<tr><th>Model</th><th>MMBC</th><th>HLE-VL</th><th>BC-VL</th><th>VDR</th><th>MMSearch</th><th>MMSearch+</th><th>SVQA</th><th>FVQA</th><th>Avg.</th></tr>
+<tr><td>Gemini-2.5 Pro (Agent Workflow)</td><td>13.8</td><td>17.3</td><td>42.3</td><td>10.0</td><td>55.7</td><td>24.9</td><td>74.3</td><td>65.0</td><td>37.9</td></tr>
+<tr><td>Qwen3-VL-8B (Visual-Native Harness)</td><td>7.6</td><td>6.1</td><td>26.1</td><td>4.2</td><td>47.3</td><td>10.0</td><td>53.0</td><td>44.7</td><td>24.9</td></tr>
+<tr><td>+ ODE-SFT</td><td>8.5</td><td>8.2</td><td>39.6</td><td>19.2</td><td>61.7</td><td>21.3</td><td>68.3</td><td>62.0</td><td>36.1</td></tr>
+<tr><td class="best">+ ODE-RL</td><td class="best">12.5</td><td class="best">11.4</td><td class="best">41.9</td><td class="best">20.4</td><td class="best">66.0</td><td class="best">24.9</td><td class="best">70.3</td><td class="best">64.7</td><td class="best">39.0</td></tr>
+<tr><td>Qwen3-VL-30B (Visual-Native Harness)</td><td>7.1</td><td>8.5</td><td>32.8</td><td>11.0</td><td>57.0</td><td>10.0</td><td>63.7</td><td>54.3</td><td>30.6</td></tr>
+<tr><td>+ ODE-SFT</td><td>10.3</td><td>9.9</td><td>43.1</td><td>24.0</td><td>65.7</td><td>26.7</td><td>70.3</td><td>66.3</td><td>39.5</td></tr>
+<tr><td class="best">+ ODE-RL</td><td class="best">11.2</td><td class="best">10.5</td><td class="best">46.1</td><td class="best">26.4</td><td class="best">69.7</td><td class="best">28.1</td><td class="best">71.0</td><td class="best">69.3</td><td class="best">41.5</td></tr>
+</table>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+    <ul><li><strong>问题定义很到位</strong></li><li>把 multimodal deep search 的核心困难拆成“工作区设计 + 数据演化”两个层面，而不是只盯模型 backbone</li></ul>
+<ul><li><strong>方法结构完整</strong></li><li>harness、data generator、rubric、SFT、RL 串成了一个闭环</li></ul>
+<ul><li><strong>实验扎实</strong></li><li>有主结果</li><li>有 harness 消融</li><li>有 static vs evolution 对比</li><li>有机制分析</li></ul>
+<ul><li><strong>对 agent 社区很有启发</strong></li><li>这篇 paper 不只是一个 benchmark 上提分，更像是在提出一种 multimodal agent training recipe</li></ul>
+<ul><li><strong>系统很重</strong></li><li>9 工具 + graph organization + rubric analysis + config optimization</li><li>训练和数据构建成本都不低</li></ul>
+<ul><li><strong>对 LLM judge / analyzer 依赖比较强</strong></li><li>rubric 打分、failure attribution、config update 都要靠强模型</li><li>这意味着方法质量部分依赖 judge 的稳定性</li></ul>
+<ul><li><strong>更多展示的是 recipe effectiveness，而不是理论解释</strong></li><li>为什么某些 rubric 组合最好、为什么某些配置更新最优，并没有更深层理论</li></ul>
+<ul><li><strong>可迁移性仍有待验证</strong></li><li>backbone 主要是 Qwen3-VL</li><li>harness 和 ODE 是否能无痛迁移到更多 agent stack、更多工具生态，还需要更多证据</li></ul>
+<p>如果你关心的是 agent / VLM / OPD 的细粒度数据构造，这篇 paper 有几个很直接的启发：</p>
+<ul><li><strong>可以把“可复用视觉记忆”看成 agent state design，而不是 prompt 技巧</strong></li><li>对 VLM agent 来说，memory 不一定只是文本 memory，也可以是 image-bank memory</li></ul>
+<ul><li><strong>on-policy 不一定只优化 policy，也可以优化 data generator</strong></li><li>这和你前面一直在看的 OPD 系列是有呼应的</li><li>这里只不过把 on-policy 的对象从 answer distribution 扩展到了 task distribution...</li></ul>
+</div>
+</article></main></body></html>

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Agent Learning via Early Experience | agent_工作整理_rl_training</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent RL Training — Agent 工作整理</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+
+  :root {
+    --bg: #f8f9fa; --card-bg: #ffffff; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2d6cdf; --accent-light: #e8f0fe; --tag-bg: #eef2ff; --tag-text: #3730a3;
+    --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem 1rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  header p { color: var(--text-secondary); font-size: 0.95rem; }
+  .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+  .paper-card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border); transition: box-shadow 0.2s;
+    width: min(960px, 100%); margin-left: auto; margin-right: auto;
+  }
+  .paper-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+  .paper-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.6rem; line-height: 1.4; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+  .meta-row a {
+    color: var(--accent); text-decoration: none; padding: 2px 8px; border-radius: 4px; background: var(--accent-light);
+  }
+  .meta-row a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); padding: 2px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .summary-box {
+    background: #f0f7ff; border-left: 4px solid var(--accent); padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.92rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.5rem 0; color: var(--text);
+    border-bottom: 1px dashed var(--border); padding-bottom: 0.3rem;
+  }
+  .paper-card p, .paper-card li { font-size: 0.92rem; color: #333; margin-bottom: 0.4rem; }
+  .paper-card ul { padding-left: 1.2rem; }
+  .paper-card ul li { margin-bottom: 0.3rem; }
+  .fig-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0; }
+  .fig-row img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+  .fig-row .fig-item { flex: 1 1 300px; min-width: 0; }
+  .fig-row .fig-item img { width: 100%; }
+  .result-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+  .result-table th, .result-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+  .result-table th { background: var(--accent-light); font-weight: 600; }
+  .result-table td.best { font-weight: 700; color: var(--accent); }
+  @media (max-width: 640px) { .paper-card { padding: 1.2rem; } }
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 0.9rem 0 1.15rem;
+    padding: 0.95rem 1rem 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+  .fig-block-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 240px;
+    min-width: 0;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:first-child {
+    flex-basis: 100%;
+  }
+  .fig-row .fig-item:first-child img {
+    width: 100%;
+    max-height: 460px;
+  }
+  .section-panel + .figure-block {
+    margin-top: -0.15rem;
+  }
+  .figure-block + .section-panel {
+    margin-top: 0.85rem;
+  }
+  @media (max-width: 720px) {
+    .figure-block {
+      padding: 0.8rem 0.85rem 0.9rem;
+    }
+    .fig-row .fig-item:first-child {
+      flex-basis: auto;
+    }
+    .fig-row img,
+    .fig-row .fig-item:first-child img {
+      max-height: 360px;
+    }
+  }
+
+
+
+  .meta-muted {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .subpage-nav {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1.6rem;
+  }
+  .subpage-nav h2 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+  .subpage-nav p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.55rem;
+  }
+  .subpage-nav ol {
+    padding-left: 1.2rem;
+  }
+  .subpage-nav li {
+    margin: 0.28rem 0;
+  }
+  .subpage-nav a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .subpage-nav a:hover {
+    text-decoration: underline;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .figure-block {
+    margin: 1rem 0 1.25rem;
+  }
+  .fig-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.55rem;
+  }
+  .fig-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    flex: 1 1 280px;
+    min-width: 0;
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.55rem;
+  }
+  .fig-row img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child {
+    margin-bottom: 0;
+  }
+  .summary-box p:last-child,
+  .section-panel p:last-child,
+  .section-panel ul:last-child,
+  .section-panel table:last-child {
+    margin-bottom: 0;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+
+  /* Paper-reading figure layout: large first figure, readable secondary figures. */
+  .figure-block {
+    margin: 1.25rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fbfdff;
+    padding: 1rem;
+  }
+  .fig-block-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin: 0;
+  }
+  .fig-row .fig-item {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.65rem;
+  }
+  .fig-row .fig-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .fig-row .fig-item a {
+    display: block;
+  }
+  .fig-row img {
+    display: block;
+    width: 100%;
+    max-height: 680px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .fig-row .fig-item:not(:first-child) img {
+    max-height: 520px;
+  }
+  @media (max-width: 720px) {
+    .fig-row {
+      grid-template-columns: 1fr;
+    }
+    .fig-row .fig-item:first-child {
+      grid-column: auto;
+    }
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-panel {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    margin: 1rem 0;
+  }
+  .section-panel .section-title {
+    margin-top: 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-panel > :last-child,
+  .summary-box > :last-child {
+    margin-bottom: 0;
+  }
+  .placeholder-note {
+    color: #667085;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+  }
+  .artifact-note {
+    color: #7c5c00;
+    background: #fff8db;
+    border-left: 3px solid #eab308;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.8rem;
+  }
+  .caption-note {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    background: #f8fafc;
+    border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    padding: 0.45rem 0.7rem;
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    margin: 0.8rem 0;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../agent_工作整理_github_rl_training.html">← 返回 agent_工作整理_rl_training 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2510.08558">
+  <h2>Agent Learning via Early Experience</h2>
+
+<div class="meta-row">
+  <span class="tag">agent</span>
+  <a href="https://arxiv.org/abs/2510.08558" target="_blank">arXiv abs</a>
+  <a href="https://arxiv.org/pdf/2510.08558.pdf" target="_blank">PDF</a>
+  <span style="color:var(--text-secondary)">arXiv 2510.08558</span>
+</div>
+  <div class="summary-box">
+  <strong>核心思想：</strong>这篇论文最值得记住的点是：<strong>在 agent 训练里，即使没有 reward，模型自己的动作所引发的 future states 也已经构成了高价值 supervision。</strong> IWM 利用它学习环境动态，SR 利用它学习决策理由，两者共同把 imitation learning 推向更接近真实 experience-driven agent 的阶段。
+</div>
+<div class="section-panel">
+  <h3 class="section-title">问题与动机</h3>
+
+    <p>语言 agent 的一个长期目标，是像 AlphaGo 一样通过自身经验不断变强，而不是永远停留在“模仿人类演示”的阶段。但现实里的很多 agent 环境并不满足标准 RL 的前提：</p>
+<ul><li>一类环境根本没有可验证 reward，比如真实网页、复杂网站工作流。</li><li>另一类环境即使有 reward，也往往需要很长的交互链条才能得到，rollout 成本太高，比如多轮工具调用。</li></ul>
+<p>因此，当前很多 agent 训练依赖 expert demonstrations 和 imitation learning / SFT。问题在于，expert data 的覆盖面很窄，只展示“正确轨迹”，几乎不展示“做错之后环境会怎样”。这会带来两个直接后果：</p>
+<ul><li>模型容易受到 distribution shift 影响，一旦部署时偏离 expert 轨迹，就可能进入训练中没见过的状态。</li><li>模型不知道错误动作的后果，因此恢复能力、纠错能力和泛化能力都有限。</li></ul>
+<p>这篇论文提出的核心观点是：在“完全依赖 expert 数据”和“完全依赖 reward-driven RL”之间，其实存在一个中间地带，即 <strong>early experience</strong>。它指的是：</p>
+<p>&gt; 由 agent 自己提出动作、与环境交互后得到的未来状态，这些未来状态本身就能成为 supervision，即使没有显式 reward。</p>
+<p>这个 framing 很重要。论文不是单纯提出某个 trick，而是在 agent 训练范式上提出一个桥接层：</p>
+<ul><li>从 human data era 走向 experience era；</li><li>从 imitation learning 逐步过渡到 reinforcement learning；</li><li>在 reward 不可用或很贵时，先用“未来状态”替代 reward 提供训练信号。</li></ul>
+<p>上图给出的直觉很清楚：传统 imitation learning 只看 expert action；early experience 则额外观察 agent 自己尝试其他动作后环境发生了什么变化，因此学习信号更丰富。</p>
+</div>
+<div class="section-panel">
+  <h3 class="section-title">方法核心</h3>
+
+<table class="result-table">
+<tr><th>Environment</th><th>类型</th><th>简述</th><th>Expert Traj.</th><th>$\# \mathcal{D}_{\text{expert}}$</th></tr>
+<tr><td>ALFWorld</td><td>Embodied simulation</td><td>家居环境中的文本化高层动作控制</td><td>3,553</td><td>21,031</td></tr>
+<tr><td>ScienceWorld</td><td>Scientific simulation</td><td>自然语言科学实验环境</td><td>1,000</td><td>14,506</td></tr>
+<tr><td>TravelPlanner</td><td>Long-horizon planning</td><td>多日旅行规划与工具调用</td><td>45</td><td>1,395</td></tr>
+<tr><td>BFCLv3</td><td>Tool use</td><td>多轮 function calling / API 环境</td><td>125</td><td>1,264</td></tr>
+<tr><td>Tau-Bench</td><td>Tool use</td><td>客服场景、多轮 API 使用</td><td>452</td><td>5,239</td></tr>
+<tr><td>SearchQA</td><td>Search agent</td><td>多跳搜索问答</td><td>2,082</td><td>7,691</td></tr>
+<tr><td>WebShop</td><td>Web navigation</td><td>电商网站购物任务</td><td>1,571</td><td>15,464</td></tr>
+<tr><td>WebArena-Lite</td><td>Web navigation</td><td>多域网站导航</td><td>554</td><td>7,044</td></tr>
+</table>
+<p>从这个表可以看出，作者并不是只在单一 agent setting 上做验证，而是试图证明 early experience 是一个跨环境范式。</p>
+<p>在这个统一范式下，作者展示了两种可实例化方法：</p>
+<ul><li>IWM: 将 future-state prediction 作为环境 grounding 的 warm-up。</li><li>SR: 将 expert outcome 与 alternative outcome 的差异转化成反思式监督。</li></ul>
+</div>
+
+  <div class="figure-block">
+    <div class="fig-block-title">关键图示</div>
+    <div class="fig-row">
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/teaser_v4.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/teaser_v4.png" alt="Early Experience Motivation"></a>
+    </div>
+    <div class="fig-item">
+      <a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/method_v3.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2510_agent_learning_via_early_experience/method_v3.png" alt="Early Experience Methods"></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="section-panel">
+  <h3 class="section-title">实验与结论</h3>
+
+<table class="result-table">
+<tr><th>Environment</th><th>类型</th><th>简述</th><th>Expert Traj.</th><th>$\# \mathcal{D}_{\text{expert}}$</th></tr>
+<tr><td>ALFWorld</td><td>Embodied simulation</td><td>家居环境中的文本化高层动作控制</td><td>3,553</td><td>21,031</td></tr>
+<tr><td>ScienceWorld</td><td>Scientific simulation</td><td>自然语言科学实验环境</td><td>1,000</td><td>14,506</td></tr>
+<tr><td>TravelPlanner</td><td>Long-horizon planning</td><td>多日旅行规划与工具调用</td><td>45</td><td>1,395</td></tr>
+<tr><td>BFCLv3</td><td>Tool use</td><td>多轮 function calling / API 环境</td><td>125</td><td>1,264</td></tr>
+<tr><td>Tau-Bench</td><td>Tool use</td><td>客服场景、多轮 API 使用</td><td>452</td><td>5,239</td></tr>
+<tr><td>SearchQA</td><td>Search agent</td><td>多跳搜索问答</td><td>2,082</td><td>7,691</td></tr>
+<tr><td>WebShop</td><td>Web navigation</td><td>电商网站购物任务</td><td>1,571</td><td>15,464</td></tr>
+<tr><td>WebArena-Lite</td><td>Web navigation</td><td>多域网站导航</td><td>554</td><td>7,044</td></tr>
+</table>
+<p>从这个表可以看出，作者并不是只在单一 agent setting 上做验证，而是试图证明 early experience 是一个跨环境范式。</p>
+<table class="result-table">
+<tr><th>Benchmark</th><th>Model</th><th>Prompt</th><th>IL</th><th>IWM</th><th>SR</th></tr>
+<tr><td>ALFWorld</td><td>Llama-3.2-3B</td><td>8.6</td><td>78.1</td><td>83.6</td><td class="best">85.9</td></tr>
+<tr><td>ALFWorld</td><td>Qwen-2.5-7B</td><td>20.3</td><td>78.1</td><td class="best">82.8</td><td>82.0</td></tr>
+<tr><td>ALFWorld</td><td>Llama-3.1-8B</td><td>25.0</td><td>80.5</td><td class="best">85.9</td><td>85.2</td></tr>
+<tr><td>ScienceWorld</td><td>Llama-3.2-3B</td><td>2.3</td><td>51.6</td><td>55.5</td><td class="best">56.2</td></tr>
+<tr><td>ScienceWorld</td><td>Qwen-2.5-7B</td><td>3.9</td><td>53.9</td><td class="best">59.4</td><td>57.8</td></tr>
+<tr><td>ScienceWorld</td><td>Llama-3.1-8B</td><td>3.1</td><td>54.7</td><td>57.0</td><td class="best">68.0</td></tr>
+<tr><td>TravelPlanner</td><td>Llama-3.2-3B</td><td>0.0</td><td>19.4</td><td>28.3</td><td class="best">32.2</td></tr>
+</table>
+<p class="artifact-note">这里原本残留了一段未完全转换成 HTML 的表格摘录，先省略这段噪音以保证阅读流畅。</p>
+</div>
+
+
+
+
+
+
+
+<div class="section-panel">
+  <h3 class="section-title">价值、局限与启发</h3>
+
+<table class="result-table">
+<tr><th>维度</th><th>IWM</th><th>SR</th></tr>
+<tr><td>训练目标</td><td>预测 future state</td><td>生成反思并输出 expert action</td></tr>
+<tr><td>监督来源</td><td>$(s, a, s&#x27;)$ 三元组</td><td>expert outcome 与 alternative outcome 的对比</td></tr>
+<tr><td>更偏向学习什么</td><td>环境 dynamics、动作后果、错误反馈</td><td>约束理解、决策理由、错误分析</td></tr>
+<tr><td>更适合什么任务</td><td>状态转移稳定、环境规律强</td><td>逻辑推理强、约束满足、多步规划</td></tr>
+<tr><td>训练流程</td><td>先 IWM warm-up，再 IL</td><td>SR 数据与 expert 数据联合训练</td></tr>
+</table>
+<ul><li><strong>仍依赖环境交互成本</strong>：虽然不需要 reward，但要拿到 $s_i^j$ 仍然得执行 alternative actions。</li><li><strong>目前主要是短视角 early experience</strong>：论文自己也承认，仍未真正解决 long-horizon credit assignment。</li><li><strong>SR 依赖额外反思生成质量</strong>：如果生成的 reflection 本身噪声大，可能影响训练。</li><li><strong>更偏 offline / pre-collected interaction augmentation</strong>：离真正在线 continual improvement 还有距离。</li><li><strong>开放网页环境提升有限</strong>：像 WebArena-Lite 这类超复杂场景，提升仍然比较 modest。</li></ul>
+<p>如果从你当前 <code>agent</code> 方向的阅读与实验积累来看，这篇论文有几条特别值得落地：</p>
+<p>论文的核心不是 reward，而是“环境状态变化本身带信息”。如果你在做 agent evaluator / reward model，可以考虑把打分从只看最终 answer，扩展为同时看：</p>
+<ul><li>动作是否触发了合理状态变化；</li><li>状态变化是否暴露了错误约束；</li><li>是否出现了 recoverable error signal；</li><li>是否推进了子目标。</li></ul>
+<p>这和只看最终 success/fail 相比，会更细粒度。</p>
+<p>这篇论文最值得记住的点是：<strong>在 agent 训练里，即使没有 reward，模型自己的动作所引发的 future states 也已经构成了高价值 supervision。</strong> IWM 利用它学习环境动态，SR 利用它学习决策理由，两者共同把 imitation learning 推向更接近真实 experience-driven agent 的阶段。</p>
+</div>
+</article></main></body></html>

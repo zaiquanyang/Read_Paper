@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LLaDA2.0-Uni: Unifying Multimodal Understanding and Generation with Diffusion Large Language Model | diffusion_llm_工作整理_overview_foundation</title>﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>综述、基础建模与多模态扩展 - Diffusion LLM 工作整理</title>
+<style>
+
+  :root {
+    --bg: #f4f7fb;
+    --card-bg: rgba(255,255,255,0.96);
+    --text: #162033;
+    --text-secondary: #5c6982;
+    --accent: #1f6feb;
+    --accent-soft: #e9f2ff;
+    --border: #dbe4f0;
+    --shadow: 0 18px 52px rgba(22, 32, 51, 0.08);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(84, 140, 255, 0.18), transparent 26rem),
+      linear-gradient(180deg, #eef4fb 0%, #f8fbff 28%, #f4f7fb 100%);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #f1f5fb;
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+  }
+  .hero {
+    padding: 56px 20px 34px;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+  .hero p {
+    max-width: 920px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+  }
+  .layout {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 48px;
+  }
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .group-card,
+  .work-list,
+  .paper-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .group-card {
+    display: block;
+    padding: 22px 22px 20px;
+    color: inherit;
+  }
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+  .group-card p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+  }
+  .group-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .back-link {
+    display: inline-block;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+  .work-list {
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .work-list h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+  }
+  .work-list p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .work-list ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2;
+    column-gap: 28px;
+  }
+  .work-list li {
+    break-inside: avoid;
+    margin: 0 0 10px;
+  }
+  .work-meta {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 2px;
+  }
+  .paper-card {
+    padding: 28px;
+    margin-bottom: 22px;
+  }
+  .paper-card h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3vw, 1.95rem);
+    line-height: 1.3;
+  }
+  .paper-links {
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .meta-block p {
+    margin: 0 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+  }
+  .paper-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .paper-section.highlight {
+    border-top: none;
+    background: linear-gradient(135deg, #f4f8ff, #ffffff);
+    border: 1px solid #d8e5ff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-top: 18px;
+  }
+  .paper-section h3 {
+    margin: 0 0 8px;
+    font-size: 1.02rem;
+  }
+  .paper-section p {
+    margin: 0 0 10px;
+  }
+  .paper-section ul {
+    margin: 0 0 10px 1.25rem;
+    padding: 0;
+  }
+  .paper-section li {
+    margin-bottom: 5px;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 10px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0 16px 42px;
+    font-size: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .layout { width: min(100% - 20px, 100%); }
+    .work-list,
+    .paper-card,
+    .group-card { padding: 18px; }
+    .work-list ol { columns: 1; }
+  }
+
+
+  /* add-summary-to-topic-html skill override: readable cards, formulas, and figures. */
+  .layout {
+    width: min(100% - 32px, 1040px);
+  }
+  .paper-card {
+    width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .paper-section {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .paper-section.highlight {
+    border-left: 4px solid var(--accent);
+  }
+  .formula-block {
+    overflow-x: auto;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .figure-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .paper-figure {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .paper-figure a {
+    display: block;
+  }
+  .paper-figure img {
+    display: block;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .paper-figure figcaption {
+    padding: 8px 2px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+</style><style>.paper-card{max-width:960px;margin:0 auto 2rem}.back{max-width:960px;margin:0 auto 1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}body{padding-top:2rem}</style></head><body><div class="back"><a href="../diffusion_llm_工作整理_github_overview_foundation.html">← 返回 diffusion_llm_工作整理_overview_foundation 论文列表</a></div><main class="container"><article class="paper-card" id="arxiv-2604-20796">
+  <div class="card-top">
+    <div class="badge-row"><span class="badge">arXiv 2604.20796</span><span class="badge">detailed</span></div>
+    <h2>LLaDA2.0-Uni: Unifying Multimodal Understanding and Generation with Diffusion Large Language Model</h2>
+    <div class="paper-links"><a href="https://arxiv.org/abs/2604.20796" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2604.20796.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../diffusion_llm/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model.md">summary md</a></div>
+  </div>
+  <div class="meta-block">
+    
+  </div>
+  <section class="paper-section highlight">
+    <h3>一句话总结</h3>
+    <p>LLaDA2.0-Uni 的核心贡献是把视觉变成语义离散 token，让文本和图像共享 dLLM 的 block-level masked diffusion 建模，再用 diffusion decoder 还原图像；它证明 diffusion LLM 可以成为统一多模态理解与生成的可行架构，并把真正的潜力指向 interleaved generation and reasoning。</p>
+  </section>
+  <section class="paper-section">
+    <h3>背景与动机</h3>
+    <p>多模态模型通常分成两条路线：</p>
+<ul><li><strong>理解模型</strong>：例如 Qwen-VL、InternVL，强在 VQA、OCR、文档、图表、推理。</li><li><strong>生成模型</strong>：例如 FLUX、Z-Image、Qwen-Image，强在 text-to-image 和 image editing。</li></ul>
+<p>统一模型的好处很诱人：部署更简单，理解和生成可以互相增强，还能自然支持“边看边想边画”的 interleaved generation and reasoning。但已有统一模型大多基于 autoregressive 架构，或者是文本 AR + 图像 diffusion 的混合架构。</p>
+<p>dLLM / masked diffusion model 的优势是并行解码和双向上下文建模。问题在于，已有统一 masked diffusion 模型仍有几个短板：</p>
+<ul><li>reconstruction-based VQ tokenizer 主要保像素重建，不保语义，导致理解能力弱。</li><li>过度压缩图像 token 会牺牲生成质量。</li><li>完全双向 attention 对文本不稳定。</li><li>一些模型假设固定输出长度，不适合开放式理解任务。</li></ul>
+<p>LLaDA2.0-Uni 的核心解法是：<strong>用 SigLIP-VQ 把图像离散成语义 token，用 16B MoE dLLM backbone 做统一 masked diffusion，再用 diffusion decoder 从语义视觉 token 还原高质量图像。</strong></p>
+  </section>
+  <section class="paper-section">
+    <h3>方法与框架</h3>
+    <p>暂无内容。</p>
+  </section>
+  <section class="paper-section">
+    <h3>实验与结论</h3>
+    <p>论文在 21 个 multimodal understanding benchmark 上评估，涵盖 general VQA、reasoning、OCR/chart 和其他任务。</p>
+<p>摘取代表性指标如下：</p>
+<p>| Model | MMStar | MMMU | MathVista | ChartQA | OCRBench | DocVQA | AI2D | CountBench |</p>
+<p>|---|---:|---:|---:|---:|---:|---:|---:|---:|</p>
+<p>| Qwen2.5-VL-7B | 63.9 | 51.3 | 68.2 | 84.1 | 84.2 | 94.9 | 82.6 | 84.9 |</p>
+<p>| LLaDA-V | 60.1 | 48.6 | 59.7 | 78.3 | 63.2 | 83.9 | 77.8 | 75.1 |</p>
+<p>| BAGEL | 67.0 | 55.3 | 73.1 | 74.3 | 73.3 | 94.3 | 88.9 | 93.2 |</p>
+<p>| Lumina-DiMOO | 61.0 | 58.6 | 10.3 | 8.3 | 7.6 | 7.2 | 43.2 | 48.4 |</p>
+<p>| LLaDA-o | 58.0 | 44.9 | 66.1 | 87.9 | 74.6 | 91.5 | 79.3 | 91.7 |</p>
+<p>| LLaDA2.0-Uni | 64.1 | 50.1 | 68.1 | 80.1 | 75.7 | 89.5 | 82.0 | 86.0 |</p>
+<p>结论比较克制但重要：</p>
+<ul><li>LLaDA2.0-Uni 明显强于早期 diffusion unified model，例如 Lumina-DiMOO 和 LLaDA-o。</li><li>它在一些指标上接近 Qwen2.5-VL-7B 专用理解模型，例如 MMStar 64.1 vs 63.9、AI2D 82.0 vs 82.6。</li><li>DocVQA 和 OCRBench 仍低于 Qwen2.5-VL-7B，说明统一生成/理解模型在精细 OCR 文档能力上还有差距。</li></ul>
+  </section>
+  <section class="paper-section">
+    <h3>价值、局限与启发</h3>
+    <p>论文自己也指出了几个局限：</p>
+<ul><li>SigLIP-VQ 语义强，但细节保真不足，影响 detail-sensitive image editing。</li><li>interleaved generation/reasoning 还处在早期，需要更多数据和更大模型容量。</li><li>RL for unified dLLMs 仍在探索，如何对理解、生成、编辑、交错推理统一做 RL 优化还未解决。</li></ul>
+<p>另外，从结果看：</p>
+<ul><li>OCRBench、DocVQA 仍低于 Qwen2.5-VL-7B，说明理解侧的专用 OCR/document 能力还有差距。</li><li>文本渲染虽然是 unified model 中强，但仍弱于 Qwen-Image、LongCat-Image 这种专用图像生成模型。</li><li>diffusion decoder 虽然快速蒸馏到 8 steps，但整体系统仍包含 dLLM denoising + image diffusion decoder，端到端部署复杂度不低。</li></ul>
+<p>LLaDA2.0-Uni 的核心贡献是把视觉变成语义离散 token，让文本和图像共享 dLLM 的 block-level masked diffusion 建模，再用 diffusion decoder 还原图像；它证明 diffusion LLM 可以成为统一多模态理解与生成的可行架构，并把真正的潜力指向 interleaved generation and reasoning。</p>
+  </section>
+  
+  <section class="paper-section">
+    <h3>关键图示</h3>
+    <div class="figure-grid">
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/architecture.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/architecture.png" alt="Architecture"></a><figcaption>Architecture</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/performance_compare.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/performance_compare.png" alt="Performance comparison"></a><figcaption>Performance comparison</figcaption></figure>
+      <figure class="paper-figure"><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/intergen.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/diffusion_llm/assets/arxiv_2604_llada20_uni_unifying_multimodal_understanding_and_generation_with_diffusion_large_language_model/intergen.png" alt="InterGen benchmark"></a><figcaption>InterGen benchmark</figcaption></figure>
+    </div>
+  </section>
+</article></main></body></html>
