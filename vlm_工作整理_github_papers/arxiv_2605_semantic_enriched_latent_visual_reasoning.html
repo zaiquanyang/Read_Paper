@@ -15,13 +15,9 @@
 </ul></li>
 </ol>
 <p>作者认为，这会带来两个直接后果:</p>
-<ul>
-<li>同一个区域换个问法，latent 不一定还能稳定回答。</li>
-<li>latent 可能能支持某一个 query，但不能同时支持多个语义角度不同的问题。</li>
-</ul>
 <p>因此，这篇文章想回答的问题是:</p>
 <p><code>能不能学出一种 region-centric latent，它不仅保留局部视觉证据，还显式编码对象属性、动作状态、空间关系、文本内容等语义，并且在同一区域的多问题设置下仍保持一致？</code></p>
-</div><h2 class="section-title">方法框架：4. 核心思路</h2><p>作者提出 <code>SLVR (Semantic-Enriched Latent Visual Reasoning)</code>，是一个两阶段框架:</p>
+</div><h2 class="section-title">方法框架：核心思路</h2><p>作者提出 <code>SLVR (Semantic-Enriched Latent Visual Reasoning)</code>，是一个两阶段框架:</p>
 <ol type="1">
 <li><code>Stage 1: Structured Latent Learning</code>
 <ul>
@@ -36,32 +32,13 @@
 </ol>
 <p>这篇文章最重要的观点不是“latent reasoning 比 text reasoning 更强”，而是:</p>
 <p><code>latent 本身也需要被显式塑形，尤其要塑造成能承载结构化视觉语义的 latent。</code></p>
+<p>上图对应论文 Figure 1。作者把三条路线放在一起对比:</p>
+<p>这张图传达得很直接: 他们认为已有 latent reasoning 的核心瓶颈不是 latent 不存在，而是 latent 的 <code>semantic richness</code> 不够。</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/figure1_n.png" alt="概念对比图" /><figcaption aria-hidden="true">概念对比图</figcaption>
 </figure>
-<p>上图对应论文 Figure 1。作者把三条路线放在一起对比:</p>
-<ul>
-<li>显式 chain-of-thought / cropped evidence</li>
-<li>纯视觉监督的 latent reasoning</li>
-<li>他们提出的“视觉 + 语义联合监督”的 latent reasoning</li>
-</ul>
-<p>这张图传达得很直接: 他们认为已有 latent reasoning 的核心瓶颈不是 latent 不存在，而是 latent 的 <code>semantic richness</code> 不够。</p>
-<h2 class="section-title">实验与核心结论：7. 实验设置</h2><h3 id="公开-benchmark">7.1 公开 benchmark</h3>
-<p>标准 VQA benchmark 包括:</p>
-<ul>
-<li><code>OKVQA</code></li>
-<li><code>GQA</code></li>
-<li><code>VizWiz</code></li>
-<li><code>ChartQA</code></li>
-<li><code>TextVQA</code></li>
-<li><code>AI2D</code></li>
-</ul>
+<h2 class="section-title">实验与核心结论：实验设置</h2><p>标准 VQA benchmark 包括:</p>
 <p>此外还有:</p>
-<ul>
-<li><code>VisualPuzzles</code></li>
-<li>新构造的 <code>SV-QA</code></li>
-</ul>
-<h3 id="比较方法">7.2 比较方法</h3>
 <p>作者对比了两大类方法:</p>
 <ol type="1">
 <li><code>think-with-image</code>

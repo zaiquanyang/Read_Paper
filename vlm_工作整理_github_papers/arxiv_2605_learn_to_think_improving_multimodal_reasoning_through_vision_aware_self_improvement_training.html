@@ -1,9 +1,4 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Learn to Think: Improving Multimodal Reasoning through Vision-Aware Self-Improvement Training</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Learn to Think: Improving Multimodal Reasoning through Vision-Aware Self-Improvement Training</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.11931">arXiv 2605.11931</a></div><div class="summary-box"><strong>核心问题：</strong><p>这篇工作讨论的是一个很具体、但也很现实的问题：</p>
-<ul>
-<li>现在很多 MLLM 想提升 multimodal reasoning，往往要做带 reasoning trace 的 post-training</li>
-<li>但高质量 reasoning trace 很贵</li>
-<li>所以大家开始转向 <strong>self-improvement</strong>：让模型自己生成 reasoning data，再用这些数据反过来训练自己</li>
-</ul>
 <p>作者认为，这条路线虽然有效，但在 MLLM 上有两个被低估的问题：</p>
 <ol type="1">
 <li><p><strong>data imbalance</strong><br />
@@ -21,7 +16,6 @@
 <p>现有 self-improvement 基本只用 “answer correctness” 作为唯一质量信号，但这个信号同时在数量和质量两个层面都不够。</p>
 </blockquote>
 <p>也就是：</p>
-<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：方法框架</h2><p>作者提出针对上述问题的视觉语言模型训练或推理框架。</p>
 <h2 class="section-title">实验与核心结论：实验与结论</h2><p>实验部分验证了方法在相关视觉语言任务上的有效性。</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

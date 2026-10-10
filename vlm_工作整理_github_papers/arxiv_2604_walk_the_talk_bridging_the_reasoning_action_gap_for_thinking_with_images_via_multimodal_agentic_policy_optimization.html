@@ -1,37 +1,9 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Walk the Talk: Bridging the Reasoning-Action Gap for Thinking with Images via Multimodal Agentic Policy Optimization</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Walk the Talk: Bridging the Reasoning-Action Gap for Thinking with Images via Multimodal Agentic Policy Optimization</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2604.06777">arXiv 2604.06777</a></div><div class="summary-box"><strong>核心问题：</strong><p>这篇工作的切入点很明确: 现在很多 MLLM 已经不满足于“看一张图然后只在文本里推理”，而是开始进入 <code>thinking with images</code> 阶段，也就是在推理链中主动调用视觉工具，例如 crop、zoom-in、局部观察，再根据新的视觉观察继续推理。</p>
 <p>问题在于，现有 RL 训练大多只看最终答案是否正确，也就是只给 <code>outcome-based reward</code>。这会带来一个作者强调的核心问题:</p>
-<ul>
-<li>文本推理看起来很合理，但执行出来的视觉动作可能是错的</li>
-<li>模型可能“嘴上说要放大摩托车”，实际却裁到了错误区域</li>
-<li>只要最终答案碰巧答对，RL 仍会把这条轨迹当成正样本强化</li>
-<li>错误的动作执行与看似合理的文字推理混在一起，会让训练信号非常噪声化</li>
-</ul>
 <p>作者把这个问题命名为 <code>reasoning-action gap</code>。它不是简单的“答案错了”，而是“推理意图”和“动作执行”之间出现了系统性脱钩。对多轮 agentic visual reasoning 来说，这种脱钩尤其致命，因为错误会在长轨迹中逐步积累，最后导致:</p>
-<ul>
-<li>语义监督过 sparse</li>
-<li>梯度方差变大</li>
-<li>训练曲线震荡</li>
-<li>长程训练时可能 collapse</li>
-</ul>
 <p>从问题定义看，这篇论文的重点不是再发明一个更强的 outcome reward，而是给 agent 轨迹增加一种“过程一致性监督”: 模型不光要会想，还要让执行出来的视觉动作与它刚才说的意图一致。</p>
 </div><h2 class="section-title">方法框架：方法框架</h2><p>作者提出针对上述问题的视觉语言模型训练或推理框架。</p>
-<h2 class="section-title">实验与核心结论：9. 实验设置</h2><h3 id="backbone-与训练框架">9.1 Backbone 与训练框架</h3>
-<ul>
-<li>Backbone: <code>Ovis2.5-9B</code></li>
-<li>RL 框架: <code>verl</code></li>
-<li>Rollout 加速: <code>vLLM</code></li>
-<li>并行与显存优化: <code>FSDP</code>, optimizer offloading, gradient checkpointing, Triton fused kernels</li>
-</ul>
-<h3 id="任务与-benchmark">9.2 任务与 benchmark</h3>
-<p>作者主要评测高分辨率、细粒度视觉推理，选择了:</p>
-<ul>
-<li><code>V*</code></li>
-<li><code>HR-Bench</code></li>
-<li><code>MME-Realworld-Lite</code></li>
-</ul>
-<p>这些 benchmark 都强调小目标、细节属性、相对位置与高分辨率局部观察能力，因此非常适合评估 <code>thinking with images</code> 场景下的 agentic exploration。</p>
-<h3 id="关键超参数">9.3 关键超参数</h3>
-<p>根据正文和附录可整理出 MAPO 的主要超参数:</p>
+<h2 class="section-title">实验与核心结论：实验设置</h2><p>这些 benchmark 都强调小目标、细节属性、相对位置与高分辨率局部观察能力，因此非常适合评估 <code>thinking with images</code> 场景下的 agentic exploration。</p>
 <table>
 <thead>
 <tr class="header">

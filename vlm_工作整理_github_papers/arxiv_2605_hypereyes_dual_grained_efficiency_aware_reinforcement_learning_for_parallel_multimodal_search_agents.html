@@ -1,74 +1,26 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span></div><div class="summary-box"><strong>核心问题：</strong><h3 id="这篇论文到底在解决什么">2.1 这篇论文到底在解决什么</h3>
-<p>这篇工作讨论的不是“让 VLM 会不会搜索”，而是“让 multimodal search agent 搜得是否高效”。</p>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span></div><div class="summary-box"><strong>核心问题：</strong><p>这篇工作讨论的不是“让 VLM 会不会搜索”，而是“让 multimodal search agent 搜得是否高效”。</p>
 <p>作者的核心观察是：</p>
-<ul>
-<li>现有 multimodal search agents 大多是 <strong>串行</strong> 的；</li>
-<li>对一张图里有多个实体、一个问题又需要分别查多个实体信息的场景，agent 往往会：
-<ul>
-<li>先裁第一个实体</li>
-<li>搜一次</li>
-<li>再裁第二个实体</li>
-<li>再搜一次</li>
-<li>如此反复</li>
-</ul></li>
-<li>这会带来两类问题：
-<ul>
-<li><code>interaction round</code> 很多，推理很慢</li>
-<li>context 会越来越长、越来越 noisy，后面更容易被干扰</li>
-</ul></li>
-</ul>
 <p>作者认为，对这类可分解的查询，正确策略应该是：</p>
 <p><strong>search wider, not longer</strong></p>
 <p>也就是：</p>
-<ul>
-<li>不要把多个独立子检索任务串成长链；</li>
-<li>而是应该在同一轮里把多个 grounded query 一起发出去。</li>
-</ul>
-<h3 id="为什么有并行能力还不够">2.2 为什么“有并行能力”还不够</h3>
 <p>这是论文最重要的出发点之一。</p>
 <p>即便模型已经支持 parallel tool calling，也不代表它会“高效地并行”。</p>
 <p>原因是大多数现有 search agent 训练目标还是围绕最终 <code>accuracy reward</code>：</p>
-<ul>
-<li>只要答对了，就算好；</li>
-<li>至于中间用了多少轮工具、查了多少冗余信息、是不是把本来能并行的事情拆成串行，都没有被明确惩罚。</li>
-</ul>
-<p>（本节其余细节见论文原始笔记。）</p>
-</div><h2 class="section-title">方法框架：3. 方法总览</h2><p>HyperEyes 整体由三块组成：</p>
+<p>所以模型很容易学出一种 brute-force 行为：</p>
+<p>HyperEyes 的核心贡献，就是把 <strong>效率</strong> 从一个隐含偏好，提升为训练目标里的第一类公民。</p>
+</div><h2 class="section-title">方法框架：方法总览</h2><p>HyperEyes 整体由三块组成：</p>
 <ol type="1">
 <li>并行友好的动作空间：<code>Unified Grounded Search (UGS)</code></li>
 <li>面向并行检索的冷启动数据管线：<code>Parallel-Amenable Data Synthesis + PRS</code></li>
 <li>双粒度效率感知强化学习：<code>TRACE + OPD</code></li>
 </ol>
 <p>其中最值得细看的是第 1 和第 3 部分。</p>
-<h3 id="整体框架图">3.1 整体框架图</h3>
-<h4 id="串行-vs-并行搜索直觉">串行 vs 并行搜索直觉</h4>
+<p>这张图非常关键。它明确展示了作者想解决的问题：</p>
+<p>这张图对应全文最核心的算法结构：</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/parallel_vs_serial.png" alt="Parallel vs Serial" /><figcaption aria-hidden="true">Parallel vs Serial</figcaption>
 </figure>
-<p>这张图非常关键。它明确展示了作者想解决的问题：</p>
-<ul>
-<li>传统 agent: <code>crop -&gt; search -&gt; crop -&gt; search -&gt; ...</code></li>
-<li>HyperEyes: 一次把多个实体 grounding 出来，并在同一轮中同时发起搜索</li>
-</ul>
-<h4 id="训练框架总览">训练框架总览</h4>
-<figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/framework.png" alt="Framework" /><figcaption aria-hidden="true">Framework</figcaption>
-</figure>
-<p>这张图对应全文最核心的算法结构：</p>
-<ul>
-<li>前半部分是并行友好的数据构造与轨迹筛选</li>
-<li>后半部分是 RL 阶段的双粒度优化</li>
-</ul>
-<h2 class="section-title">实验与核心结论：8. 主实验结果</h2><h3 id="六个-benchmark-的主结果">8.1 六个 benchmark 的主结果</h3>
-<p>论文在 6 个 benchmark 上评估：</p>
-<ul>
-<li>MMSearch</li>
-<li>FVQA</li>
-<li>LiveVQA</li>
-<li>BCVL</li>
-<li>MMSearch+</li>
-<li>IMEB</li>
-</ul>
+<h2 class="section-title">实验与核心结论：主实验结果</h2><p>论文在 6 个 benchmark 上评估：</p>
 <p>最关键的结果是：</p>
 <table>
 <thead>
@@ -105,19 +57,7 @@
 </tbody>
 </table>
 <p>几个最值得记的数字：</p>
-<ul>
-<li><code>HyperEyes-30B (RL)</code> 相比同规模最强开源 deep search agent，平均准确率 <strong>+9.9</strong>，同时工具轮数约 <strong>-9.4</strong></li>
-<li>相比 VDR，工具调用轮数大约少 <strong>5.3x</strong></li>
-<li><code>HyperEyes-235B (RL)</code> 的平均准确率来到 <strong>66.6</strong></li>
-<li>和 <code>Gemini-3.1-Pro</code> 的平均差距只有 <strong>1.1</strong> 个点</li>
-</ul>
 <p>作者的解释是：</p>
-<ul>
-<li>现有串行 agent 仍然困在 <code>crop-then-search</code> loop 里</li>
-<li>HyperEyes 用 UGS 把 entity grounding 与 retrieval 解耦并并发化</li>
-<li>因此同时减少了 latency 与级联错误</li>
-</ul>
-<h3 id="bcvl-imeb-上的成本感知对比">8.2 BCVL / IMEB 上的成本感知对比</h3>
 <p>Table 3 特别有说服力，因为它把 token、tool 数和 CAS 放在一起看：</p>
 <table>
 <thead>
@@ -156,9 +96,5 @@
 </tbody>
 </table>
 <p>这里可以看出 HyperEyes 不是“为了效率牺牲精度”，而是两边一起赢：</p>
-<ul>
-<li>BCVL 上 CAS 大约是次优开源方法的 <strong>4.3x</strong></li>
-<li>IMEB 上 CAS 大约是次优开源方法的 <strong>7.6x</strong></li>
-</ul>
 <p>这基本证明了：在多实体场景里，并行 grounding + efficiency-aware RL 确实不是 cosmetic 优化，而是显著改变了单位计算成本的信息密度。</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

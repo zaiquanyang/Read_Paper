@@ -5,33 +5,221 @@
 </ol>
 <p>核心问题：<em>能否设计一个两阶段剪枝框架，在不同阶段使用最合适的重要性度量？</em></p>
 <hr />
-</div><h2 class="section-title">方法框架：方法概述</h2><h3 id="注意力机制分析关键发现">注意力机制分析（关键发现）</h3>
-<p>通过在 LLaVA-1.5-7B 上的系统实验，得出三个核心观察：</p>
+</div><h2 class="section-title">方法框架：方法概述</h2><p>通过在 LLaVA-1.5-7B 上的系统实验，得出三个核心观察：</p>
 <p><strong>发现 1：视觉编码器 [CLS] 注意力的缺陷</strong> - 将 token 选择限制在前景区域（<span class="math inline"><code>[CLS]</code><sub><em>f</em><em>g</em></sub></span>）始终优于全图选择（<span class="math inline"><code>[CLS]</code><sub><em>a</em><em>l</em><em>l</em></sub></span>），尤其在激进剪枝比例下 - 甚至随机前景选择（<span class="math inline">Random<sub><em>f</em><em>g</em></sub></span>）都能达到与 <span class="math inline"><code>[CLS]</code><sub><em>a</em><em>l</em><em>l</em></sub></span> 相当的性能 - 结论：[CLS] token 未能有效关注前景区域</p>
 <p><strong>发现 2：LLM 中文本注意力 vs 视觉注意力</strong> - 视觉注意力受 attention shift 严重影响，不同样本间偏差大 - 文本注意力的偏移趋势更平缓，且不同样本和低索引 token 也能获得高关注度 - 结合视觉注意力会导致性能大幅下降</p>
 <p><strong>发现 3：LLM 中间层的注意力最可靠</strong> - 浅层：不相关区域吸收了文本 token 的大部分注意力 - 中间层（8+ 层开始）：不同文本 token 能聚焦到语义相关区域，&gt;95% 原始性能 - 深层：注意力可靠性显著下降</p>
-<figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
-</figure>
-<h3 id="learnpruner-框架">LearnPruner 框架</h3>
 <p>基于上述分析，提出<strong>两阶段剪枝框架</strong>：</p>
-<figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /><figcaption aria-hidden="true">框架概览</figcaption>
-</figure>
 <p><strong>阶段一：移除视觉冗余（视觉编码器后）</strong></p>
 <p>使用<strong>可学习剪枝模块（LPM）</strong>替代 [CLS] 注意力： - 轻量 MLP 对每个视觉 token 做二分类（保留/剪枝） - 使用 Straight-Through Estimator（STE）实现端到端训练 - <span class="math inline"><strong>M</strong><sub>soft</sub> = Softmax(MLP(<strong>X</strong><sub><em>v</em></sub><sup>(0)</sup>))</span>，推理时作为重要性分数</p>
 <p>为防止 LPM 过度聚焦前景而丢失关键背景信息，引入<strong>多样性 token 选择</strong>： - LPM 选完后，对剩余 token 计算与已选 token 的最大余弦相似度 - 迭代添加相似度最小的 token，直到 token 预算用尽 - 默认保留 10% 的 token 预算用于多样性选择</p>
 <p><strong>阶段二：移除文本无关内容（LLM 中间层）</strong></p>
 <p>在 LLM 第 12 层利用<strong>文本注意力</strong>进行二次剪枝： - <span class="math inline">$\tilde{\mathbf{A}}^{(k)} = \frac{1}{N_q} \sum_{i=1}^{N_q} \mathbf{A}^{(k)}(\mathbf{X}_{q,i}^{(k)}, \mathbf{X}_v^{(k)})$</span> - 仅保留注意力分数最高的 top-k token</p>
 <p>两个阶段的 token 保留比例 <span class="math inline"><em>R</em><sub>1</sub> : <em>R</em><sub>2</sub> = 3</span>（消融实验验证最优）。</p>
-<h3 id="训练细节">训练细节</h3>
-<ul>
-<li><strong>训练数据</strong>：LLaVA-665K 数据集的 10%（数据效率极高，5% 即可达到强性能）</li>
-<li><strong>训练策略</strong>：冻结基础 VLM 权重，仅训练 LPM</li>
-<li><strong>损失函数</strong>：<span class="math inline">ℒ = ℒ<sub>ntp</sub> + <em>λ</em> ⋅ ℒ<sub>prune</sub></span>，其中 <span class="math inline">$\mathcal{L}_{\text{prune}} = (\frac{1}{N_v} \sum \mathbf{M}_{\text{hard}} - \tau)^2$</span>，<span class="math inline"><em>τ</em> = 0</span> 鼓励最小化 token 使用</li>
-<li><strong>注意力掩码训练</strong>：通过修改 Softmax 模拟剪枝过程——被剪枝 token 不参与注意力计算</li>
-</ul>
 <hr />
-<h2 class="section-title">实验与核心结论：主要实验结果</h2><h3 id="表-1llava-v1.5-7b-上的剪枝对比">表 1：LLaVA-v1.5-7B 上的剪枝对比</h3>
+<figure>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
+</figure>
+<h2 class="section-title">实验与核心结论：主要实验结果</h2><table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>可学习参数</th>
+<th>GQA</th>
+<th>SQA^I</th>
+<th>VQA^T</th>
+<th>POPE</th>
+<th>MME</th>
+<th>VQA^v2</th>
+<th>MMB</th>
+<th>MMB^CN</th>
+<th>RelAcc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>Upper Bound, 576 Tokens (100%)</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Vanilla</td>
+<td>-</td>
+<td>61.9</td>
+<td>69.5</td>
+<td>58.2</td>
+<td>85.9</td>
+<td>1862</td>
+<td>78.5</td>
+<td>64.7</td>
+<td>58.3</td>
+<td>100.0%</td>
+</tr>
+<tr class="odd">
+<td><em>保留 128 Tokens（减少 77.8%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>FastV</td>
+<td>-</td>
+<td>49.6</td>
+<td>60.2</td>
+<td>50.6</td>
+<td>59.6</td>
+<td>1490</td>
+<td>61.8</td>
+<td>56.1</td>
+<td>51.4</td>
+<td>82.1%</td>
+</tr>
+<tr class="odd">
+<td>SparseVLM</td>
+<td>-</td>
+<td>56.0</td>
+<td>67.1</td>
+<td>54.9</td>
+<td>80.5</td>
+<td>1696</td>
+<td>73.8</td>
+<td>60.0</td>
+<td>51.1</td>
+<td>92.6%</td>
+</tr>
+<tr class="even">
+<td>VisPruner</td>
+<td>-</td>
+<td>58.2</td>
+<td>69.1</td>
+<td>57.0</td>
+<td>84.6</td>
+<td>1794</td>
+<td>75.8</td>
+<td>62.7</td>
+<td>57.3</td>
+<td>97.3%</td>
+</tr>
+<tr class="odd">
+<td>VisionZip</td>
+<td>20.9M</td>
+<td>58.9</td>
+<td>68.3</td>
+<td>57.0</td>
+<td>83.7</td>
+<td>1823</td>
+<td>76.6</td>
+<td>62.6</td>
+<td>-</td>
+<td>97.3%</td>
+</tr>
+<tr class="even">
+<td>TwigVLM</td>
+<td>610M</td>
+<td><strong>60.6</strong></td>
+<td><strong>69.5</strong></td>
+<td><strong>57.8</strong></td>
+<td>86.6</td>
+<td>1818</td>
+<td><strong>77.9</strong></td>
+<td>63.5</td>
+<td>-</td>
+<td><strong>99.0%</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>LearnPruner</strong></td>
+<td><strong>0.53M</strong></td>
+<td>60.3</td>
+<td>68.5</td>
+<td>57.3</td>
+<td><strong>86.7</strong></td>
+<td>1820</td>
+<td>77.3</td>
+<td><strong>63.8</strong></td>
+<td>56.8</td>
+<td>98.5%</td>
+</tr>
+<tr class="even">
+<td><em>保留 64 Tokens（减少 88.9%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FastV</td>
+<td>-</td>
+<td>46.1</td>
+<td>51.1</td>
+<td>47.8</td>
+<td>48.0</td>
+<td>1256</td>
+<td>55.0</td>
+<td>48.0</td>
+<td>42.7</td>
+<td>71.4%</td>
+</tr>
+<tr class="even">
+<td>VisPruner</td>
+<td>-</td>
+<td>55.4</td>
+<td>69.1</td>
+<td>55.8</td>
+<td>80.4</td>
+<td>1689</td>
+<td>72.7</td>
+<td>61.3</td>
+<td>55.1</td>
+<td>94.3%</td>
+</tr>
+<tr class="odd">
+<td>VisionZip</td>
+<td>20.9M</td>
+<td>57.0</td>
+<td>68.8</td>
+<td>56.0</td>
+<td>80.9</td>
+<td>1756</td>
+<td>74.2</td>
+<td>61.5</td>
+<td>-</td>
+<td>95.1%</td>
+</tr>
+<tr class="even">
+<td>TwigVLM</td>
+<td>610M</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

@@ -1,23 +1,12 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perceptual Flow Network for Visually Grounded Reasoning</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Perceptual Flow Network for Visually Grounded Reasoning</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.02730">arXiv 2605.02730</a></div><div class="summary-box"><strong>核心问题：</strong><h3 id="任务定义与应用场景">2.1 任务定义与应用场景</h3>
-<p>大型视觉语言模型（LVLMs）在复杂视觉推理中面临幻觉和可解释性不足的问题。当前主流做法是利用视觉专家（如 GroundingDINO）的几何先验，通过 RLVR（Reinforcement Learning with Verifiable Reward）将推理过程锚定到视觉证据上。</p>
-<h3 id="现有方法的关键不足tunnel-vision效应">2.2 现有方法的关键不足——“Tunnel Vision”效应</h3>
-<p>本文通过一个关键探测实验发现：<strong>几何精度最高的专家标注并不等于推理效用最高</strong>。</p>
-<p>在 V* Bench 上使用 Qwen2.5-VL 家族进行探测，将原始标注各向同性扩展后送入模型（而非完整图像），测量不同几何先验的推理效用。结果发现： - 最精确的几何先验（专家标注）反而<strong>不是</strong>最有帮助的 - 适度扩展的区域（IoU 较低但包含更多上下文）效果更好 - 最优几何先验是<strong>高度实例特定的</strong>，无法通过简单启发式策略获得</p>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perceptual Flow Network for Visually Grounded Reasoning</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Perceptual Flow Network for Visually Grounded Reasoning</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.02730">arXiv 2605.02730</a></div><div class="summary-box"><strong>核心问题：</strong><p>在 V* Bench 上使用 Qwen2.5-VL 家族进行探测，将原始标注各向同性扩展后送入模型（而非完整图像），测量不同几何先验的推理效用。结果发现： - 最精确的几何先验（专家标注）反而<strong>不是</strong>最有帮助的 - 适度扩展的区域（IoU 较低但包含更多上下文）效果更好 - 最优几何先验是<strong>高度实例特定的</strong>，无法通过简单启发式策略获得</p>
 <p>原因在于：视觉专家最初为物体检测设计，追求严格的几何精度，但这会诱导 <strong>“隧道视野”（tunnel vision）</strong>效应——排斥了全面理解所需的上下文信息，反而降低推理性能。</p>
-<h3 id="本文核心切入点">2.3 本文核心切入点</h3>
-<p>不强制模型对齐有偏差的专家先验，而是让模型学习<strong>自参数化的变分分布</strong> <span class="math inline"><em>p</em><sub><em>θ</em></sub>(<em>Z</em>|<em>X</em>)</span> 来近似理想感知行为的后验 <span class="math inline"><em>P</em><sub><em>V</em></sub>(<em>Z</em>|<em>X</em>, <em>Y</em>)</span>，通过采样自优化的内部分布实现 grounded yet more accurate 的推理。</p>
-</div><h2 class="section-title">方法框架：3. 方法与框架（详细）</h2><h3 id="总体框架解耦感知与推理">3.1 总体框架：解耦感知与推理</h3>
-<p>PFlowNet 将视觉推理分解为两个<strong>解耦</strong>的阶段：</p>
+</div><h2 class="section-title">方法框架：方法与框架（详细）</h2><p>PFlowNet 将视觉推理分解为两个<strong>解耦</strong>的阶段：</p>
 <pre><code>p_θ(Y, Z | X) = p_θ(Z | X) · p_θ(Y | Z, ⟨X, I_RoI⟩)</code></pre>
 <ol type="1">
 <li><strong>Flow Generation 阶段</strong>：从模型内在分布 <span class="math inline"><em>p</em><sub><em>θ</em></sub>(<em>Z</em>|<em>X</em>)</span> 采样 Perceptual Flow</li>
 <li><strong>Flow-Guided Reasoning 阶段</strong>：基于生成的 Flow 及对应 RoI 裁剪图进行 self-conditioned 自回归生成</li>
 </ol>
 <p>核心框架图见 Figure 4：</p>
-<figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_perceptual_flow_network_for_visually_grounded_reasoning/fig4.png" alt="PFlowNet 总览" /><figcaption aria-hidden="true">PFlowNet 总览</figcaption>
-</figure>
-<h3 id="关键概念perceptual-flow">3.2 关键概念：Perceptual Flow</h3>
 <p><strong>Perceptual Flow</strong> <span class="math inline"><em>Z</em> = (<em>z</em><sub>0</sub> → <em>z</em><sub>1</sub>…<em>z</em><sub><em>K</em></sub>)</span> 是一个结构化的隐式轨迹，包含两种状态：</p>
 <table>
 <colgroup>
@@ -47,53 +36,14 @@
 </table>
 <p>基于此，采用 <strong>Sub-Trajectory Balance (Sub-TB)</strong> 目标进行分层变分优化： <span class="math display">min<sub><em>θ</em></sub>∑<sub><em>i</em>, <em>j</em></sub><em>D</em>(ℱ(<em>z</em><sub><em>i</em></sub>)𝒯<sub><em>F</em></sub>(<em>z</em><sub><em>i</em> : <em>j</em></sub>)∥ℱ(<em>z</em><sub><em>j</em></sub>)𝒯<sub><em>B</em></sub>(<em>z</em><sub><em>j</em> : <em>i</em></sub>))</span></p>
 <p>相比 PPO 等 RL 范式，Sub-TB 提供<strong>密集的中间监督</strong>，促进多样化的感知行为。</p>
-<h3 id="训练流程">3.3 训练流程</h3>
-<h4 id="数据构建与-cold-start">3.3.1 数据构建与 Cold Start</h4>
 <p><strong>数据收集原则</strong>： - <strong>多样化任务</strong>：覆盖细粒度理解和通用场景 - <strong>多样化 RoI</strong>：跨专家交叉标注，保留空间覆盖足够广泛的样本</p>
 <p><strong>Flow 合成</strong>（使用 Gemini3Flash 和 GPT-4o 作为教师）： 1. 对每个带专家 RoI 的样本，随机扩展每个 RoI 以缓解视觉专家的归纳偏差 2. 教师模型识别关键视觉内容 → 生成 Planning State <span class="math inline"><em>z</em><sub>0</sub></span> 3. 为每个 RoI 生成详细 caption → Perceptual States <span class="math inline"><em>z</em><sub> ≥ 1</sub></span></p>
 <p><strong>验证与难度控制</strong>（关键设计）：</p>
-<table>
-<thead>
-<tr class="header">
-<th>验证条件 w/o <span class="math inline"><em>Z</em><sub><em>s</em></sub></span></th>
-<th>验证条件 w/ <span class="math inline"><em>Z</em><sub><em>s</em></sub></span></th>
-<th>决策</th>
-<th>数据分配</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><span class="math inline"><em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> = 1</span></td>
-<td>—</td>
-<td>拒绝（trivial）</td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td>—</td>
-<td><span class="math inline"><em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> &gt; 1</span></td>
-<td>拒绝（unverified flow）</td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td><span class="math inline">2 ≤ <em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> ≤ 16</span></td>
-<td><span class="math inline"><em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> = 1</span></td>
-<td>接受</td>
-<td>RFT 数据集 <span class="math inline">(<em>X</em>, <em>Y</em>, <em>E</em>)</span></td>
-</tr>
-<tr class="even">
-<td><span class="math inline"><em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> &gt; 16</span></td>
-<td><span class="math inline"><em>k</em><sub><em>p</em><em>a</em><em>s</em><em>s</em></sub> = 1</span></td>
-<td>接受</td>
-<td>Cold-start 数据集 <span class="math inline">(<em>X</em>, <em>Z</em><sub><em>s</em></sub>)</span></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Cold Start SFT</strong>：对 cold-start 样本最小化交叉熵损失，初始化策略生成 Perceptual Flow 的能力。</p>
-<h4 id="变分强化微调variational-rft">3.3.2 变分强化微调（Variational RFT）</h4>
 <p>（本节其余细节见论文原始笔记。）</p>
-<h2 class="section-title">实验与核心结论：4. 实验分析（详细）</h2><h3 id="主结果">4.1 主结果</h3>
-<p><strong>基础模型</strong>：Qwen3-VL-8B</p>
-<h4 id="通用视觉任务treebench-mme-realworld-lite">通用视觉任务（TreeBench + MME-RealWorld-Lite）</h4>
+<figure>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_perceptual_flow_network_for_visually_grounded_reasoning/fig4.png" alt="PFlowNet 总览" /><figcaption aria-hidden="true">PFlowNet 总览</figcaption>
+</figure>
+<h2 class="section-title">实验与核心结论：实验分析（详细）</h2><p><strong>基础模型</strong>：Qwen3-VL-8B</p>
 <table>
 <thead>
 <tr class="header">
@@ -141,7 +91,6 @@
 </tbody>
 </table>
 <p>PFlowNet 在 19 个子任务中的 17 个（89%）创下 SOTA 记录，超越最近竞争者 5.3%（TreeBench）和 12.6%（MME-RW）。</p>
-<h4 id="细粒度视觉理解">细粒度视觉理解</h4>
 <table>
 <thead>
 <tr class="header">
@@ -189,68 +138,5 @@
 </tbody>
 </table>
 <p><strong>关键结论</strong>：PFlowNet (8B) 在 V* Bench 上达到 90.6%，匹配甚至超越 Qwen3-VL-32B (87.4%)。</p>
-<h3 id="消融实验">4.2 消融实验</h3>
-<table>
-<thead>
-<tr class="header">
-<th>设置</th>
-<th style="text-align: center;">TreeBench</th>
-<th style="text-align: center;">V*</th>
-<th style="text-align: center;">MME-RW</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>(1) Base Model</td>
-<td style="text-align: center;">44.9</td>
-<td style="text-align: center;">77.5</td>
-<td style="text-align: center;">46.0</td>
-</tr>
-<tr class="even">
-<td>(2) + SFT</td>
-<td style="text-align: center;">48.3</td>
-<td style="text-align: center;">83.7</td>
-<td style="text-align: center;">54.2</td>
-</tr>
-<tr class="odd">
-<td>(3) + RFT (仅对比项)</td>
-<td style="text-align: center;">51.5</td>
-<td style="text-align: center;">85.3</td>
-<td style="text-align: center;">59.5</td>
-</tr>
-<tr class="even">
-<td>(4) + RFT (仅推理效用)</td>
-<td style="text-align: center;">52.8</td>
-<td style="text-align: center;">87.4</td>
-<td style="text-align: center;">62.8</td>
-</tr>
-<tr class="odd">
-<td><strong>(5) + RFT (两者结合)</strong></td>
-<td style="text-align: center;"><strong>55.3</strong></td>
-<td style="text-align: center;"><strong>90.6</strong></td>
-<td style="text-align: center;"><strong>67.0</strong></td>
-</tr>
-<tr class="even">
-<td>(6) + RFT (仅正例 <span class="math inline"><em>P</em><sup>+</sup></span>)</td>
-<td style="text-align: center;">52.2</td>
-<td style="text-align: center;">88.1</td>
-<td style="text-align: center;">65.5</td>
-</tr>
-<tr class="odd">
-<td>(7) PFlowNet w/o Z (仅 RoI)</td>
-<td style="text-align: center;">54.5</td>
-<td style="text-align: center;">89.4</td>
-<td style="text-align: center;">66.4</td>
-</tr>
-<tr class="even">
-<td>(8) PFlowNet w/o I_RoI (仅 Flow)</td>
-<td style="text-align: center;">49.2</td>
-<td style="text-align: center;">83.8</td>
-<td style="text-align: center;">52.1</td>
-</tr>
-</tbody>
-</table>
-<p><strong>关键发现</strong>： - 质量奖励和效用奖励<strong>协同作用</strong>，缺一不可 - 对比项（<span class="math inline"><em>P</em><sup>+</sup>/<em>P</em><sup>−</sup></span> vs 仅 <span class="math inline"><em>P</em><sup>+</sup></span>）中负例信号至关重要 - 消除 Perceptual Flow 导致性能<strong>严重退化</strong>（-6.8 on V*），证明 Flow 不只是定位工具，更是关键的<strong>显式语义锚点</strong> - 消除 RoI 特征影响相对较小——说明文本 Flow 已充分编码视觉语义</p>
-<h3 id="geometric-shaping-消融">4.3 Geometric Shaping 消融</h3>
 <p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

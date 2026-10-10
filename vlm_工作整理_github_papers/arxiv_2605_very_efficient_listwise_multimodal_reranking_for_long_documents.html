@@ -1,11 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Very Efficient Listwise Multimodal Reranking for Long Documents</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Very Efficient Listwise Multimodal Reranking for Long Documents</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.11864">arXiv 2605.11864</a></div><div class="summary-box"><strong>核心问题：</strong><p>这篇工作的目标很明确：做一个<strong>又快又准的 long-document multimodal listwise reranker</strong>。</p>
 <p>它面向的场景不是普通文本 reranking，而是：</p>
-<ul>
-<li>query 是文本</li>
-<li>candidate 是长文档里的多个 page</li>
-<li>每个 page 以图像形式输入</li>
-<li>reranker 需要在 top-k page 里重新排序</li>
-</ul>
 <p>这个 setting 很适合 MMDocIR、M-RAG、DocVQA 一类任务，但也天然很贵。作者把瓶颈拆成了两个：</p>
 <ol type="1">
 <li><strong>长视觉上下文带来的 prefill 开销</strong>
@@ -22,11 +16,11 @@
 </ul></li>
 </ol>
 <p>作者的核心观点是：</p>
-<p>（本节其余细节见论文原始笔记。）</p>
-</div><h2 class="section-title">方法框架：3. 方法总览</h2><figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_very_efficient_listwise_multimodal_reranking_for_long_documents/zipranker.png" alt="ZipRerank overview" /><figcaption aria-hidden="true">ZipRerank overview</figcaption>
-</figure>
-<p>ZipRerank 的结构可以概括成一句话：</p>
+<blockquote>
+<p>现有工作很多只在“怎么让 reranking 更准”上发力，但对 long multimodal context 的推理路径做得还不够工程化。真正的高效方案，需要同时减少输入 token 和输出 token。</p>
+</blockquote>
+<p>所以 ZipRerank 不是只改一个点，而是做了一个比较完整的协同设计：</p>
+</div><h2 class="section-title">方法框架：方法总览</h2><p>ZipRerank 的结构可以概括成一句话：</p>
 <p><strong>训练上用两阶段迁移出 listwise multimodal reranking 能力，推理上用 query-aware token pruning + single-token scoring 把时延压下去。</strong></p>
 <p>整个框架分成两部分：</p>
 <ol type="1">
@@ -41,43 +35,13 @@
 <li>用 single-token decoding 替代传统多步排序生成</li>
 </ul></li>
 </ol>
-<h2 class="section-title">实验与核心结论：7. 实验设置</h2><h3 id="数据和任务">7.1 数据和任务</h3>
-<ul>
-<li>训练:
-<ul>
-<li>Stage 1: RankZephyr</li>
-<li>Stage 2: MMDocIR training set</li>
-</ul></li>
-<li>测试:
-<ul>
-<li>MMDocIR page-level retrieval / reranking</li>
-<li>ViDoRe English subset（看 OOD generalization）</li>
-</ul></li>
-</ul>
-<p>MMDocIR 的 setting 是：</p>
-<ul>
-<li>313 个长文档</li>
-<li>10 个 domain</li>
-<li>平均每个文档 65.1 页</li>
-<li>1658 个 expert-curated query</li>
-</ul>
+<figure>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_very_efficient_listwise_multimodal_reranking_for_long_documents/zipranker.png" alt="ZipRerank overview" /><figcaption aria-hidden="true">ZipRerank overview</figcaption>
+</figure>
+<h2 class="section-title">实验与核心结论：实验设置</h2><p>MMDocIR 的 setting 是：</p>
 <p>评价时先用 first-stage retriever 取 top-20 candidate pages，再做 reranking。</p>
-<h3 id="first-stage-retriever">7.2 First-stage retriever</h3>
 <p>作者用了两个不同的一阶段召回器：</p>
-<ul>
-<li><code>DSE_wiki-ss</code></li>
-<li><code>ColQwen</code></li>
-</ul>
 <p>这让结论更稳一些，因为能看出 ZipRerank 不是只绑定在某一种 retriever 上。</p>
-<h3 id="backbone-和训练细节">7.3 Backbone 和训练细节</h3>
-<ul>
-<li>base model: <code>Qwen3-VL-8B-Instruct</code></li>
-<li>训练时冻结 vision encoder，只更新 language model 参数</li>
-<li>硬件: 单张 <code>NVIDIA H200</code></li>
-<li>attention: <code>Flash Attention 2</code></li>
-<li>optimizer: <code>8-bit AdamW</code></li>
-<li>precision: <code>BF16</code></li>
-</ul>
 <p>训练超参：</p>
 <table>
 <thead>
@@ -116,21 +80,8 @@
 </tbody>
 </table>
 <p>额外关键设置：</p>
-<ul>
-<li>Stage 1 文本先渲染成 <code>280x280</code> image</li>
-<li>Stage 2 图片最长边不超过 <code>1024</code></li>
-<li>Stage 2 里 <code>lambda_2 = 1.0</code></li>
-<li>soft rank 的位置衰减 <code>gamma = 0.5</code></li>
-<li>每个 query 最多看 20 个候选</li>
-</ul>
-<h3 id="prompt-形式">7.4 Prompt 形式</h3>
+<p>prompt 设计很朴素，但和 single-token listwise scoring 强绑定：</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_very_efficient_listwise_multimodal_reranking_for_long_documents/Prompt.drawio.png" alt="Prompt template" /><figcaption aria-hidden="true">Prompt template</figcaption>
 </figure>
-<p>prompt 设计很朴素，但和 single-token listwise scoring 强绑定：</p>
-<ul>
-<li>候选用 <code>A/B/C/...</code> 标号</li>
-<li>输出序列也是这些 identifier 的排序</li>
-<li>推理时只取第一个位置对这些 identifier 的 logits</li>
-</ul>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

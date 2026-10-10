@@ -1,11 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AlphaGRPO: Unlocking Self-Reflective Multimodal Generation in Unified Multimodal Models via Decompositional Verifiable Reward</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>AlphaGRPO: Unlocking Self-Reflective Multimodal Generation in Unified Multimodal Models via Decompositional Verifiable Reward</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.12495">arXiv 2605.12495</a></div><div class="summary-box"><strong>核心问题：</strong><p>这篇 paper 的目标很明确：</p>
 <p><strong>能不能不用额外的 cold-start SFT，只靠 RL，把 unified multimodal model 里“潜在但没被激活”的 reasoning / self-reflection / refinement 能力逼出来，用来提升 multimodal generation？</strong></p>
 <p>这里的对象不是普通 text-to-image diffusion model，而是 <strong>Unified Multimodal Models (UMMs)</strong>，尤其是这种：</p>
-<ul>
-<li>一体化处理理解和生成</li>
-<li>同时能走 autoregressive text token 和 diffusion image token</li>
-<li>能在单一 backbone 里做 interleaved multimodal reasoning / generation</li>
-</ul>
 <p>作者的核心判断是：</p>
 <ol type="1">
 <li>这类 unified model 在大规模预训练后，其实已经有一些“隐式原语”
@@ -20,12 +15,14 @@
 <li>强 teacher 合成高质量数据</li>
 <li>再做额外 cold-start SFT</li>
 </ul></li>
+<li>但这样有个问题：
+<ul>
+<li>你很难分清性能提升到底来自 RL，还是来自 teacher distillation</li>
+</ul></li>
 </ol>
-<p>（本节其余细节见论文原始笔记。）</p>
-</div><h2 class="section-title">方法框架：5. 方法总览</h2><figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /><figcaption aria-hidden="true">AlphaGRPO overview</figcaption>
-</figure>
-<p>AlphaGRPO 的整体结构由三部分组成：</p>
+<p>所以作者要做的是：</p>
+<p><strong>不加冷启动蒸馏阶段，直接在 AR-Diffusion unified model 上做 GRPO，看看能不能把这些 latent capability 激活出来。</strong></p>
+</div><h2 class="section-title">方法框架：方法总览</h2><p>AlphaGRPO 的整体结构由三部分组成：</p>
 <ol type="1">
 <li><strong>统一轨迹建模</strong></li>
 <li><strong>统一 GRPO 优化</strong></li>
@@ -34,27 +31,15 @@
 <p>作者优化的不是单纯文本，也不是单纯 diffusion image trajectory，而是一个混合轨迹：</p>
 <p><code>tau = (y, z_1 -&gt; z_0)</code></p>
 <p>其中：</p>
-<ul>
-<li><code>y</code> 是 autoregressive reasoning text</li>
-<li><code>z_1 -&gt; z_0</code> 是 diffusion visual trajectory</li>
-</ul>
 <p>这个建模非常关键，因为它允许作者说：</p>
 <blockquote>
 <p>reasoning text 是 image generation 的因果前驱，所以同一个 reward 可以反传到文本和图像两边。</p>
 </blockquote>
-<h2 class="section-title">实验与核心结论：9. 主要实验结果</h2><h3 id="text-to-image-总体结果">9.1 Text-to-Image 总体结果</h3>
 <figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/teaser.png" alt="Qualitative and quantitative teaser" /><figcaption aria-hidden="true">Qualitative and quantitative teaser</figcaption>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /><figcaption aria-hidden="true">AlphaGRPO overview</figcaption>
 </figure>
-<p>论文主表横跨多个 benchmark：</p>
-<ul>
-<li>TIIF-Bench</li>
-<li>WISE</li>
-<li>DPG-Bench</li>
-<li>GenEval</li>
-</ul>
+<h2 class="section-title">实验与核心结论：主要实验结果</h2><p>论文主表横跨多个 benchmark：</p>
 <p>下面只抓最核心的对比。</p>
-<h4 id="分辨率">512 分辨率</h4>
 <table>
 <thead>
 <tr class="header">
@@ -104,7 +89,6 @@
 </ol>
 <p>也就是说，这篇 paper 不是只证明“训练某个特定任务能涨这个任务”，而是在强调：</p>
 <p><strong>self-reflective refinement 这种训练形态本身能学到比较通用的 multimodal generation alignment。</strong></p>
-<h4 id="分辨率-1">1024 分辨率</h4>
 <table>
 <thead>
 <tr class="header">
@@ -154,11 +138,9 @@
 <p>这张表支撑了作者的一个关键 claim：</p>
 <p><strong>虽然训练主要在 512 分辨率进行，但学到的对齐能力能迁移到更高分辨率。</strong></p>
 <p>作者用这个来论证：</p>
-<ul>
-<li>学到的不是像素层面的投机技巧</li>
-<li>更像是更稳的 semantic alignment / reasoning behavior</li>
-</ul>
-<h3 id="image-editing没专门训-editing也能涨">9.2 Image editing：没专门训 editing，也能涨</h3>
 <p>GEdit-Bench 上：</p>
 <p>（本节其余细节见论文原始笔记。）</p>
+<figure>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/teaser.png" alt="Qualitative and quantitative teaser" /><figcaption aria-hidden="true">Qualitative and quantitative teaser</figcaption>
+</figure>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

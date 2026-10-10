@@ -1,46 +1,228 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perceval: 以感知为中心的过程奖励模型改进视觉语言模型</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Perceval: 以感知为中心的过程奖励模型改进视觉语言模型</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span></div><div class="summary-box"><strong>核心问题：</strong><p>RLVR（Reinforcement Learning with Verifiable Rewards）已成为提升 VLM 推理能力的关键技术，但其<strong>结果级（outcome-level）奖励信号过于粗糙</strong>，无法定位推理链中具体哪一步出了错。VLM 在多步推理中频繁出现<strong>感知幻觉</strong>（插入不存在的物体、错误的空间关系），但只有最终奖励才给出反馈，导致严重的信用分配问题。</p>
 <p>本文提出核心问题：<em>能否构建一个以感知为中心的过程奖励模型（PRM），在 token 级别定位并惩罚幻觉，从而提供更细粒度的训练监督和推理纠错？</em></p>
 <hr />
-</div><h2 class="section-title">方法框架：方法概述</h2><h3 id="perceval感知级过程奖励模型">Perceval：感知级过程奖励模型</h3>
-<p>Perceval 是一个<strong>生成式</strong>过程奖励模型，给定图像 <span class="math inline"><em>v</em></span>、问题 <span class="math inline"><em>q</em></span>、模型回答 <span class="math inline"><em>o</em></span>，输出结构化的验证结果：</p>
+</div><h2 class="section-title">方法框架：方法概述</h2><p>Perceval 是一个<strong>生成式</strong>过程奖励模型，给定图像 <span class="math inline"><em>v</em></span>、问题 <span class="math inline"><em>q</em></span>、模型回答 <span class="math inline"><em>o</em></span>，输出结构化的验证结果：</p>
 <ol type="1">
 <li><strong><think>…</think></strong>：逐条分析回答中每个感知 claim 是否与图像视觉证据一致</li>
 <li><strong><answer>…</answer></strong>：若无错误输出 <code>"The response is correct."</code>；否则输出一个 Python 列表，包含被识别为幻觉的<strong>原文子串</strong></li>
 </ol>
 <p>这种设计直接定位错误 span，而非给出单一标量分数。</p>
-<h3 id="prm-训练流程四阶段">PRM 训练流程（四阶段）</h3>
 <ol type="1">
 <li><strong>查询选择</strong>：主要来自视觉搜索数据集（如 V*、DeepEyes），辅以少量数学推理和通用理解数据</li>
 <li><strong>Rollout 生成</strong>：用 Qwen2.5-VL-7B 生成回答（其不完美的感知对齐天然产生丰富的幻觉样本）</li>
 <li><strong>自动标注与验证</strong>：使用强模型（如 Gemini-2.5-Pro）进行幻觉检测的逐步验证，生成结构化标注</li>
 <li><strong>监督微调</strong>：在聚合数据上 SFT 训练 Perceval 模型</li>
 </ol>
-<h3 id="rlvr-中的过程级监督">RLVR 中的过程级监督</h3>
 <p>标准 GRPO 的优势值 <span class="math inline"><em>Â</em><sub><em>i</em></sub></span> 是<strong>序列级</strong>的，对同一回答中所有 token 一视同仁。Perceval 的改进：</p>
 <ol type="1">
 <li>用 Perceval 识别每个回答中的幻觉 token span，构建二值掩码 <span class="math inline"><em>M</em><sub><em>i</em></sub></span></li>
 <li>将序列级优势改为<strong>token 级优势</strong>：</li>
 </ol>
 <p><span class="math display"><em>Â</em>′<sub><em>i</em>, <em>t</em></sub> = <em>Â</em><sub><em>i</em></sub> − <em>α</em> ⋅ <em>m</em><sub><em>i</em>, <em>t</em></sub> ⋅ |<em>Â</em><sub><em>i</em></sub>|</span></p>
-<ul>
-<li>正确 token (<span class="math inline"><em>m</em> = 0</span>)：保持原优势 <span class="math inline"><em>Â</em><sub><em>i</em></sub></span></li>
-<li>幻觉 token (<span class="math inline"><em>m</em> = 1</span>)：优势被削弱——winner 序列变为 <span class="math inline"><em>Â</em><sub><em>i</em></sub>(1 − <em>α</em>)</span>，loser 序列变为 <span class="math inline"><em>Â</em><sub><em>i</em></sub>(1 + <em>α</em>)</span>（惩罚更重）</li>
-</ul>
 <ol start="3" type="1">
 <li>将 <span class="math inline"><em>Â</em>′<sub><em>i</em>, <em>t</em></sub></span> 替换进 GRPO 目标函数</li>
 </ol>
 <p>关键设计：<strong>仅在感知相关数据上使用 Perceval 干预</strong>，数学推理等其他数据仍使用标准 GRPO。这使得可以验证感知增强是否能泛化到其他推理领域。</p>
-<h3 id="推理时的-test-time-scaling">推理时的 Test-Time Scaling</h3>
 <p>Perceval 在推理阶段也可用于迭代纠错，设计了两种策略：</p>
 <ol type="1">
 <li><strong>Truncate–then–Regenerate</strong>：检测到幻觉后，截断错误 span 之前的内容，保留已验证的前缀，让模型从该位置重新生成</li>
 <li><strong>Truncate–Thinking–then–Regenerate</strong>：在截断后插入反思提示（如 “Wait, I need to reconsider…”），引导模型反思后再生</li>
 </ol>
 <p>两种策略均可迭代最多 <span class="math inline"><em>k</em></span> 次，直到 Perceval 不再检测到错误。</p>
+<hr />
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/final-main.png" alt="方法概览" /><figcaption aria-hidden="true">方法概览</figcaption>
 </figure>
-<hr />
-<h2 class="section-title">实验与核心结论：主要实验结果</h2><h3 id="表-1主实验结果3b-和-7b-模型">表 1：主实验结果（3B 和 7B 模型）</h3>
+<h2 class="section-title">实验与核心结论：主要实验结果</h2><table>
+<thead>
+<tr class="header">
+<th>模型</th>
+<th>参数</th>
+<th>V*_attr</th>
+<th>V*_pos</th>
+<th>V*_all</th>
+<th>BLINK</th>
+<th>MMStar</th>
+<th>MRW</th>
+<th>RWQA</th>
+<th>MathVision</th>
+<th>MathVista</th>
+<th>ChartQA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>3B 基线</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>VLM-R1</td>
+<td>3B</td>
+<td>75.65</td>
+<td>67.11</td>
+<td>72.25</td>
+<td>46.25</td>
+<td><strong>56.7</strong></td>
+<td>42.3</td>
+<td>61.5</td>
+<td>21.71</td>
+<td>65.1</td>
+<td>83.48</td>
+</tr>
+<tr class="odd">
+<td>LMM-R1</td>
+<td>3B</td>
+<td>46.09</td>
+<td>53.95</td>
+<td>49.21</td>
+<td>46.60</td>
+<td><strong>56.7</strong></td>
+<td>35.8</td>
+<td>58.7</td>
+<td>24.47</td>
+<td>63.5</td>
+<td>85.04</td>
+</tr>
+<tr class="even">
+<td>Perception-R1</td>
+<td>3B</td>
+<td>57.39</td>
+<td>48.68</td>
+<td>53.92</td>
+<td>46.44</td>
+<td>54.8</td>
+<td>37.5</td>
+<td>55.8</td>
+<td>22.03</td>
+<td>58.1</td>
+<td>81.60</td>
+</tr>
+<tr class="odd">
+<td>Jigsaw-R1</td>
+<td>3B</td>
+<td>72.17</td>
+<td>65.79</td>
+<td>69.63</td>
+<td>45.01</td>
+<td>54.4</td>
+<td>42.2</td>
+<td>57.9</td>
+<td>19.40</td>
+<td>61.0</td>
+<td>84.60</td>
+</tr>
+<tr class="even">
+<td>Qwen2.5-VL</td>
+<td>3B</td>
+<td>57.39</td>
+<td>65.79</td>
+<td>60.73</td>
+<td>46.94</td>
+<td>52.1</td>
+<td>41.7</td>
+<td>63.4</td>
+<td>21.40</td>
+<td>61.6</td>
+<td>83.12</td>
+</tr>
+<tr class="odd">
+<td>+ GRPO</td>
+<td>3B</td>
+<td>86.95</td>
+<td>69.73</td>
+<td>80.10</td>
+<td><strong>49.13</strong></td>
+<td>55.3</td>
+<td>46.8</td>
+<td>62.1</td>
+<td>23.36</td>
+<td>65.1</td>
+<td>83.32</td>
+</tr>
+<tr class="even">
+<td><strong>+ Ours</strong></td>
+<td><strong>3B</strong></td>
+<td><strong>90.43</strong></td>
+<td><strong>72.37</strong></td>
+<td><strong>83.25</strong></td>
+<td>48.75</td>
+<td>55.8</td>
+<td><strong>47.6</strong></td>
+<td><strong>64.9</strong></td>
+<td><strong>26.32</strong></td>
+<td><strong>65.6</strong></td>
+<td><strong>86.48</strong></td>
+</tr>
+<tr class="odd">
+<td><em>7B 基线</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>DeepEyes*</td>
+<td>7B</td>
+<td><strong>91.30</strong></td>
+<td>81.58</td>
+<td><strong>87.43</strong></td>
+<td>50.98</td>
+<td>62.7</td>
+<td>46.5</td>
+<td>67.0</td>
+<td>12.50</td>
+<td>69.9</td>
+<td>75.84</td>
+</tr>
+<tr class="odd">
+<td>Vision-R1</td>
+<td>7B</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>49.72</td>
+<td>55.4</td>
+<td>49.6</td>
+<td>64.1</td>
+<td><strong>36.18</strong></td>
+<td>71.3</td>
+<td>83.36</td>
+</tr>
+<tr class="even">
+<td>VL-Rethinker</td>
+<td>7</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p>（本节其余细节见论文原始笔记。）</p>
+<figure>
+<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/hallucination_rate.png" alt="幻觉率曲线" /><figcaption aria-hidden="true">幻觉率曲线</figcaption>
+</figure>
 <h2 class="section-title">论文信息</h2></article></div></body></html>
