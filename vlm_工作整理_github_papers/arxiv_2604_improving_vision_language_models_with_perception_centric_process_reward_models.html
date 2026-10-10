@@ -1,0 +1,490 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Improving Vision Language Models With Perception Centric Process Reward Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}</style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><h1 id="perceval-以感知为中心的过程奖励模型改进视觉语言模型">Perceval: 以感知为中心的过程奖励模型改进视觉语言模型</h1>
+<h2 id="基本信息">基本信息</h2>
+<ul>
+<li><strong>标题</strong>: Improving Vision-Language Models with Perception-Centric Process Reward Models</li>
+<li><strong>ArXiv ID</strong>: 2604.24583</li>
+<li><strong>链接</strong>: <a href="https://arxiv.org/abs/2604.24583">Abs</a> | <a href="https://arxiv.org/pdf/2604.24583.pdf">PDF</a></li>
+<li><strong>机构</strong>: 中国人民大学、字节跳动、UCSD、香港科技大学</li>
+<li><strong>会议</strong>: CVPR 2026</li>
+<li><strong>代码</strong>: <a href="https://github.com/RUCAIBox/Perceval">https://github.com/RUCAIBox/Perceval</a></li>
+</ul>
+<hr />
+<h2 id="核心问题与动机">核心问题与动机</h2>
+<p>RLVR（Reinforcement Learning with Verifiable Rewards）已成为提升 VLM 推理能力的关键技术，但其<strong>结果级（outcome-level）奖励信号过于粗糙</strong>，无法定位推理链中具体哪一步出了错。VLM 在多步推理中频繁出现<strong>感知幻觉</strong>（插入不存在的物体、错误的空间关系），但只有最终奖励才给出反馈，导致严重的信用分配问题。</p>
+<p>本文提出核心问题：<em>能否构建一个以感知为中心的过程奖励模型（PRM），在 token 级别定位并惩罚幻觉，从而提供更细粒度的训练监督和推理纠错？</em></p>
+<hr />
+<h2 id="方法概述">方法概述</h2>
+<h3 id="perceval感知级过程奖励模型">Perceval：感知级过程奖励模型</h3>
+<p>Perceval 是一个<strong>生成式</strong>过程奖励模型，给定图像 $v$、问题 $q$、模型回答 $o$，输出结构化的验证结果：</p>
+<ol type="1">
+<li><strong><think>...</think></strong>：逐条分析回答中每个感知 claim 是否与图像视觉证据一致</li>
+<li><strong><answer>...</answer></strong>：若无错误输出 <code>"The response is correct."</code>；否则输出一个 Python 列表，包含被识别为幻觉的<strong>原文子串</strong></li>
+</ol>
+<p>这种设计直接定位错误 span，而非给出单一标量分数。</p>
+<h3 id="prm-训练流程四阶段">PRM 训练流程（四阶段）</h3>
+<ol type="1">
+<li><strong>查询选择</strong>：主要来自视觉搜索数据集（如 V*、DeepEyes），辅以少量数学推理和通用理解数据</li>
+<li><strong>Rollout 生成</strong>：用 Qwen2.5-VL-7B 生成回答（其不完美的感知对齐天然产生丰富的幻觉样本）</li>
+<li><strong>自动标注与验证</strong>：使用强模型（如 Gemini-2.5-Pro）进行幻觉检测的逐步验证，生成结构化标注</li>
+<li><strong>监督微调</strong>：在聚合数据上 SFT 训练 Perceval 模型</li>
+</ol>
+<h3 id="rlvr-中的过程级监督">RLVR 中的过程级监督</h3>
+<p>标准 GRPO 的优势值 $\hat{A}_i$ 是<strong>序列级</strong>的，对同一回答中所有 token 一视同仁。Perceval 的改进：</p>
+<ol type="1">
+<li>用 Perceval 识别每个回答中的幻觉 token span，构建二值掩码 $M_i$</li>
+<li>将序列级优势改为<strong>token 级优势</strong>：</li>
+</ol>
+<p>$$\hat{A}'_{i,t} = \hat{A}<em>i - \alpha \cdot m</em>{i,t} \cdot |\hat{A}_i|$$</p>
+<ul>
+<li>正确 token ($m=0$)：保持原优势 $\hat{A}_i$</li>
+<li>幻觉 token ($m=1$)：优势被削弱——winner 序列变为 $\hat{A}_i(1-\alpha)$，loser 序列变为 $\hat{A}_i(1+\alpha)$（惩罚更重）</li>
+</ul>
+<ol start="3" type="1">
+<li>将 $\hat{A}'_{i,t}$ 替换进 GRPO 目标函数</li>
+</ol>
+<p>关键设计：<strong>仅在感知相关数据上使用 Perceval 干预</strong>，数学推理等其他数据仍使用标准 GRPO。这使得可以验证感知增强是否能泛化到其他推理领域。</p>
+<h3 id="推理时的-test-time-scaling">推理时的 Test-Time Scaling</h3>
+<p>Perceval 在推理阶段也可用于迭代纠错，设计了两种策略：</p>
+<ol type="1">
+<li><strong>Truncate–then–Regenerate</strong>：检测到幻觉后，截断错误 span 之前的内容，保留已验证的前缀，让模型从该位置重新生成</li>
+<li><strong>Truncate–Thinking–then–Regenerate</strong>：在截断后插入反思提示（如 "Wait, I need to reconsider..."），引导模型反思后再生</li>
+</ol>
+<p>两种策略均可迭代最多 $k$ 次，直到 Perceval 不再检测到错误。</p>
+<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/final-main.png" alt="方法概览" /></p>
+<hr />
+<h2 id="主要实验结果">主要实验结果</h2>
+<h3 id="表-1主实验结果3b-和-7b-模型">表 1：主实验结果（3B 和 7B 模型）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>模型</th>
+<th>参数</th>
+<th>V*_attr</th>
+<th>V*_pos</th>
+<th>V*_all</th>
+<th>BLINK</th>
+<th>MMStar</th>
+<th>MRW</th>
+<th>RWQA</th>
+<th>MathVision</th>
+<th>MathVista</th>
+<th>ChartQA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>3B 基线</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>VLM-R1</td>
+<td>3B</td>
+<td>75.65</td>
+<td>67.11</td>
+<td>72.25</td>
+<td>46.25</td>
+<td><strong>56.7</strong></td>
+<td>42.3</td>
+<td>61.5</td>
+<td>21.71</td>
+<td>65.1</td>
+<td>83.48</td>
+</tr>
+<tr class="odd">
+<td>LMM-R1</td>
+<td>3B</td>
+<td>46.09</td>
+<td>53.95</td>
+<td>49.21</td>
+<td>46.60</td>
+<td><strong>56.7</strong></td>
+<td>35.8</td>
+<td>58.7</td>
+<td>24.47</td>
+<td>63.5</td>
+<td>85.04</td>
+</tr>
+<tr class="even">
+<td>Perception-R1</td>
+<td>3B</td>
+<td>57.39</td>
+<td>48.68</td>
+<td>53.92</td>
+<td>46.44</td>
+<td>54.8</td>
+<td>37.5</td>
+<td>55.8</td>
+<td>22.03</td>
+<td>58.1</td>
+<td>81.60</td>
+</tr>
+<tr class="odd">
+<td>Jigsaw-R1</td>
+<td>3B</td>
+<td>72.17</td>
+<td>65.79</td>
+<td>69.63</td>
+<td>45.01</td>
+<td>54.4</td>
+<td>42.2</td>
+<td>57.9</td>
+<td>19.40</td>
+<td>61.0</td>
+<td>84.60</td>
+</tr>
+<tr class="even">
+<td>Qwen2.5-VL</td>
+<td>3B</td>
+<td>57.39</td>
+<td>65.79</td>
+<td>60.73</td>
+<td>46.94</td>
+<td>52.1</td>
+<td>41.7</td>
+<td>63.4</td>
+<td>21.40</td>
+<td>61.6</td>
+<td>83.12</td>
+</tr>
+<tr class="odd">
+<td>+ GRPO</td>
+<td>3B</td>
+<td>86.95</td>
+<td>69.73</td>
+<td>80.10</td>
+<td><strong>49.13</strong></td>
+<td>55.3</td>
+<td>46.8</td>
+<td>62.1</td>
+<td>23.36</td>
+<td>65.1</td>
+<td>83.32</td>
+</tr>
+<tr class="even">
+<td><strong>+ Ours</strong></td>
+<td><strong>3B</strong></td>
+<td><strong>90.43</strong></td>
+<td><strong>72.37</strong></td>
+<td><strong>83.25</strong></td>
+<td>48.75</td>
+<td>55.8</td>
+<td><strong>47.6</strong></td>
+<td><strong>64.9</strong></td>
+<td><strong>26.32</strong></td>
+<td><strong>65.6</strong></td>
+<td><strong>86.48</strong></td>
+</tr>
+<tr class="odd">
+<td><em>7B 基线</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>DeepEyes*</td>
+<td>7B</td>
+<td><strong>91.30</strong></td>
+<td>81.58</td>
+<td><strong>87.43</strong></td>
+<td>50.98</td>
+<td>62.7</td>
+<td>46.5</td>
+<td>67.0</td>
+<td>12.50</td>
+<td>69.9</td>
+<td>75.84</td>
+</tr>
+<tr class="odd">
+<td>Vision-R1</td>
+<td>7B</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>49.72</td>
+<td>55.4</td>
+<td>49.6</td>
+<td>64.1</td>
+<td><strong>36.18</strong></td>
+<td>71.3</td>
+<td>83.36</td>
+</tr>
+<tr class="even">
+<td>VL-Rethinker</td>
+<td>7B</td>
+<td>54.78</td>
+<td>59.21</td>
+<td>56.54</td>
+<td>49.91</td>
+<td><strong>64.0</strong></td>
+<td>38.8</td>
+<td>64.0</td>
+<td>31.91</td>
+<td><strong>72.6</strong></td>
+<td>85.60</td>
+</tr>
+<tr class="odd">
+<td>OpenVLThinker</td>
+<td>7B</td>
+<td>76.52</td>
+<td>80.26</td>
+<td>78.01</td>
+<td>51.36</td>
+<td>62.8</td>
+<td>59.1</td>
+<td>66.5</td>
+<td>32.57</td>
+<td>71.1</td>
+<td><strong>89.00</strong></td>
+</tr>
+<tr class="even">
+<td>Qwen2.5-VL</td>
+<td>7B</td>
+<td>60.87</td>
+<td>64.47</td>
+<td>62.30</td>
+<td>48.56</td>
+<td>62.3</td>
+<td>43.0</td>
+<td>60.6</td>
+<td>26.97</td>
+<td>70.2</td>
+<td>84.28</td>
+</tr>
+<tr class="odd">
+<td>+ GRPO</td>
+<td>7B</td>
+<td>85.22</td>
+<td>82.89</td>
+<td>84.29</td>
+<td>53.55</td>
+<td>62.0</td>
+<td>49.5</td>
+<td>66.4</td>
+<td>27.96</td>
+<td>71.7</td>
+<td>85.16</td>
+</tr>
+<tr class="even">
+<td><strong>+ Ours</strong></td>
+<td><strong>7B</strong></td>
+<td>86.09</td>
+<td><strong>86.84</strong></td>
+<td><strong>86.39</strong></td>
+<td><strong>54.49</strong></td>
+<td>63.8</td>
+<td><strong>50.0</strong></td>
+<td><strong>67.4</strong></td>
+<td>30.92</td>
+<td>72.0</td>
+<td>84.44</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Perceval 在 3B 和 7B 上均一致超越 GRPO 基线。3B 模型在视觉搜索上提升约 4%，数学/图表推理提升约 3%。<strong>关键发现</strong>：尽管 PRM 训练和 RL 干预主要集中在视觉搜索任务上，感知能力的提升<strong>泛化</strong>到了数学推理等其他领域。</p>
+</blockquote>
+<h3 id="表-2test-time-scaling-策略对比3b-模型">表 2：Test-Time Scaling 策略对比（3B 模型）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>采样数 k</th>
+<th>方法</th>
+<th>V*_attr</th>
+<th>V*_pos</th>
+<th>V*_all</th>
+<th>BLINK</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>k=4</td>
+<td>Major voting</td>
+<td>91.30</td>
+<td>76.32</td>
+<td>85.34</td>
+<td>48.24</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>Truncate</td>
+<td>93.04</td>
+<td><strong>77.63</strong></td>
+<td><strong>87.96</strong></td>
+<td><strong>49.13</strong></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>Truncate-Thinking</td>
+<td><strong>94.78</strong></td>
+<td>76.32</td>
+<td>86.91</td>
+<td>48.85</td>
+</tr>
+<tr class="even">
+<td>k=8</td>
+<td>Major voting</td>
+<td>92.17</td>
+<td>76.32</td>
+<td>85.86</td>
+<td>48.41</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>Truncate</td>
+<td>93.91</td>
+<td><strong>78.95</strong></td>
+<td><strong>87.96</strong></td>
+<td><strong>49.25</strong></td>
+</tr>
+<tr class="even">
+<td></td>
+<td>Truncate-Thinking</td>
+<td><strong>94.78</strong></td>
+<td>77.63</td>
+<td><strong>87.96</strong></td>
+<td><strong>49.25</strong></td>
+</tr>
+<tr class="odd">
+<td>k=16</td>
+<td>Major voting</td>
+<td>92.17</td>
+<td>76.32</td>
+<td>85.86</td>
+<td>48.41</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>Truncate</td>
+<td><strong>94.78</strong></td>
+<td><strong>81.57</strong></td>
+<td><strong>89.53</strong></td>
+<td><strong>49.45</strong></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>Truncate-Thinking</td>
+<td><strong>94.78</strong></td>
+<td>78.95</td>
+<td>88.48</td>
+<td>49.38</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>PRM 引导的策略在所有 k 值下均优于 major voting。Truncate 策略效果最好。Major voting 在困难子任务（V*_pos）上快速饱和，说明仅靠模型自身能力不足以纠错。</p>
+</blockquote>
+<h3 id="表-3惩罚强度-α-消融">表 3：惩罚强度 α 消融</h3>
+<table>
+<thead>
+<tr class="header">
+<th>α</th>
+<th>V*</th>
+<th>RealWorldQA</th>
+<th>MathVision</th>
+<th>ChartQA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.0（GRPO基线）</td>
+<td>80.10</td>
+<td>62.17</td>
+<td>23.36</td>
+<td>83.32</td>
+</tr>
+<tr class="even">
+<td>0.03</td>
+<td>81.68</td>
+<td>63.09</td>
+<td>22.70</td>
+<td>84.44</td>
+</tr>
+<tr class="odd">
+<td><strong>0.1</strong></td>
+<td><strong>83.25</strong></td>
+<td><strong>64.92</strong></td>
+<td><strong>26.32</strong></td>
+<td><strong>85.04</strong></td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>78.53</td>
+<td>61.78</td>
+<td>22.04</td>
+<td>84.56</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>α=0.1 为最优。过小的惩罚（0.03）矫正力度不足；过大的惩罚（0.3）因对 span 内所有 token（包括无害的虚词）施加惩罚而引入噪声，反而降低性能。</p>
+</blockquote>
+<h3 id="图-2reward-hacking-检测">图 2：Reward Hacking 检测</h3>
+<p>训练过程中被 Perceval 识别为含幻觉的回答比例：</p>
+<ul>
+<li>初期<strong>下降</strong>：模型成功学习减少幻觉</li>
+<li>后期<strong>稳定</strong>：未持续下降 → 模型未学会欺骗 PRM → 无明显 reward hacking</li>
+</ul>
+<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/hallucination_rate.png" alt="幻觉率曲线" /></p>
+<h3 id="图-3定性分析案例">图 3：定性分析案例</h3>
+<p>任务：判断高分辨率图中蓝色车辆与白色车辆的相对位置</p>
+<ul>
+<li><strong>GRPO 基线</strong>：跳过感知步骤，直接输出 "left"（典型幻觉）</li>
+<li><strong>Perceval 方法</strong>：逐步定位白色车辆 → 搜索蓝色车辆 → 正确推断相对位置</li>
+</ul>
+<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/case.png" alt="定性分析" /></p>
+<hr />
+<h2 id="优势">优势</h2>
+<ol type="1">
+<li><strong>细粒度监督</strong>：token 级优势重分配，比序列级 GRPO 奖励更精准地定位和纠正幻觉</li>
+<li><strong>抗 reward hacking</strong>：不直接输出标量分数，而是通过修改优势值间接干预，更难被策略模型利用</li>
+<li><strong>感知泛化</strong>：仅在感知数据上施加 PRM 干预，但数学/图表推理也获得一致提升——"能力迁移"效应显著</li>
+<li><strong>推理时可扩展</strong>：Truncate 策略在推理阶段也能使用，且随迭代次数增加持续提升</li>
+<li><strong>无需外部工具</strong>：7B 模型在视觉搜索上媲美使用外部工具（如 DeepEyes、Pixel-Reasoner）的 SOTA 方法</li>
+</ol>
+<h2 id="局限性">局限性</h2>
+<ol type="1">
+<li><strong>PRM 训练依赖强教师模型</strong>：标注质量受 Gemini-2.5-Pro 等闭源模型限制</li>
+<li><strong>感知任务为主</strong>：PRM 设计聚焦感知错误检测，对逻辑推理错误的检测能力有限</li>
+<li><strong>Truncate 策略的序列开销</strong>：迭代截断-再生需要多次前向传播，增加推理延迟</li>
+<li><strong>模型规模探索有限</strong>：主要在 3B/7B 上实验，更大规模的扩展行为未验证</li>
+<li><strong>反思策略效果弱于 Truncate</strong>：可能因训练数据中缺少反思样例，导致模型对反思 prompt 的遵循质量不足</li>
+</ol>
+<hr />
+<h2 id="复现--实现要点">复现 / 实现要点</h2>
+<ul>
+<li><strong>基础模型</strong>：Qwen2.5-VL（3B / 7B）作为 PRM 和策略模型的骨干</li>
+<li><strong>PRM 训练数据</strong>：来自 DeepEyes 和 SophiaVL-R1，每条 rollout 3 次</li>
+<li><strong>RL 训练数据</strong>：来自 DeepEyes，包含感知数据和部分通用推理数据</li>
+<li><strong>条件干预策略</strong>：仅感知数据使用 Perceval 进行 token 级优势重分配，其他数据使用标准 GRPO</li>
+<li><strong>超参数</strong>：α=0.1（惩罚强度），评估使用 greedy decoding + EM judge + GPT-4o-mini 二次验证</li>
+<li><strong>评估设置</strong>：8 个基准涵盖视觉搜索（V*）、感知推理（BLINK, MMStar, MME-RealWorld, RealWorldQA）、数学/图表（MathVision, MathVista, ChartQA）</li>
+</ul>
+<hr />
+<h2 id="未来工作启发">未来工作启发</h2>
+<ol type="1">
+<li><strong>扩展 PRM 到逻辑推理</strong>：当前 PRM 仅检测感知幻觉，扩展到逻辑错误检测（如数学推理中的因果错误）可进一步提升推理能力</li>
+<li><strong>更强的自反思训练</strong>：在 RL 训练数据中加入反思样例，可能提升 Truncate-Thinking 策略的效果</li>
+<li><strong>PRM 与工具调用结合</strong>：将 Perceval 的检测结果与外部视觉工具（放大、裁剪）结合，形成检测-修正闭环</li>
+<li><strong>更大规模验证</strong>：在 70B+ 模型上验证 token 级监督的收益是否更大</li>
+<li><strong>自动化 PRM 数据构建</strong>：减少对闭源强模型的依赖，探索自蒸馏或对抗训练方案</li>
+<li><strong>多模态 PRM 统一</strong>：将感知检测、逻辑检测、事实检测统一到一个 PRM 框架中</li>
+</ol>
+</main></body></html>

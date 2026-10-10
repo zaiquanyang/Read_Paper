@@ -1,0 +1,676 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Learnpruner Rethinking Attention Based Token Pruning In Vision Language Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}</style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><h1 id="learnpruner-重新思考视觉语言模型中基于注意力的-token-剪枝">LearnPruner: 重新思考视觉语言模型中基于注意力的 Token 剪枝</h1>
+<h2 id="基本信息">基本信息</h2>
+<ul>
+<li><strong>标题</strong>: LearnPruner: Rethinking Attention-based Token Pruning in Vision Language Models</li>
+<li><strong>ArXiv ID</strong>: 2604.23950</li>
+<li><strong>链接</strong>: <a href="https://arxiv.org/abs/2604.23950">Abs</a> | <a href="https://arxiv.org/pdf/2604.23950.pdf">PDF</a></li>
+<li><strong>作者</strong>: Rinyoichi Takezoe, Yaqian Li, Zihao Bo, Anzhou Hou, Mo Guang, Kaiwen Long</li>
+<li><strong>机构</strong>: Li Auto Inc.</li>
+<li><strong>会议</strong>: ICLR 2026</li>
+</ul>
+<hr />
+<h2 id="核心问题与动机">核心问题与动机</h2>
+<p>VLM 推理时需要处理大量视觉 token（如 LLaVA-1.5 为 576 个，LLaVA-NeXT 可达 2880 个），带来严重的计算负担。Token 剪枝的核心在于判断 token 重要性，当前方法主要依赖<strong>注意力分数</strong>。但本文发现两个关键问题：</p>
+<ol type="1">
+<li><strong>视觉编码器的 [CLS] 注意力不可靠</strong>：ViT 倾向于在背景区域产生高范数异常 token（artifacts），导致 [CLS] token 对前景区域的关注不足</li>
+<li><strong>LLM 的注意力存在层间差异</strong>：虽然存在 attention shift 现象（视觉 token 索引越高获得的注意力越多），但<strong>文本到视觉的注意力</strong>对此偏移具有鲁棒性，且在中间层才能有效关注语义相关区域</li>
+</ol>
+<p>核心问题：<em>能否设计一个两阶段剪枝框架，在不同阶段使用最合适的重要性度量？</em></p>
+<hr />
+<h2 id="方法概述">方法概述</h2>
+<h3 id="注意力机制分析关键发现">注意力机制分析（关键发现）</h3>
+<p>通过在 LLaVA-1.5-7B 上的系统实验，得出三个核心观察：</p>
+<p><strong>发现 1：视觉编码器 [CLS] 注意力的缺陷</strong></p>
+<ul>
+<li>将 token 选择限制在前景区域（$\texttt{[CLS]}<em>{fg}$）始终优于全图选择（$\texttt{[CLS]}</em>{all}$），尤其在激进剪枝比例下</li>
+<li>甚至随机前景选择（$\text{Random}<em>{fg}$）都能达到与 $\texttt{[CLS]}</em>{all}$ 相当的性能</li>
+<li>结论：[CLS] token 未能有效关注前景区域</li>
+</ul>
+<p><strong>发现 2：LLM 中文本注意力 vs 视觉注意力</strong></p>
+<ul>
+<li>视觉注意力受 attention shift 严重影响，不同样本间偏差大</li>
+<li>文本注意力的偏移趋势更平缓，且不同样本和低索引 token 也能获得高关注度</li>
+<li>结合视觉注意力会导致性能大幅下降</li>
+</ul>
+<p><strong>发现 3：LLM 中间层的注意力最可靠</strong></p>
+<ul>
+<li>浅层：不相关区域吸收了文本 token 的大部分注意力</li>
+<li>中间层（8+ 层开始）：不同文本 token 能聚焦到语义相关区域，&gt;95% 原始性能</li>
+<li>深层：注意力可靠性显著下降</li>
+</ul>
+<p><img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /></p>
+<h3 id="learnpruner-框架">LearnPruner 框架</h3>
+<p>基于上述分析，提出<strong>两阶段剪枝框架</strong>：</p>
+<p><img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /></p>
+<p><strong>阶段一：移除视觉冗余（视觉编码器后）</strong></p>
+<p>使用**可学习剪枝模块（LPM）**替代 [CLS] 注意力：</p>
+<ul>
+<li>轻量 MLP 对每个视觉 token 做二分类（保留/剪枝）</li>
+<li>使用 Straight-Through Estimator（STE）实现端到端训练</li>
+<li>$\mathbf{M}_{\text{soft}} = \text{Softmax}(\text{MLP}(\mathbf{X}_v^{(0)}))$，推理时作为重要性分数</li>
+</ul>
+<p>为防止 LPM 过度聚焦前景而丢失关键背景信息，引入<strong>多样性 token 选择</strong>：</p>
+<ul>
+<li>LPM 选完后，对剩余 token 计算与已选 token 的最大余弦相似度</li>
+<li>迭代添加相似度最小的 token，直到 token 预算用尽</li>
+<li>默认保留 10% 的 token 预算用于多样性选择</li>
+</ul>
+<p><strong>阶段二：移除文本无关内容（LLM 中间层）</strong></p>
+<p>在 LLM 第 12 层利用<strong>文本注意力</strong>进行二次剪枝：</p>
+<ul>
+<li>$\tilde{\mathbf{A}}^{(k)} = \frac{1}{N_q} \sum_{i=1}^{N_q} \mathbf{A}^{(k)}(\mathbf{X}_{q,i}^{(k)}, \mathbf{X}_v^{(k)})$</li>
+<li>仅保留注意力分数最高的 top-k token</li>
+</ul>
+<p>两个阶段的 token 保留比例 $R_1:R_2 = 3$（消融实验验证最优）。</p>
+<h3 id="训练细节">训练细节</h3>
+<ul>
+<li><strong>训练数据</strong>：LLaVA-665K 数据集的 10%（数据效率极高，5% 即可达到强性能）</li>
+<li><strong>训练策略</strong>：冻结基础 VLM 权重，仅训练 LPM</li>
+<li><strong>损失函数</strong>：$\mathcal{L} = \mathcal{L}<em>{\text{ntp}} + \lambda \cdot \mathcal{L}</em>{\text{prune}}$，其中 $\mathcal{L}<em>{\text{prune}} = (\frac{1}{N_v} \sum \mathbf{M}</em>{\text{hard}} - \tau)^2$，$\tau=0$ 鼓励最小化 token 使用</li>
+<li><strong>注意力掩码训练</strong>：通过修改 Softmax 模拟剪枝过程——被剪枝 token 不参与注意力计算</li>
+</ul>
+<hr />
+<h2 id="主要实验结果">主要实验结果</h2>
+<h3 id="表-1llava-v15-7b-上的剪枝对比">表 1：LLaVA-v1.5-7B 上的剪枝对比</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>可学习参数</th>
+<th>GQA</th>
+<th>SQA^I</th>
+<th>VQA^T</th>
+<th>POPE</th>
+<th>MME</th>
+<th>VQA^v2</th>
+<th>MMB</th>
+<th>MMB^CN</th>
+<th>RelAcc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>Upper Bound, 576 Tokens (100%)</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Vanilla</td>
+<td>-</td>
+<td>61.9</td>
+<td>69.5</td>
+<td>58.2</td>
+<td>85.9</td>
+<td>1862</td>
+<td>78.5</td>
+<td>64.7</td>
+<td>58.3</td>
+<td>100.0%</td>
+</tr>
+<tr class="odd">
+<td><em>保留 128 Tokens（减少 77.8%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>FastV</td>
+<td>-</td>
+<td>49.6</td>
+<td>60.2</td>
+<td>50.6</td>
+<td>59.6</td>
+<td>1490</td>
+<td>61.8</td>
+<td>56.1</td>
+<td>51.4</td>
+<td>82.1%</td>
+</tr>
+<tr class="odd">
+<td>SparseVLM</td>
+<td>-</td>
+<td>56.0</td>
+<td>67.1</td>
+<td>54.9</td>
+<td>80.5</td>
+<td>1696</td>
+<td>73.8</td>
+<td>60.0</td>
+<td>51.1</td>
+<td>92.6%</td>
+</tr>
+<tr class="even">
+<td>VisPruner</td>
+<td>-</td>
+<td>58.2</td>
+<td>69.1</td>
+<td>57.0</td>
+<td>84.6</td>
+<td>1794</td>
+<td>75.8</td>
+<td>62.7</td>
+<td>57.3</td>
+<td>97.3%</td>
+</tr>
+<tr class="odd">
+<td>VisionZip</td>
+<td>20.9M</td>
+<td>58.9</td>
+<td>68.3</td>
+<td>57.0</td>
+<td>83.7</td>
+<td>1823</td>
+<td>76.6</td>
+<td>62.6</td>
+<td>-</td>
+<td>97.3%</td>
+</tr>
+<tr class="even">
+<td>TwigVLM</td>
+<td>610M</td>
+<td><strong>60.6</strong></td>
+<td><strong>69.5</strong></td>
+<td><strong>57.8</strong></td>
+<td>86.6</td>
+<td>1818</td>
+<td><strong>77.9</strong></td>
+<td>63.5</td>
+<td>-</td>
+<td><strong>99.0%</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>LearnPruner</strong></td>
+<td><strong>0.53M</strong></td>
+<td>60.3</td>
+<td>68.5</td>
+<td>57.3</td>
+<td><strong>86.7</strong></td>
+<td>1820</td>
+<td>77.3</td>
+<td><strong>63.8</strong></td>
+<td>56.8</td>
+<td>98.5%</td>
+</tr>
+<tr class="even">
+<td><em>保留 64 Tokens（减少 88.9%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FastV</td>
+<td>-</td>
+<td>46.1</td>
+<td>51.1</td>
+<td>47.8</td>
+<td>48.0</td>
+<td>1256</td>
+<td>55.0</td>
+<td>48.0</td>
+<td>42.7</td>
+<td>71.4%</td>
+</tr>
+<tr class="even">
+<td>VisPruner</td>
+<td>-</td>
+<td>55.4</td>
+<td>69.1</td>
+<td>55.8</td>
+<td>80.4</td>
+<td>1689</td>
+<td>72.7</td>
+<td>61.3</td>
+<td>55.1</td>
+<td>94.3%</td>
+</tr>
+<tr class="odd">
+<td>VisionZip</td>
+<td>20.9M</td>
+<td>57.0</td>
+<td>68.8</td>
+<td>56.0</td>
+<td>80.9</td>
+<td>1756</td>
+<td>74.2</td>
+<td>61.5</td>
+<td>-</td>
+<td>95.1%</td>
+</tr>
+<tr class="even">
+<td>TwigVLM</td>
+<td>610M</td>
+<td>58.8</td>
+<td><strong>70.0</strong></td>
+<td>55.8</td>
+<td>82.7</td>
+<td><strong>1760</strong></td>
+<td>75.6</td>
+<td>60.4</td>
+<td>-</td>
+<td>96.0%</td>
+</tr>
+<tr class="odd">
+<td><strong>LearnPruner</strong></td>
+<td><strong>0.53M</strong></td>
+<td><strong>58.9</strong></td>
+<td>68.3</td>
+<td><strong>56.6</strong></td>
+<td><strong>86.8</strong></td>
+<td>1750</td>
+<td><strong>76.0</strong></td>
+<td><strong>62.6</strong></td>
+<td><strong>55.7</strong></td>
+<td><strong>96.9%</strong></td>
+</tr>
+<tr class="even">
+<td><em>保留 32 Tokens（减少 94.4%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FastV</td>
+<td>-</td>
+<td>41.5</td>
+<td>42.6</td>
+<td>42.5</td>
+<td>32.5</td>
+<td>1090</td>
+<td>43.4</td>
+<td>37.8</td>
+<td>33.2</td>
+<td>58.6%</td>
+</tr>
+<tr class="even">
+<td>VisPruner</td>
+<td>-</td>
+<td>52.2</td>
+<td>69.2</td>
+<td>53.9</td>
+<td>72.7</td>
+<td>1567</td>
+<td>67.7</td>
+<td>58.4</td>
+<td>52.7</td>
+<td>89.7%</td>
+</tr>
+<tr class="odd">
+<td><strong>LearnPruner</strong></td>
+<td><strong>0.53M</strong></td>
+<td><strong>57.2</strong></td>
+<td><strong>68.2</strong></td>
+<td><strong>56.1</strong></td>
+<td><strong>84.5</strong></td>
+<td><strong>1672</strong></td>
+<td><strong>74.0</strong></td>
+<td><strong>60.8</strong></td>
+<td><strong>55.5</strong></td>
+<td><strong>94.8%</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>在激进剪枝（仅保留 32 个 token）时优势最大：LearnPruner 保持 94.8% 性能，而 FastV 仅 58.6%。LearnPruner 仅需 0.53M 可学习参数，远少于 TwigVLM（610M）。</p>
+</blockquote>
+<h3 id="表-2llava-next-7b高分辨率2880-tokens">表 2：LLaVA-NeXT-7B（高分辨率，2880 Tokens）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>保留 Token 数</th>
+<th>GQA</th>
+<th>SQA^I</th>
+<th>VQA^T</th>
+<th>MME</th>
+<th>VQA^v2</th>
+<th>MMB</th>
+<th>RelAcc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Vanilla</td>
+<td>2880</td>
+<td>64.2</td>
+<td>70.2</td>
+<td>61.3</td>
+<td>1842</td>
+<td>81.2</td>
+<td>67.9</td>
+<td>100%</td>
+</tr>
+<tr class="even">
+<td><em>保留 640 Tokens（↓ 77.8%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>TwigVLM</td>
+<td>640</td>
+<td>63.4</td>
+<td>69.9</td>
+<td>58.6</td>
+<td><strong>1864</strong></td>
+<td><strong>81.2</strong></td>
+<td>67.4</td>
+<td>99.1%</td>
+</tr>
+<tr class="even">
+<td><strong>LearnPruner</strong></td>
+<td>640</td>
+<td><strong>63.8</strong></td>
+<td><strong>70.0</strong></td>
+<td><strong>60.5</strong></td>
+<td>1837</td>
+<td>80.5</td>
+<td><strong>67.5</strong></td>
+<td><strong>99.3%</strong></td>
+</tr>
+<tr class="odd">
+<td><em>保留 160 Tokens（↓ 94.4%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>VisionZip</td>
+<td>160</td>
+<td>58.2</td>
+<td>68.3</td>
+<td>57.3</td>
+<td>1699</td>
+<td>75.6</td>
+<td>63.9</td>
+<td>93.3%</td>
+</tr>
+<tr class="odd">
+<td><strong>LearnPruner</strong></td>
+<td>160</td>
+<td>58.7</td>
+<td>67.6</td>
+<td>55.0</td>
+<td><strong>1784</strong></td>
+<td><strong>76.2</strong></td>
+<td><strong>65.3</strong></td>
+<td><strong>94.0%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="表-3qwen25-vl-7b跨架构泛化">表 3：Qwen2.5-VL-7B（跨架构泛化）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>保留 Token 数</th>
+<th>GQA</th>
+<th>SQA^I</th>
+<th>VQA^T</th>
+<th>MME</th>
+<th>VQA^v2</th>
+<th>MMB</th>
+<th>Avg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Vanilla</td>
+<td>1280</td>
+<td>59.7</td>
+<td>77.4</td>
+<td>76.7</td>
+<td>2324</td>
+<td>83.9</td>
+<td>83.8</td>
+<td>100%</td>
+</tr>
+<tr class="even">
+<td><em>保留 142 Tokens（↓ 88.9%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FastV</td>
+<td>142</td>
+<td>42.8</td>
+<td>70.5</td>
+<td>54.8</td>
+<td>1565</td>
+<td>57.2</td>
+<td>56.2</td>
+<td>71.4%</td>
+</tr>
+<tr class="even">
+<td><strong>LearnPruner</strong></td>
+<td>142</td>
+<td><strong>51.9</strong></td>
+<td><strong>76.1</strong></td>
+<td><strong>70.8</strong></td>
+<td><strong>2292</strong></td>
+<td><strong>79.3</strong></td>
+<td><strong>81.8</strong></td>
+<td><strong>94.1%</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>在 Qwen2.5-VL 上保留 142 token 时，FastV 性能暴跌至 71.4%，而 LearnPruner 仍保持 94.1%。</p>
+</blockquote>
+<h3 id="表-4视频理解video-llava-7b">表 4：视频理解（Video-LLaVA-7B）</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>保留 Token 数</th>
+<th>TGIF-QA Acc</th>
+<th>MSVD-QA Acc</th>
+<th>MSRVTT-QA Acc</th>
+<th>Average Acc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Vanilla</td>
+<td>2048</td>
+<td>18.1</td>
+<td>64.1</td>
+<td>56.1</td>
+<td>46.1</td>
+</tr>
+<tr class="even">
+<td><em>保留 228 Tokens（↓ 88.9%）</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FastV</td>
+<td>228</td>
+<td>12.4</td>
+<td>55.1</td>
+<td>50.4</td>
+<td>39.3</td>
+</tr>
+<tr class="even">
+<td><strong>LearnPruner</strong></td>
+<td>228</td>
+<td><strong>16.3</strong></td>
+<td><strong>61.5</strong></td>
+<td><strong>53.8</strong></td>
+<td><strong>43.9</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="表-5效率分析">表 5：效率分析</h3>
+<table>
+<thead>
+<tr class="header">
+<th>模型</th>
+<th>Token 数</th>
+<th>TFLOPs</th>
+<th>Prefill Time</th>
+<th>Total Time</th>
+<th>KV Cache (MB)</th>
+<th>GPU Memory (GB)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>LLaVA-v1.5-7B</td>
+<td>576</td>
+<td>8.6 (1.0x)</td>
+<td>463.2 (1.0x)</td>
+<td>761.6 (1.0x)</td>
+<td>318.9 (1.0x)</td>
+<td>14.7 (1.0x)</td>
+</tr>
+<tr class="even">
+<td>+ LearnPruner</td>
+<td>128</td>
+<td>2.8 (3.1x)</td>
+<td>262.6 (1.8x)</td>
+<td>569.8 (1.3x)</td>
+<td>95.0 (3.4x)</td>
+<td>13.5 (1.1x)</td>
+</tr>
+<tr class="odd">
+<td>+ LearnPruner</td>
+<td>32</td>
+<td>1.6 (5.4x)</td>
+<td>201.4 (2.3x)</td>
+<td>507.3 (1.5x)</td>
+<td>47.0 (6.8x)</td>
+<td>13.3 (1.1x)</td>
+</tr>
+<tr class="even">
+<td>LLaVA-NeXT-7B</td>
+<td>2880</td>
+<td>31.9 (1.0x)</td>
+<td>1891.5 (1.0x)</td>
+<td>2307.6 (1.0x)</td>
+<td>1156.1 (1.0x)</td>
+<td>20.6 (1.0x)</td>
+</tr>
+<tr class="odd">
+<td>+ LearnPruner</td>
+<td>640</td>
+<td>11.4 (2.8x)</td>
+<td>683.0 (2.8x)</td>
+<td>1083.6 (2.1x)</td>
+<td>369.4 (3.1x)</td>
+<td>16.3 (1.3x)</td>
+</tr>
+<tr class="even">
+<td>+ LearnPruner</td>
+<td>160</td>
+<td>5.2 (6.1x)</td>
+<td>315.6 (6.0x)</td>
+<td>711.7 (3.2x)</td>
+<td>129.4 (8.9x)</td>
+<td>13.5 (1.5x)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>LLaVA-NeXT 保留 160 token 时：Prefill 加速 6.0x，KV Cache 减少 8.9x。</p>
+</blockquote>
+<h3 id="消融实验">消融实验</h3>
+<p><strong>重要性度量对比（64 token）</strong>：</p>
+<ul>
+<li>Stage1 [CLS] Attn → 94.6%</li>
+<li>Stage1 LPM → 96.1%（+1.5%）</li>
+<li>Stage1 LPM + Stage2 Text Attn → <strong>96.9%</strong>（+0.8%）</li>
+<li>Stage1 LPM + Stage2 LPM → 96.9%（第二阶段用 LPM 无额外收益，说明注意力信号已足够可靠）</li>
+</ul>
+<p><strong>LLM 剪枝位置 k</strong>：k=12 最优，浅层注意力不可靠（8 层仅 96.2%），深层注意力衰退</p>
+<p><strong>R1:R2 比例</strong>：3:1 最优——第一阶段保留更多 token 保证视觉完整性，第二阶段只需少量 token 精准选择</p>
+<p><strong>多样性 token 比例 λ</strong>：0.1 最优——平衡前景语义和背景补充</p>
+<p><strong>数据效率</strong>：仅用 5% LLaVA-665K 即可达到强性能，10%~100% 性能稳定</p>
+<hr />
+<h2 id="优势">优势</h2>
+<ol type="1">
+<li><strong>精准的重要性度量</strong>：用可学习模块替代 [CLS] 注意力，更准确关注前景区域</li>
+<li><strong>阶段适配的剪枝策略</strong>：视觉编码器后用 LPM（注意力不可靠），LLM 中间层用文本注意力（注意力可靠），每阶段使用最合适的度量</li>
+<li><strong>极高参数效率</strong>：仅 0.53M 可学习参数，远少于 TwigVLM 的 610M</li>
+<li><strong>强数据效率</strong>：5% 训练数据即可达到强性能</li>
+<li><strong>跨架构泛化</strong>：在 LLaVA 系列和 Qwen2.5-VL 上均有效</li>
+<li><strong>激进剪枝下优势显著</strong>：在 32 token（94.4% 剪枝）时远超其他方法</li>
+</ol>
+<h2 id="局限性">局限性</h2>
+<ol type="1">
+<li><strong>需要少量训练</strong>：虽然参数少，但仍需训练（非 training-free），而 FastV、SparseVLM 等无需训练</li>
+<li><strong>固定剪枝位置</strong>：第二阶段固定在第 12 层，未实现自适应层选择</li>
+<li><strong>R1:R2 比例固定</strong>：使用固定比例 3:1，不同任务的最优分配可能不同</li>
+<li><strong>主要在 7B 模型上验证</strong>：未在更大规模模型（如 13B/70B）上测试</li>
+<li><strong>复杂场景下可能丢失关键信息</strong>：当场景过于复杂时，第一阶段剪枝可能丢失后续推理所需的视觉信息</li>
+</ol>
+<hr />
+<h2 id="复现--实现要点">复现 / 实现要点</h2>
+<ul>
+<li><strong>基础模型</strong>：LLaVA-v1.5-7B、LLaVA-NeXT-7B、Video-LLaVA-7B、Qwen2.5-VL-7B</li>
+<li><strong>训练数据</strong>：LLaVA-665K 的 10%</li>
+<li><strong>训练策略</strong>：冻结基础 VLM，仅训练 LPM（轻量 MLP）</li>
+<li><strong>端到端训练</strong>：通过修改 Softmax 实现注意力掩码，模拟剪枝过程</li>
+<li><strong>损失函数</strong>：$\mathcal{L} = \mathcal{L}<em>{\text{ntp}} + \mathcal{L}</em>{\text{prune}}$，$\tau=0$，$\lambda=1$</li>
+<li><strong>推理设置</strong>：第一阶段保留 $R_1$ token（90% LPM + 10% 多样性），第二阶段在第 12 层保留 $R_2$ token，$R_1:R_2=3$</li>
+<li><strong>评估基准</strong>：GQA、SQA、TextVQA、POPE、MME、VQAv2、MMBench（中/英）、TGIF-QA、MSVD-QA、MSRVTT-QA</li>
+<li><strong>评估设备</strong>：NVIDIA A100-80GB</li>
+</ul>
+<hr />
+<h2 id="未来工作启发">未来工作启发</h2>
+<ol type="1">
+<li><strong>自适应剪枝位置</strong>：根据输入动态选择最优剪枝层，而非固定 k=12</li>
+<li><strong>自适应 token 分配</strong>：根据图像信息密度动态调整 R1:R2 比例</li>
+<li><strong>与量化结合</strong>：token 剪枝 + 量化可能实现更极致的效率提升</li>
+<li><strong>更大规模验证</strong>：在 70B+ 模型上验证剪枝收益是否更大</li>
+<li><strong>在线学习 LPM</strong>：让 LPM 在推理过程中自适应更新，而非固定训练后的权重</li>
+<li><strong>视频场景深化</strong>：当前视频实验较初步，可探索时序维度的自适应剪枝策略</li>
+</ol>
+</main></body></html>

@@ -1,0 +1,699 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Hide To See Reasoning Prefix Masking For Visual Anchored Thinking In Vlm Distillation</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}</style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><h1 id="hide-to-see-reasoning-prefix-masking-for-visual-anchored-thinking-in-vlm-distillation">Hide to See: Reasoning-prefix Masking for Visual-anchored Thinking in VLM Distillation</h1>
+<h2 id="1-论文基本信息">1. 论文基本信息</h2>
+<ul>
+<li>arXiv ID: 2605.11651</li>
+<li>URL: <a href="https://arxiv.org/abs/2605.11651">abs</a> / <a href="https://arxiv.org/pdf/2605.11651.pdf">pdf</a></li>
+<li>主题归档: <code>vlm</code></li>
+<li>总结粒度: <code>detailed</code></li>
+<li>任务类型: think-answer VLM distillation / visual-anchored reasoning</li>
+<li>核心方法: <strong>Masking-KD</strong></li>
+<li>关键词: <code>VLM distillation</code>, <code>think-answer</code>, <code>visual forgetting</code>, <code>reasoning-prefix masking</code>, <code>self-distillation</code></li>
+</ul>
+<h2 id="2-核心问题与动机">2. 核心问题与动机</h2>
+<p>这篇工作的切入点很明确：<strong>把大尺寸 think-answer VLM 的推理能力蒸馏到小模型时，学生模型很容易学会“顺着老师已经写出来的 reasoning prefix 往下接”，而不是持续去看图。</strong></p>
+<p>作者把这个问题概括为两层：</p>
+<ol type="1">
+<li><p><strong>visual forgetting</strong><br />
+think-answer VLM 的推理链很长，前面已经生成出来的大量文字本身就越来越“可预测后文”，导致模型逐步弱化对视觉证据的依赖。</p></li>
+<li><p><strong>textual shortcut learning</strong><br />
+在 distillation 时，student 不需要真正学会老师如何看图，只要抓住少量高影响力的 reasoning cues，就能把 reverse KL 做小。于是训练信号会越来越集中在前段 token，后段推理步骤的蒸馏价值变弱。</p></li>
+</ol>
+<p>作者的关键判断不是“再想办法把 teacher 的视觉 pattern 显式传给 student”，而是：</p>
+<blockquote>
+<p>更有效的做法，是让 student 在缺失一部分关键 reasoning prefix 的情况下，仍然要去逼近 teacher 分布，从而被迫重新利用图像证据。</p>
+</blockquote>
+<p>这也是论文标题 <code>Hide to See</code> 的意思：<strong>先把容易偷懒用的文本线索藏起来，student 才会重新去“看”。</strong></p>
+<h3 id="21-论文用什么证据支持这个动机">2.1 论文用什么证据支持这个动机</h3>
+<ul>
+<li><code>intro_1_aa.png</code> 显示 naive distillation 下，随着 response 前缀不断累积，reverse KL 逐渐下降，说明后续 token 越来越容易靠已有文本上下文模仿出来。</li>
+<li><code>intro_warp.png</code> 显示每一步 next-token prediction 往往只依赖极少数高注意力 prefix token，说明存在明显的 salient textual cue。</li>
+<li>Appendix 里的 <code>training_loss.png</code> 进一步说明：<strong>mask response prefix</strong> 会显著放大 distillation loss，而 mask visual/question token 则不会，这说明 student 主要在“吃文本 shortcut”，不是主要在吃视觉信息。</li>
+</ul>
+<h3 id="22-一张图看懂问题设定">2.2 一张图看懂问题设定</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/intro_10.png" alt="Reasoning-prefix masking intuition" /></p>
+<p>这张图非常关键。左边是 naive distillation：student 可以直接看完整 reasoning prefix，于是当前 token 的预测主要靠前文文字。右边是 Masking-KD：把一部分 salient reasoning prefix 挡住后，student 为了继续模仿 teacher 的当前 token 分布，就必须更多看图。</p>
+<h2 id="3-方法">3. 方法</h2>
+<h2 id="31-总体框架masking-kd">3.1 总体框架：Masking-KD</h2>
+<p>Masking-KD 的训练目标仍然是标准的 <strong>reverse KL distillation</strong>，但 teacher 和 student 的可见上下文不同：</p>
+<ul>
+<li><strong>teacher</strong>: 使用标准 causal mask</li>
+<li><strong>student</strong>: 使用扩展后的 <code>salient reasoning-prefix mask</code></li>
+</ul>
+<p>也就是：</p>
+<ul>
+<li>teacher 在完整上下文下给出目标分布</li>
+<li>student 在“被挖掉部分关键 reasoning prefix”的上下文下，去逼近 teacher 分布</li>
+</ul>
+<p>这样 student 学到的不是单纯复述 teacher 的文字轨迹，而是在<strong>缺失文本捷径</strong>时，如何借助视觉证据补回这个差距。</p>
+<h3 id="32-方法图">3.2 方法图</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/main_27.png" alt="Masking-KD framework" /></p>
+<p>这张图对应整篇 paper 的核心流程。最重要的是，它不是直接蒸馏 teacher 的视觉 attention map，而是先做一次 <strong>auxiliary student forward</strong>，从 student 自己当前状态里抽两类信号来构造 mask。</p>
+<h2 id="33-auxiliary-student-forward">3.3 Auxiliary Student Forward</h2>
+<p>作者额外对 student 做一次共享权重的 causal forward，用来抽取两个量：</p>
+<ol type="1">
+<li><p><strong>response-to-response attention map</strong> <code>A^resp</code><br />
+用来判断：当前 token 在预测时，最依赖哪些前缀 reasoning token。</p></li>
+<li><p><strong>token-wise reverse KL divergence</strong> <code>r_n</code><br />
+用来判断：当前 token 的蒸馏难度有多大。</p></li>
+</ol>
+<p>这里的设计很漂亮，因为它把两个问题拆开了：</p>
+<ul>
+<li><strong>mask 谁</strong>：由 attention 决定</li>
+<li><strong>mask 多少</strong>：由 token difficulty 决定</li>
+</ul>
+<p>这两个信号都来自 student 自己，而不是来自 teacher 的中间视觉表示。</p>
+<h2 id="34-token-wise-salient-reasoning-prefix-masking">3.4 Token-wise Salient Reasoning-prefix Masking</h2>
+<h3 id="341-mask-谁">3.4.1 mask 谁</h3>
+<p>对每个当前预测位置 <code>n</code>，作者取 <code>A^resp</code> 的第 <code>n</code> 行，看这个位置在预测 <code>y_n</code> 时最依赖哪些 prefix token。</p>
+<p>然后不是只取 top-1 / top-k，而是采用类似 nucleus top-p 的思路，做一个 <strong>top-rho cumulative masking</strong>：</p>
+<ul>
+<li>先按 attention 从高到低排序 prefix token</li>
+<li>再不断累积 attention mass</li>
+<li>直到累计比例达到阈值 <code>rho_n</code></li>
+<li>被选中的这批 token 构成 <code>S_n</code>，即当前位置要屏蔽的 salient prefix 集合</li>
+</ul>
+<p>所以它不是固定 mask 数量，而是固定“累计影响力预算”。</p>
+<h3 id="342-为什么是-token-wise">3.4.2 为什么是 token-wise</h3>
+<p>作者强调同一个 response 里，不同位置依赖的 prefix 完全不同，因此 mask 也必须 <strong>逐 token 自适应</strong>。</p>
+<p>这意味着：</p>
+<ul>
+<li>对位置 <code>n1</code>，可能 mask 掉一组 prefix</li>
+<li>对位置 <code>n2</code>，会 mask 掉另一组 prefix</li>
+</ul>
+<p>不是全序列共享一个静态 mask。</p>
+<h3 id="343-一个重要实现细节">3.4.3 一个重要实现细节</h3>
+<p>作者显式说明：</p>
+<ul>
+<li><strong>不 mask 当前 token 的紧邻前一个 prefix token</strong></li>
+</ul>
+<p>原因是如果把这个位置也纳入候选，会让训练明显不稳定，甚至 loss explosion。这个设计在 appendix 的 ablation 里也验证了。</p>
+<h2 id="35-self-paced-masking-budget-scheduling">3.5 Self-Paced Masking Budget Scheduling</h2>
+<h3 id="351-mask-多少">3.5.1 mask 多少</h3>
+<p>作者认为不同 token 的蒸馏难度不同，统一 mask 强度不合理。</p>
+<p>于是他们定义每个位置的 masking budget <code>rho_n</code>：</p>
+<ul>
+<li>easier token：更强 mask</li>
+<li>harder token：更弱 mask</li>
+</ul>
+<p>token 难度用辅助前向得到的 reverse KL <code>r_n</code> 表示，再做如下变换：</p>
+<ul>
+<li>先算 <code>tilde(r_n) = -log(r_n + epsilon)</code></li>
+<li>再和全序列平均值比较</li>
+<li>通过 sigmoid 映射到 <code>[rho_min, rho_max]</code></li>
+</ul>
+<p>最终使用：</p>
+<ul>
+<li><code>rho_min = 0.3</code></li>
+<li><code>rho_max = 0.5</code></li>
+</ul>
+<p>直觉上就是：</p>
+<ul>
+<li>如果某个 token 原本就很容易模仿，那就把它依赖的 prefix 多遮一点，恢复蒸馏难度</li>
+<li>如果某个 token 本来就难，那就别遮太狠，避免训练崩掉</li>
+</ul>
+<h3 id="352-这个设计的意义">3.5.2 这个设计的意义</h3>
+<p>这部分是整篇 paper 最值得借鉴的地方之一。<br />
+它把“重要性干预”从单纯的 raw attention ranking，推进到了一个 <strong>difficulty-aware budget scheduling</strong>：</p>
+<ul>
+<li>attention 解决“哪些前缀最关键”</li>
+<li>reverse KL 解决“当前位置该不该施加更强干预”</li>
+</ul>
+<p>这比只看 attention score 更稳，也更接近“训练信号恢复”的目标。</p>
+<h2 id="36-这篇方法和已有-vlm-distillation-的根本区别">3.6 这篇方法和已有 VLM distillation 的根本区别</h2>
+<p>已有方法大多在做：</p>
+<ul>
+<li>teacher visual attention alignment</li>
+<li>vision token relation distillation</li>
+<li>instruction-aware visual focus transfer</li>
+</ul>
+<p>而 Masking-KD 做的是：</p>
+<ul>
+<li><strong>不直接传 teacher 的视觉模式</strong></li>
+<li><strong>而是制造 student 必须重新用视觉证据的训练条件</strong></li>
+</ul>
+<p>所以它更像一种“通过破坏文本捷径来促进视觉锚定”的 distillation，而不是“把 teacher 的视觉内部状态复制给 student”。</p>
+<h2 id="4-实验">4. 实验</h2>
+<h2 id="41-实验设置">4.1 实验设置</h2>
+<h3 id="数据">数据</h3>
+<ul>
+<li>蒸馏数据来自 <code>ViRK39K</code></li>
+<li>用 teacher greedy decoding 抽取 think-answer traces</li>
+<li>仅保留回答正确的样本</li>
+<li>最终保留：
+<ul>
+<li>19k for 8B</li>
+<li>15k for 4B</li>
+<li>10k for 2B</li>
+</ul></li>
+</ul>
+<h3 id="模型">模型</h3>
+<ul>
+<li>teacher / student backbone: <code>Qwen3-VL-Thinking</code></li>
+</ul>
+<h3 id="评测集">评测集</h3>
+<ul>
+<li>Geometry-3K</li>
+<li>MathVista</li>
+<li>We-Math</li>
+<li>MMK12</li>
+<li>MathVerse</li>
+<li>LogicVista</li>
+<li>MMMU-Pro</li>
+</ul>
+<h3 id="训练细节">训练细节</h3>
+<ul>
+<li>2 epochs</li>
+<li>learning rate <code>1e-6</code></li>
+<li>batch size <code>1</code></li>
+<li>gradient accumulation <code>512</code></li>
+<li>distillation temperature <code>tau = 2</code></li>
+<li><code>rho_min = 0.3</code>, <code>rho_max = 0.5</code></li>
+<li>GPU:
+<ul>
+<li>2x A100 80GB for 2B/4B</li>
+<li>4x A100 80GB for 8B self-distillation</li>
+</ul></li>
+</ul>
+<h2 id="42-主结果和-open-source-vlm-比较">4.2 主结果：和 open-source VLM 比较</h2>
+<p>这部分最醒目的结论有两个：</p>
+<ol type="1">
+<li><strong>Masking-KD-2B 明显强于未蒸馏的 Qwen3-VL-4B-Thinking</strong></li>
+<li><strong>Masking-KD-4B 超过未蒸馏的 Qwen3-VL-8B-Thinking</strong></li>
+</ol>
+<p>也就是说，它不是“小模型追上同尺寸 baseline”，而是直接打穿了更大一档的原始模型。</p>
+<table>
+<thead>
+<tr class="header">
+<th>模型</th>
+<th style="text-align: right;">Geo3k</th>
+<th style="text-align: right;">MathVista</th>
+<th style="text-align: right;">We-Math</th>
+<th style="text-align: right;">MMK12</th>
+<th style="text-align: right;">MathVerse</th>
+<th style="text-align: right;">LogitVista</th>
+<th style="text-align: right;">MMMU-Pro</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Qwen3-VL-8B-Thinking</td>
+<td style="text-align: right;">54.58</td>
+<td style="text-align: right;">65.20</td>
+<td style="text-align: right;">66.15</td>
+<td style="text-align: right;">42.55</td>
+<td style="text-align: right;">63.81</td>
+<td style="text-align: right;">43.40</td>
+<td style="text-align: right;">39.83</td>
+<td style="text-align: right;">53.65</td>
+</tr>
+<tr class="even">
+<td><strong>Masking-KD-8B (self-distill)</strong></td>
+<td style="text-align: right;"><strong>58.24</strong></td>
+<td style="text-align: right;"><strong>67.10</strong></td>
+<td style="text-align: right;"><strong>71.72</strong></td>
+<td style="text-align: right;"><strong>49.95</strong></td>
+<td style="text-align: right;"><strong>67.84</strong></td>
+<td style="text-align: right;"><strong>48.10</strong></td>
+<td style="text-align: right;"><strong>43.47</strong></td>
+<td style="text-align: right;"><strong>58.06</strong></td>
+</tr>
+<tr class="odd">
+<td>Qwen3-VL-4B-Thinking</td>
+<td style="text-align: right;">43.93</td>
+<td style="text-align: right;">62.60</td>
+<td style="text-align: right;">49.37</td>
+<td style="text-align: right;">31.55</td>
+<td style="text-align: right;">49.86</td>
+<td style="text-align: right;">39.37</td>
+<td style="text-align: right;">32.08</td>
+<td style="text-align: right;">44.11</td>
+</tr>
+<tr class="even">
+<td><strong>Masking-KD-4B</strong></td>
+<td style="text-align: right;"><strong>52.58</strong></td>
+<td style="text-align: right;"><strong>66.50</strong></td>
+<td style="text-align: right;"><strong>71.03</strong></td>
+<td style="text-align: right;"><strong>51.00</strong></td>
+<td style="text-align: right;"><strong>62.66</strong></td>
+<td style="text-align: right;"><strong>52.35</strong></td>
+<td style="text-align: right;"><strong>40.52</strong></td>
+<td style="text-align: right;"><strong>56.66</strong></td>
+</tr>
+<tr class="odd">
+<td>Qwen3-VL-2B-Thinking</td>
+<td style="text-align: right;">26.29</td>
+<td style="text-align: right;">43.10</td>
+<td style="text-align: right;">25.17</td>
+<td style="text-align: right;">13.00</td>
+<td style="text-align: right;">28.21</td>
+<td style="text-align: right;">18.57</td>
+<td style="text-align: right;">14.51</td>
+<td style="text-align: right;">24.12</td>
+</tr>
+<tr class="even">
+<td><strong>Masking-KD-2B</strong></td>
+<td style="text-align: right;"><strong>40.93</strong></td>
+<td style="text-align: right;"><strong>59.20</strong></td>
+<td style="text-align: right;"><strong>63.79</strong></td>
+<td style="text-align: right;"><strong>37.20</strong></td>
+<td style="text-align: right;"><strong>57.89</strong></td>
+<td style="text-align: right;"><strong>41.61</strong></td>
+<td style="text-align: right;"><strong>30.75</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+</tbody>
+</table>
+<p>我觉得这里最强的一点不是单一 benchmark 的高分，而是 <strong>七个 benchmark 几乎全线提升</strong>，说明它不是某个数据集特化技巧。</p>
+<h2 id="43-和已有-vlm-distillation-方法比较">4.3 和已有 VLM distillation 方法比较</h2>
+<p>作者把 LLaVA-KD、CompoDistill、Align-TI 都搬到同样的 think-answer distillation 设定下重做比较。</p>
+<h3 id="8b-teacher---4b-student">8B teacher -&gt; 4B student</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th style="text-align: right;">Geo3k</th>
+<th style="text-align: right;">MathVista</th>
+<th style="text-align: right;">We-Math</th>
+<th style="text-align: right;">MMK12</th>
+<th style="text-align: right;">MathVerse</th>
+<th style="text-align: right;">LogitVista</th>
+<th style="text-align: right;">MMMU-Pro</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Naive Response Distillation</td>
+<td style="text-align: right;">47.42</td>
+<td style="text-align: right;">62.80</td>
+<td style="text-align: right;">60.00</td>
+<td style="text-align: right;">37.85</td>
+<td style="text-align: right;">56.97</td>
+<td style="text-align: right;">42.95</td>
+<td style="text-align: right;">34.22</td>
+<td style="text-align: right;">48.89</td>
+</tr>
+<tr class="even">
+<td>LLaVA-KD</td>
+<td style="text-align: right;">49.75</td>
+<td style="text-align: right;">63.80</td>
+<td style="text-align: right;">62.59</td>
+<td style="text-align: right;">39.45</td>
+<td style="text-align: right;">59.27</td>
+<td style="text-align: right;">43.40</td>
+<td style="text-align: right;">34.28</td>
+<td style="text-align: right;">50.36</td>
+</tr>
+<tr class="odd">
+<td>CompoDistill</td>
+<td style="text-align: right;">50.92</td>
+<td style="text-align: right;">63.40</td>
+<td style="text-align: right;">64.54</td>
+<td style="text-align: right;">39.30</td>
+<td style="text-align: right;">60.18</td>
+<td style="text-align: right;">45.19</td>
+<td style="text-align: right;">35.49</td>
+<td style="text-align: right;">51.29</td>
+</tr>
+<tr class="even">
+<td>Align-TI</td>
+<td style="text-align: right;">50.58</td>
+<td style="text-align: right;">62.80</td>
+<td style="text-align: right;">62.75</td>
+<td style="text-align: right;">39.15</td>
+<td style="text-align: right;">58.30</td>
+<td style="text-align: right;">42.95</td>
+<td style="text-align: right;">35.38</td>
+<td style="text-align: right;">50.27</td>
+</tr>
+<tr class="odd">
+<td><strong>Masking-KD</strong></td>
+<td style="text-align: right;"><strong>52.58</strong></td>
+<td style="text-align: right;"><strong>66.50</strong></td>
+<td style="text-align: right;"><strong>71.03</strong></td>
+<td style="text-align: right;"><strong>51.00</strong></td>
+<td style="text-align: right;"><strong>62.66</strong></td>
+<td style="text-align: right;"><strong>52.35</strong></td>
+<td style="text-align: right;"><strong>40.52</strong></td>
+<td style="text-align: right;"><strong>56.66</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这张表很说明问题：<br />
+<strong>即使不显式蒸馏 teacher 的视觉 attention / visual relation，Masking-KD 仍然比这些显式视觉蒸馏方法更强。</strong></p>
+<p>作者由此得出的结论是：</p>
+<blockquote>
+<p>对 think-answer VLM，直接逼 student 形成自己的 visual-anchored thinking，比复制 teacher 的视觉模式更有效。</p>
+</blockquote>
+<h2 id="44-self-distillation-结果">4.4 Self-distillation 结果</h2>
+<p>作者还对比了自蒸馏方法 OPSD。</p>
+<table>
+<thead>
+<tr class="header">
+<th>Base Model</th>
+<th>Self-distill Method</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Qwen3-VL-8B-Thinking</td>
+<td>OPSD</td>
+<td style="text-align: right;">55.13</td>
+</tr>
+<tr class="even">
+<td>Qwen3-VL-8B-Thinking</td>
+<td><strong>Masking-KD</strong></td>
+<td style="text-align: right;"><strong>58.06</strong></td>
+</tr>
+<tr class="odd">
+<td>Qwen3-VL-4B-Thinking</td>
+<td>OPSD</td>
+<td style="text-align: right;">47.51</td>
+</tr>
+<tr class="even">
+<td>Qwen3-VL-4B-Thinking</td>
+<td><strong>Masking-KD</strong></td>
+<td style="text-align: right;"><strong>56.01</strong></td>
+</tr>
+<tr class="odd">
+<td>Qwen3-VL-2B-Thinking</td>
+<td>OPSD</td>
+<td style="text-align: right;">25.37</td>
+</tr>
+<tr class="even">
+<td>Qwen3-VL-2B-Thinking</td>
+<td><strong>Masking-KD</strong></td>
+<td style="text-align: right;"><strong>32.95</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这个结果说明 Masking-KD 不依赖一个更强外部 teacher 的中间特征。<br />
+即使 self-teacher 只是自己，<strong>只要 student 端被遮掉 salient reasoning prefix，训练依然有效。</strong></p>
+<h2 id="45-ablation">4.5 Ablation</h2>
+<h3 id="451-每个组件是否必要">4.5.1 每个组件是否必要</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Token-wise salient masking</th>
+<th>Self-paced scheduling</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>x</td>
+<td>x</td>
+<td style="text-align: right;">38.26</td>
+</tr>
+<tr class="even">
+<td>check</td>
+<td>x</td>
+<td style="text-align: right;">45.91</td>
+</tr>
+<tr class="odd">
+<td>check</td>
+<td>check</td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+</tbody>
+</table>
+<p>解读：</p>
+<ul>
+<li>单加 salient masking 就已经很强</li>
+<li>再加 self-paced budget scheduling 还能继续涨</li>
+</ul>
+<p>也就是说，这篇 paper 的主体贡献不是包装，而是两个部件都真的在起作用。</p>
+<h3 id="452-方法内部-ablation">4.5.2 方法内部 ablation</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Ablation</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Non-adaptive masking</td>
+<td style="text-align: right;">41.73</td>
+</tr>
+<tr class="even">
+<td><strong>Token-wise adaptive masking</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+<tr class="odd">
+<td>Random prefixes</td>
+<td style="text-align: right;">42.71</td>
+</tr>
+<tr class="even">
+<td>Low-attention prefixes</td>
+<td style="text-align: right;">37.29</td>
+</tr>
+<tr class="odd">
+<td>Middle-attention prefixes</td>
+<td style="text-align: right;">38.84</td>
+</tr>
+<tr class="even">
+<td><strong>High-attention prefixes</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这组结果说明两点：</p>
+<ol type="1">
+<li><strong>必须是 token-wise 自适应的 mask</strong></li>
+<li><strong>确实应该 mask 高注意力 prefix，而不是随便 mask</strong></li>
+</ol>
+<h3 id="453-self-paced-budget-的细节">4.5.3 Self-paced budget 的细节</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Threshold type / range</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Attention threshold</td>
+<td style="text-align: right;">46.29</td>
+</tr>
+<tr class="even">
+<td>Masking ratio %</td>
+<td style="text-align: right;">46.21</td>
+</tr>
+<tr class="odd">
+<td><strong>Cumulative ratio rho</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+<tr class="even">
+<td>[0.1, 0.3]</td>
+<td style="text-align: right;">45.76</td>
+</tr>
+<tr class="odd">
+<td>[0.5, 0.7]</td>
+<td style="text-align: right;">45.82</td>
+</tr>
+<tr class="even">
+<td><strong>[0.3, 0.5]</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这里可以看出，作者的 top-rho 设计不是随手拍的超参，确实优于简单 threshold 或固定比例。</p>
+<h3 id="454-mask-哪个区域最有效">4.5.4 mask 哪个区域最有效</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Masked Region</th>
+<th style="text-align: right;">Avg.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Visual tokens</td>
+<td style="text-align: right;">37.39</td>
+</tr>
+<tr class="even">
+<td>Question tokens</td>
+<td style="text-align: right;">31.31</td>
+</tr>
+<tr class="odd">
+<td><strong>Response prefixes (ours)</strong></td>
+<td style="text-align: right;"><strong>47.34</strong></td>
+</tr>
+<tr class="even">
+<td>Naive Distillation</td>
+<td style="text-align: right;">38.26</td>
+</tr>
+</tbody>
+</table>
+<p>这个 ablation 很有价值，因为它告诉我们：</p>
+<ul>
+<li>问题不在“视觉 token 不够重要”</li>
+<li>而在“文本 prefix 过于容易形成 shortcut”</li>
+</ul>
+<p>所以正确做法不是遮图、也不是遮问题，而是<strong>遮掉 response 中最会让 student 偷懒的那部分 prefix</strong>。</p>
+<h2 id="46-额外分析">4.6 额外分析</h2>
+<h3 id="461-visual-forgetting-是否真的被缓解">4.6.1 visual forgetting 是否真的被缓解</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/visual_forgetting_length.png" alt="Visual-anchored thinking evidence" /></p>
+<p>这张图给出了最直观的分析：</p>
+<ul>
+<li>undistilled student 的 visual attention 随生成快速下降</li>
+<li>CompoDistill 有一定缓解，但仍下降</li>
+<li>Masking-KD 在整条 reasoning trace 上维持了最高视觉注意比例</li>
+</ul>
+<p>也就是说，它不是单纯提分，而是真的把 student 的推理过程拉回到“持续看图”这件事上。</p>
+<h3 id="462-视觉-attention-map-对比">4.6.2 视觉 attention map 对比</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/overall_visual_attn.png" alt="Overall visual attention" /></p>
+<p>作者把整条 thinking trace 上的 visual attention 做平均后发现：</p>
+<ul>
+<li>naive KD 和 undistilled student 的相关区域注意力不够集中</li>
+<li>CompoDistill 虽然显式做 attention alignment，但效果仍不如 Masking-KD</li>
+<li>Masking-KD 的视觉关注区域更聚焦于语义相关位置</li>
+</ul>
+<p>这支撑了作者的主张：<strong>forcing student to use visual evidence</strong> 比 <strong>forcing student to copy teacher visual pattern</strong> 更有效。</p>
+<h3 id="463-训练时-student-的行为变化">4.6.3 训练时 student 的行为变化</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/qual.png" alt="Prediction behavior during distillation" /></p>
+<p>这张图展示得很直白：</p>
+<ul>
+<li>不加 mask 时，student 主要盯着文本 prefix</li>
+<li>加 mask 后，student 会激活更多相关图像区域，去补偿缺失的 reasoning cue</li>
+</ul>
+<p>这是整篇 paper 最关键的机制证据之一。</p>
+<h3 id="464-被-mask-的-prefix-大多离当前-token-很近">4.6.4 被 mask 的 prefix 大多离当前 token 很近</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/masked_position.png" alt="Masked prefix distance" /></p>
+<p>Appendix 里统计了被 mask prefix 到当前 token 的相对距离。结论是：</p>
+<ul>
+<li>被 mask 的 token 更常出现在较近的上下文</li>
+<li>距离越远，被 mask 的频率越低</li>
+</ul>
+<p>这说明高影响力的 reasoning cue 往往就藏在“最近那几步推理”里，和直觉一致。</p>
+<h3 id="465-推理案例">4.6.5 推理案例</h3>
+<p><img src="../vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/qual_inference.png" alt="Inference example" /></p>
+<p>作者给出的案例里，未蒸馏 student 更容易出现 perception error，而 Masking-KD 对图像细节的理解更稳。这部分是定性证据，但和前面的 attention 分析是统一的。</p>
+<h2 id="47-统计稳定性与计算代价">4.7 统计稳定性与计算代价</h2>
+<h3 id="统计稳定性">统计稳定性</h3>
+<p>作者额外跑了 4 次 8B teacher -&gt; 2B student：</p>
+<ul>
+<li>Avg. <code>47.44 +- 0.23</code></li>
+</ul>
+<p>标准差很小，说明收益不是 seed 偶然性。</p>
+<h3 id="计算代价">计算代价</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th style="text-align: right;">Per step (s)</th>
+<th style="text-align: right;">Memory (GB)</th>
+<th style="text-align: right;">Avg. Pass@1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Naive Response Distillation</td>
+<td style="text-align: right;">75.8</td>
+<td style="text-align: right;">36.5</td>
+<td style="text-align: right;">38.3</td>
+</tr>
+<tr class="even">
+<td>LLaVA-KD</td>
+<td style="text-align: right;">100.4</td>
+<td style="text-align: right;">37.2</td>
+<td style="text-align: right;">40.3</td>
+</tr>
+<tr class="odd">
+<td>CompoDistill</td>
+<td style="text-align: right;">103.9</td>
+<td style="text-align: right;">38.0</td>
+<td style="text-align: right;">41.5</td>
+</tr>
+<tr class="even">
+<td>Align-TI</td>
+<td style="text-align: right;">381.2</td>
+<td style="text-align: right;">38.2</td>
+<td style="text-align: right;">40.5</td>
+</tr>
+<tr class="odd">
+<td><strong>Masking-KD</strong></td>
+<td style="text-align: right;"><strong>157.9</strong></td>
+<td style="text-align: right;"><strong>40.9</strong></td>
+<td style="text-align: right;"><strong>47.3</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这个表说明：</p>
+<ul>
+<li>Masking-KD 不是免费的</li>
+<li>它比 naive KD 更慢，也更吃显存</li>
+<li>主要开销来自 auxiliary student forward 和长 response 上的 response-to-response attention map</li>
+</ul>
+<p>但从性能收益看，这个 trade-off 是成立的。</p>
+<h2 id="5-论文的核心-takeaway">5. 论文的核心 takeaway</h2>
+<p>我觉得这篇 paper 最值得记住的不是“mask attention 高的 prefix”这件事本身，而是下面这三条：</p>
+<ol type="1">
+<li><strong>think-answer VLM distillation 的主要风险，是学生学会了文本 shortcut，而不是学会了视觉推理。</strong></li>
+<li><strong>在这种场景里，恢复训练难度比复制 teacher 中间表示更重要。</strong></li>
+<li><strong>token difficulty-aware 的干预强度调度，是比单纯 attention ranking 更完整的设计。</strong></li>
+</ol>
+<h2 id="6-优点与局限">6. 优点与局限</h2>
+<h3 id="61-优点">6.1 优点</h3>
+<ol type="1">
+<li><p><strong>问题定义很准</strong><br />
+它抓到的是 think-answer VLM distillation 的特有问题，而不是泛泛地做一个“又一种 KD loss”。</p></li>
+<li><p><strong>机制闭环完整</strong><br />
+从 textual shortcut -&gt; salient prefix -&gt; masking -&gt; visual re-anchoring -&gt; benchmark gain，证据链比较完整。</p></li>
+<li><p><strong>结果非常硬</strong><br />
+2B 超 4B、4B 超 8B，这种结果很有说服力。</p></li>
+<li><p><strong>self-distillation 也成立</strong><br />
+说明方法依赖的是训练条件设计，而不是强 teacher 的私有中间结构。</p></li>
+</ol>
+<h3 id="62-局限">6.2 局限</h3>
+<p>下面这部分论文没有单列完整 limitation section，属于我基于正文和 appendix 的归纳：</p>
+<ol type="1">
+<li><p><strong>训练开销上升明显</strong><br />
+需要 auxiliary forward，还要拿 response-to-response attention map，时间和显存都有额外成本。</p></li>
+<li><p><strong>方法仍依赖 attention 信息</strong><br />
+它不是 attention-free 的干预策略；重要 prefix 的识别仍然来自 attention map。</p></li>
+<li><p><strong>验证场景主要集中在 reasoning-heavy benchmark</strong><br />
+对开放域、多轮交互、非推理型 VLM 任务是否同样有效，文中没有充分展开。</p></li>
+<li><p><strong>和显式视觉蒸馏方法叠加时收益变小</strong><br />
+appendix 提到与其他方法结合时仍有提升，但增益变小，作者认为两类目标存在部分冲突。</p></li>
+</ol>
+<h2 id="7-对复现和后续研究的启发">7. 对复现和后续研究的启发</h2>
+<h3 id="71-如果你是做-vlm-distillation">7.1 如果你是做 VLM distillation</h3>
+<p>这篇 paper 最直接的启发是：</p>
+<ul>
+<li>不一定要显式对齐 teacher 的视觉 attention</li>
+<li>可以从 <strong>破坏 student 的文本捷径</strong> 入手</li>
+<li>让 student 自己长出 visual-anchored thinking</li>
+</ul>
+<h3 id="72-如果你在想attention-free-importance这类问题">7.2 如果你在想“attention-free importance”这类问题</h3>
+<p>这篇论文虽然<strong>不是 attention-free</strong>，但它给了一个很有用的抽象：</p>
+<ul>
+<li><strong>重要性信号 1</strong>: 哪些上下文最影响当前预测</li>
+<li><strong>重要性信号 2</strong>: 当前 token 的训练难度 / 恢复难度</li>
+</ul>
+<p>作者把这两个量拆开处理。<br />
+对你前面关心的“不要直接依赖 attention score 的重要 KV 采样”问题，这里至少有两个可迁移思路：</p>
+<ol type="1">
+<li><p><strong>不要只做 token saliency ranking，也要做 budget scheduling</strong><br />
+即使你不用 attention 来选 KV，也可以借鉴它的 self-paced 设计，用 entropy / confidence / reverse-KL 一类量决定采样强度。</p></li>
+<li><p><strong>把问题从‘谁重要’改写成‘缺了谁以后，模型还原目标分布有多难’</strong><br />
+这更接近 counterfactual / residual importance 的思想。</p></li>
+</ol>
+<h3 id="73-一个很具体的研究迁移点">7.3 一个很具体的研究迁移点</h3>
+<p>如果你后面真要做“非 attention-based 的重要历史 token / KV 采样”，这篇 paper 可以启发出一个两阶段设计：</p>
+<ul>
+<li>阶段 A：用某种非 attention 的代理信号估计 token 对未来预测的贡献</li>
+<li>阶段 B：再用 difficulty-aware budget 决定每一步该保留多少历史信息</li>
+</ul>
+<p>也就是把：</p>
+<ul>
+<li><code>importance ranking</code></li>
+<li><code>retention budget scheduling</code></li>
+</ul>
+<p>显式拆开，而不是把它们揉成一个分数。</p>
+<h2 id="8-一句话总结">8. 一句话总结</h2>
+<p><strong>Masking-KD 的核心不是“mask 高 attention token”这么简单，而是通过遮掉最容易形成文本 shortcut 的 reasoning prefix，恢复后续 token 的蒸馏难度，迫使 student 在整个 think-answer 过程中持续重新看图。</strong></p>
+</main></body></html>

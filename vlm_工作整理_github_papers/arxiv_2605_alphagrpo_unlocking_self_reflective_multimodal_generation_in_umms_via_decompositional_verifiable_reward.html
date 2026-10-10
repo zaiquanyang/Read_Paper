@@ -1,0 +1,872 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Alphagrpo Unlocking Self Reflective Multimodal Generation In Umms Via Decompositional Verifiable Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}</style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><h1 id="alphagrpo-unlocking-self-reflective-multimodal-generation-in-unified-multimodal-models-via-decompositional-verifiable-reward">AlphaGRPO: Unlocking Self-Reflective Multimodal Generation in Unified Multimodal Models via Decompositional Verifiable Reward</h1>
+<h2 id="1-论文基本信息">1. 论文基本信息</h2>
+<ul>
+<li>arXiv ID: 2605.12495</li>
+<li>URL: <a href="https://arxiv.org/abs/2605.12495">abs</a> / <a href="https://arxiv.org/pdf/2605.12495.pdf">pdf</a></li>
+<li>主题归档: <code>vlm</code></li>
+<li>总结粒度: <code>detailed</code></li>
+<li>作者: Runhui Huang, Jie Wu, Rui Yang, Zhe Liu, Hengshuang Zhao</li>
+<li>作者机构: The University of Hong Kong / Bytedance Seed</li>
+<li>核心方法: <strong>AlphaGRPO</strong></li>
+<li>核心奖励: <strong>DVReward</strong> (<code>Decompositional Verifiable Reward</code>)</li>
+<li>项目页: <a href="https://huangrh99.github.io/AlphaGRPO/">huangrh99.github.io/AlphaGRPO</a></li>
+<li>关键词: <code>UMM</code>, <code>AR-Diffusion</code>, <code>GRPO</code>, <code>self-reflective refinement</code>, <code>reasoning text-to-image</code>, <code>decompositional reward</code>, <code>multimodal RL</code></li>
+</ul>
+<h2 id="2-这篇论文在解决什么问题">2. 这篇论文在解决什么问题</h2>
+<p>这篇 paper 的目标很明确：</p>
+<p><strong>能不能不用额外的 cold-start SFT，只靠 RL，把 unified multimodal model 里“潜在但没被激活”的 reasoning / self-reflection / refinement 能力逼出来，用来提升 multimodal generation？</strong></p>
+<p>这里的对象不是普通 text-to-image diffusion model，而是 <strong>Unified Multimodal Models (UMMs)</strong>，尤其是这种：</p>
+<ul>
+<li>一体化处理理解和生成</li>
+<li>同时能走 autoregressive text token 和 diffusion image token</li>
+<li>能在单一 backbone 里做 interleaved multimodal reasoning / generation</li>
+</ul>
+<p>作者的核心判断是：</p>
+<ol type="1">
+<li><p>这类 unified model 在大规模预训练后，其实已经有一些“隐式原语”</p>
+<ul>
+<li>比如视觉理解</li>
+<li>prompt-following</li>
+<li>局部 reasoning</li>
+<li>甚至自我诊断的潜力</li>
+</ul></li>
+<li><p>过去很多工作想让它做更强的 reasoning T2I 或 image refinement，主要靠：</p>
+<ul>
+<li>强 teacher 合成高质量数据</li>
+<li>再做额外 cold-start SFT</li>
+</ul></li>
+<li><p>但这样有个问题：</p>
+<ul>
+<li>你很难分清性能提升到底来自 RL，还是来自 teacher distillation</li>
+</ul></li>
+</ol>
+<p>所以作者要做的是：</p>
+<p><strong>不加冷启动蒸馏阶段，直接在 AR-Diffusion unified model 上做 GRPO，看看能不能把这些 latent capability 激活出来。</strong></p>
+<h2 id="3-这篇论文最重要的两个点">3. 这篇论文最重要的两个点</h2>
+<p>论文的贡献其实可以浓缩成两件事：</p>
+<ol type="1">
+<li><strong>把 GRPO 扩展到 AR-Diffusion unified multimodal trajectory</strong></li>
+<li><strong>提出更稳定的 multimodal reward：DVReward</strong></li>
+</ol>
+<p>前者解决“怎么训”，后者解决“拿什么信号训”。</p>
+<h2 id="4-为什么作者觉得这件事可行">4. 为什么作者觉得这件事可行</h2>
+<h3 id="41-它先做了一个-pilot-study">4.1 它先做了一个 pilot study</h3>
+<p>这篇 paper 不错的一点是，没有一上来就堆方法，而是先问两个前提是否成立：</p>
+<ol type="1">
+<li>预训练好的 UMM 到底有没有 latent self-reflection 能力？</li>
+<li>通用 MLLM 能不能给 visual generation 提供稳定、可区分的 reward？</li>
+</ol>
+<p>这两个问题分别对应它后面方法的两个核心部件。</p>
+<h3 id="42-发现-1让模型找错比让它判断对错更能激活推理">4.2 发现 1：让模型“找错”比让它“判断对错”更能激活推理</h3>
+<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study1.png" alt="Verification vs reflection" /></p>
+<p>作者用 Bagel 做了两个 probing task：</p>
+<ol type="1">
+<li><p><strong>Verification</strong></p>
+<ul>
+<li>问模型：这张图有没有问题？</li>
+</ul></li>
+<li><p><strong>Reflection</strong></p>
+<ul>
+<li>明确告诉模型：这张图有错误，请你找出来</li>
+</ul></li>
+</ol>
+<p>结果很有意思：</p>
+<ul>
+<li><p>在 Verification 模式下，模型经常有明显的 <strong>confirmation bias</strong></p>
+<ul>
+<li>即使图里有明显错误，也倾向于说“整体符合用户意图”</li>
+</ul></li>
+<li><p>在 Reflection 模式下，模型反而更容易认真检查细节，指出错位、属性冲突等问题</p></li>
+</ul>
+<p>这个结论很关键，因为它说明：</p>
+<p><strong>UMM 不是没有理解能力，而是“验证有没有错”这件事本身不够容易激活它；反过来，“请你找错”更像一个能触发 latent reasoning 的开关。</strong></p>
+<p>这其实直接支撑了后面的 self-reflective refinement 训练设计。</p>
+<h3 id="43-发现-2问具体问题比直接打分更容易得到可区分-reward">4.3 发现 2：问具体问题，比直接打分更容易得到可区分 reward</h3>
+<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study2_v3.png" alt="Score reward vs question reward" /></p>
+<p>作者做了另一个很重要的比较：</p>
+<ul>
+<li>同一个 prompt 生成两张图</li>
+<li>其中一张满足空间关系，另一张不满足</li>
+</ul>
+<p>然后对比两种 reward：</p>
+<ol type="1">
+<li><p><strong>Holistic scalar reward</strong></p>
+<ul>
+<li>直接让模型打 0-10 分</li>
+<li>用的是 VIEScore 一类方式</li>
+</ul></li>
+<li><p><strong>Question-based reward</strong></p>
+<ul>
+<li>不让模型给抽象分数</li>
+<li>而是直接问一个关键问题，比如：
+<ul>
+<li>“树有没有部分挡住长椅？”</li>
+</ul></li>
+<li>再看 <code>Yes</code> / <code>No</code> token 的概率</li>
+</ul></li>
+</ol>
+<p>结果是：</p>
+<ul>
+<li>scalar reward 给两张图同样的分数</li>
+<li>question-based reward 能明显拉开差距</li>
+</ul>
+<p>作者据此得出的结论非常重要：</p>
+<p><strong>通用 MLLM 不是不能分辨好坏，而是“不擅长把复杂视觉语义直接映射成稳定标量”；但如果把任务拆成可验证问题，它的判别能力会被更稳定地激活。</strong></p>
+<p>这就是 DVReward 的出发点。</p>
+<h2 id="5-方法总览">5. 方法总览</h2>
+<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /></p>
+<p>AlphaGRPO 的整体结构由三部分组成：</p>
+<ol type="1">
+<li><strong>统一轨迹建模</strong></li>
+<li><strong>统一 GRPO 优化</strong></li>
+<li><strong>DVReward 作为外部 verifier</strong></li>
+</ol>
+<p>作者优化的不是单纯文本，也不是单纯 diffusion image trajectory，而是一个混合轨迹：</p>
+<p><code>tau = (y, z_1 -&gt; z_0)</code></p>
+<p>其中：</p>
+<ul>
+<li><code>y</code> 是 autoregressive reasoning text</li>
+<li><code>z_1 -&gt; z_0</code> 是 diffusion visual trajectory</li>
+</ul>
+<p>这个建模非常关键，因为它允许作者说：</p>
+<blockquote>
+<p>reasoning text 是 image generation 的因果前驱，所以同一个 reward 可以反传到文本和图像两边。</p>
+</blockquote>
+<h2 id="6-alphagrpo-的核心机制">6. AlphaGRPO 的核心机制</h2>
+<h3 id="61-统一轨迹先想再画">6.1 统一轨迹：先想，再画</h3>
+<p>作者把 multimodal generation 看成统一生成过程：</p>
+<ul>
+<li>先采样 reasoning text token <code>y</code></li>
+<li>再把 <code>y</code> 作为条件先验，引导 image latent trajectory</li>
+</ul>
+<p>这样一来，它就能统一描述两类任务：</p>
+<ol type="1">
+<li><p><strong>Reasoning T2I</strong></p>
+<ul>
+<li>文本中间链条负责补世界知识、做空间规划、拆约束</li>
+</ul></li>
+<li><p><strong>Self-Reflective Refinement</strong></p>
+<ul>
+<li>文本中间链条负责诊断先前图像的错误，再引导修正</li>
+</ul></li>
+</ol>
+<p>虽然语义上一个更像 planning，一个更像 critique，但训练形式上都可以写成：</p>
+<ul>
+<li>先出文本 reasoning</li>
+<li>再出图像 trajectory</li>
+</ul>
+<h3 id="62-统一-grpo-目标">6.2 统一 GRPO 目标</h3>
+<p>AlphaGRPO 的关键不是“对 image 做 RL”，而是对<strong>整条混合轨迹</strong>做 RL。</p>
+<p>对每个 context <code>C</code>，采样一组 trajectories：</p>
+<ul>
+<li><code>tau_i = (y_i, z_i)</code></li>
+</ul>
+<p>然后只根据最终图像 <code>z_i</code> 算 reward：</p>
+<ul>
+<li><code>r(z_i)</code></li>
+</ul>
+<p>接着把 group-normalized advantage 同时作用到：</p>
+<ol type="1">
+<li>reasoning token policy</li>
+<li>flow generation policy</li>
+</ol>
+<p>也就是：</p>
+<ul>
+<li><code>J_AR</code></li>
+<li><code>J_Flow</code></li>
+</ul>
+<p>共享一个 advantage，但分别有各自的 PPO / GRPO 风格项与 KL 项。</p>
+<p>这一步的直觉是：</p>
+<p><strong>如果某张最终图像更好，那生成它的前置 reasoning 也应该被 credit assignment 奖励。</strong></p>
+<p>这就是 unified trajectory RL 的核心。</p>
+<h3 id="63-false-positive-rectification-fpr">6.3 False-Positive Rectification (FPR)</h3>
+<p>这是这篇 paper 里一个挺实用的工程点。</p>
+<p>在 self-reflective refinement 任务中，作者需要比较：</p>
+<ul>
+<li>初始图</li>
+<li>refinement 后的图</li>
+</ul>
+<p>但如果只是用 group advantage，可能会出现一种情况：</p>
+<ul>
+<li>某些 refinement 其实没有比原图更好</li>
+<li>但在当前采样组里还是拿到了正 advantage</li>
+</ul>
+<p>这样会产生 <strong>false-positive optimization</strong>。</p>
+<p>为了解决这个问题，作者引入了 <strong>False-Positive Rectification (FPR)</strong>：</p>
+<ul>
+<li>如果 refinement 结果没有超过初始图：
+<ul>
+<li><code>r(z_i) &lt;= r(z_init)</code></li>
+</ul></li>
+<li>就直接把它的 reward 赋成 group 最小值</li>
+</ul>
+<p>这样做的效果是：</p>
+<ul>
+<li>所有“没改好甚至改坏”的 refinement 轨迹都会拿负 advantage</li>
+<li>防止模型学会“看起来在修，实际在瞎改”</li>
+</ul>
+<p>这个设计很像给 self-refinement 加了一个 hard validity constraint。</p>
+<h2 id="7-dvreward这篇最值钱的部分">7. DVReward：这篇最值钱的部分</h2>
+<p>我觉得这篇 paper 最有意思、最可能迁移到别处的，不一定是 AlphaGRPO 本身，而是 <strong>DVReward</strong>。</p>
+<h3 id="71-为什么不用-holistic-scalar-score">7.1 为什么不用 holistic scalar score</h3>
+<p>作者明确批评了像 VIEScore 这类 holistic scalar reward：</p>
+<ul>
+<li>分数标定不稳定</li>
+<li>区分细粒度差异的能力差</li>
+<li>容易把多个语义错误“平均掉”</li>
+<li>对 GRPO 来说，reward 噪声太大会直接污染优化</li>
+</ul>
+<p>这和你前面一直关心的“细粒度质量信号”其实高度一致。</p>
+<h3 id="72-request-decomposition">7.2 Request decomposition</h3>
+<p>DVReward 的第一步是让 LLM 先把用户请求拆成一组 <strong>atomic, verifiable questions</strong>。</p>
+<p>拆分的内容分两类：</p>
+<ol type="1">
+<li><p><strong>Semantic questions</strong></p>
+<ul>
+<li>entity existence</li>
+<li>属性</li>
+<li>空间关系</li>
+<li>组合约束</li>
+</ul></li>
+<li><p><strong>Quality questions</strong></p>
+<ul>
+<li>几何完整性</li>
+<li>纹理保真度</li>
+<li>视觉质量相关项</li>
+</ul></li>
+</ol>
+<p>作者还特别强调一点：</p>
+<p><strong>要把抽象语义 grounding 成可观察的物理现象。</strong></p>
+<p>例如：</p>
+<ul>
+<li>不是问 “咖啡是不是热的”</li>
+<li>而是问 “杯子上方有没有蒸汽”</li>
+</ul>
+<p>这个设计非常强，因为它把抽象 reward 转成了一组更接近可验证观测的问题。</p>
+<h3 id="73-confidence-scoring">7.3 Confidence scoring</h3>
+<p>DVReward 不是让 verifier 回答一个硬二值 0/1，也不是让它打整体分。</p>
+<p>它做的是：</p>
+<ul>
+<li>对每个问题，拿 verifier（Qwen3VL-30B-A3B）</li>
+<li>看 <code>Yes</code> 和 <code>No</code> token 的概率</li>
+<li>用：</li>
+</ul>
+<p><code>P(Yes) / (P(Yes) + P(No))</code></p>
+<p>作为连续置信度分数</p>
+<p>这比 binary score 更细腻，因为：</p>
+<ul>
+<li>“勉强对”</li>
+<li>“高度确定地对”</li>
+</ul>
+<p>不会被压成一样的 1。</p>
+<h3 id="74-最终-reward-组合">7.4 最终 reward 组合</h3>
+<p>最终 reward 用 semantic score 和 quality score 的几何平均：</p>
+<p><code>r(z) = sqrt(v_sem * v_qua)</code></p>
+<p>这个组合说明作者不想让模型只追 semantic correctness，而忽略视觉质量； 也不想只追画质，而忽略 prompt alignment。</p>
+<p>这点很像把“对齐”和“保真”绑定成一个更稳的联合优化信号。</p>
+<h2 id="8-训练数据与训练设置">8. 训练数据与训练设置</h2>
+<h3 id="81-训练数据primitive-to-prompt">8.1 训练数据：Primitive-to-Prompt</h3>
+<p>作者采用一个 bottom-up 的 prompt 合成方式：</p>
+<ul>
+<li><p>先准备视觉原语池</p>
+<ul>
+<li>objects</li>
+<li>attributes</li>
+<li>spatial relations</li>
+</ul></li>
+<li><p>参考 TIIF-Bench taxonomy 定义 39 种 compositional task</p></li>
+<li><p>用 Qwen3-235B-A22B 合成 prompt</p></li>
+<li><p>按 Easy / Medium / Hard 三档采样</p></li>
+</ul>
+<p>总共生成：</p>
+<ul>
+<li>19,500 个训练 prompt</li>
+<li>1,024 个测试 prompt</li>
+</ul>
+<p>并对每个 prompt 预生成：</p>
+<ul>
+<li><code>q</code></li>
+<li><code>Q_sem</code></li>
+<li><code>Q_qua</code></li>
+</ul>
+<p>也就是说，训练前就把 decomposer 跑完，在线训练时主要是 verifier 在看生成图是否满足这些问题。</p>
+<h3 id="82-训练细节">8.2 训练细节</h3>
+<p>论文给了不少实现细节：</p>
+<ul>
+<li>base model: <strong>Bagel</strong></li>
+<li>LoRA:
+<ul>
+<li><code>r = 32</code></li>
+<li><code>alpha = 64</code></li>
+</ul></li>
+<li>训练硬件:
+<ul>
+<li>64 x NVIDIA A100</li>
+</ul></li>
+<li>每 8 张卡里：
+<ul>
+<li>7 张训练</li>
+<li>1 张跑 verifier (<code>Qwen3VL-30B-A3B</code>)</li>
+</ul></li>
+<li>不做 cold-start stage</li>
+<li>训练步数：
+<ul>
+<li>380 steps</li>
+</ul></li>
+<li>rollout batch:
+<ul>
+<li>每步 32 prompts</li>
+</ul></li>
+<li>group size:
+<ul>
+<li><code>G = 14</code></li>
+</ul></li>
+<li>noise level:
+<ul>
+<li><code>a = 0.7</code></li>
+</ul></li>
+<li>train resolution:
+<ul>
+<li><code>512</code></li>
+</ul></li>
+<li><code>lambda = 0.2</code></li>
+<li><code>beta_AR = beta_Flow = 0</code></li>
+</ul>
+<p>此外：</p>
+<ul>
+<li>reasoning T2I 训练时：
+<ul>
+<li>16 steps 采样</li>
+</ul></li>
+<li>self-reflective refinement：
+<ul>
+<li>初始生成和 refinement 都用 40 steps</li>
+</ul></li>
+</ul>
+<h3 id="83-训练效率">8.3 训练效率</h3>
+<p>DVReward 需要多次 verifier 调用，本来会很慢。作者通过几件事把这个问题压下去：</p>
+<ol type="1">
+<li>KV cache 复用</li>
+<li>question 并行验证</li>
+<li>decentralized reward serving</li>
+<li>asynchronous scheduling</li>
+</ol>
+<p>最终 reward-waiting bubble time 从：</p>
+<ul>
+<li><code>40.8s</code></li>
+</ul>
+<p>降到：</p>
+<ul>
+<li><code>9.72e-6 s</code></li>
+</ul>
+<p>这个结果很夸张，但至少说明作者在 reward serving 上下了不少工程功夫。</p>
+<h2 id="9-主要实验结果">9. 主要实验结果</h2>
+<h3 id="91-text-to-image-总体结果">9.1 Text-to-Image 总体结果</h3>
+<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/teaser.png" alt="Qualitative and quantitative teaser" /></p>
+<p>论文主表横跨多个 benchmark：</p>
+<ul>
+<li>TIIF-Bench</li>
+<li>WISE</li>
+<li>DPG-Bench</li>
+<li>GenEval</li>
+</ul>
+<p>下面只抓最核心的对比。</p>
+<h4 id="512-分辨率">512 分辨率</h4>
+<table>
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">TIIF Overall S</th>
+<th style="text-align: right;">TIIF Overall L</th>
+<th style="text-align: right;">DPG</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BAGEL</td>
+<td style="text-align: right;">75.2</td>
+<td style="text-align: right;">78.6</td>
+<td style="text-align: right;">85.0</td>
+<td style="text-align: right;">84.0</td>
+</tr>
+<tr class="even">
+<td>AlphaGRPO (RT2I)</td>
+<td style="text-align: right;">78.9</td>
+<td style="text-align: right;">79.5</td>
+<td style="text-align: right;">86.0</td>
+<td style="text-align: right;">85.0</td>
+</tr>
+<tr class="odd">
+<td>AlphaGRPO (SRR)</td>
+<td style="text-align: right;">79.1</td>
+<td style="text-align: right;">79.5</td>
+<td style="text-align: right;">86.3</td>
+<td style="text-align: right;">84.2</td>
+</tr>
+<tr class="even">
+<td>+ Inference SRR</td>
+<td style="text-align: right;"><strong>83.9</strong></td>
+<td style="text-align: right;"><strong>83.2</strong></td>
+<td style="text-align: right;"><strong>87.9</strong></td>
+<td style="text-align: right;"><strong>88.2</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这里最重要的观察是：</p>
+<ol type="1">
+<li><strong>无论训练在 RT2I 还是 SRR 上，都会比 BAGEL 强</strong></li>
+<li><strong>SRR 训练本身就能泛化到标准 T2I benchmark</strong></li>
+<li><strong>inference-time self-reflective refinement 再往上推一截</strong></li>
+</ol>
+<p>也就是说，这篇 paper 不是只证明“训练某个特定任务能涨这个任务”，而是在强调：</p>
+<p><strong>self-reflective refinement 这种训练形态本身能学到比较通用的 multimodal generation alignment。</strong></p>
+<h4 id="1024-分辨率">1024 分辨率</h4>
+<table>
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">TIIF Overall S</th>
+<th style="text-align: right;">TIIF Overall L</th>
+<th style="text-align: right;">WISE</th>
+<th style="text-align: right;">DPG</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BAGEL</td>
+<td style="text-align: right;">76.4</td>
+<td style="text-align: right;">76.2</td>
+<td style="text-align: right;">0.53/0.70</td>
+<td style="text-align: right;">85.1</td>
+<td style="text-align: right;">86.6</td>
+</tr>
+<tr class="even">
+<td>AlphaGRPO (RT2I)</td>
+<td style="text-align: right;">78.7</td>
+<td style="text-align: right;">79.5</td>
+<td style="text-align: right;">0.50/0.69</td>
+<td style="text-align: right;">85.9</td>
+<td style="text-align: right;">87.4</td>
+</tr>
+<tr class="odd">
+<td>AlphaGRPO (SRR)</td>
+<td style="text-align: right;">77.7</td>
+<td style="text-align: right;">78.1</td>
+<td style="text-align: right;"><strong>0.53/0.71</strong></td>
+<td style="text-align: right;">85.1</td>
+<td style="text-align: right;">86.1</td>
+</tr>
+<tr class="even">
+<td>+ Inference SRR</td>
+<td style="text-align: right;"><strong>82.2</strong></td>
+<td style="text-align: right;"><strong>81.4</strong></td>
+<td style="text-align: right;">-</td>
+<td style="text-align: right;"><strong>86.6</strong></td>
+<td style="text-align: right;"><strong>89.5</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这张表支撑了作者的一个关键 claim：</p>
+<p><strong>虽然训练主要在 512 分辨率进行，但学到的对齐能力能迁移到更高分辨率。</strong></p>
+<p>作者用这个来论证：</p>
+<ul>
+<li>学到的不是像素层面的投机技巧</li>
+<li>更像是更稳的 semantic alignment / reasoning behavior</li>
+</ul>
+<h3 id="92-image-editing没专门训-editing也能涨">9.2 Image editing：没专门训 editing，也能涨</h3>
+<p>GEdit-Bench 上：</p>
+<table>
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">G_SC</th>
+<th style="text-align: right;">G_PQ</th>
+<th style="text-align: right;">G_O</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BAGEL</td>
+<td style="text-align: right;">7.36</td>
+<td style="text-align: right;">6.83</td>
+<td style="text-align: right;">6.52</td>
+</tr>
+<tr class="even">
+<td>AlphaGRPO (RT2I)</td>
+<td style="text-align: right;">7.54</td>
+<td style="text-align: right;">7.18</td>
+<td style="text-align: right;">6.85</td>
+</tr>
+<tr class="odd">
+<td>AlphaGRPO (SRR)</td>
+<td style="text-align: right;"><strong>7.67</strong></td>
+<td style="text-align: right;"><strong>7.46</strong></td>
+<td style="text-align: right;"><strong>7.08</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这个结果很有说服力，因为作者说：</p>
+<ul>
+<li>没有在 editing task 上专门训练</li>
+<li>但 SRR 训练仍然显著提升 editing benchmark</li>
+</ul>
+<p>这进一步说明：</p>
+<p><strong>它强化的不是某个 narrow task，而是更一般的“看懂指令 - 发现偏差 - 做修正”能力。</strong></p>
+<h2 id="10-ablationdvreward-和-fpr-是否真的重要">10. Ablation：DVReward 和 FPR 是否真的重要</h2>
+<h3 id="101-对比其他-reward-model">10.1 对比其他 reward model</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Base</th>
+<th>Reward</th>
+<th style="text-align: right;">TIIF-S</th>
+<th style="text-align: right;">TIIF-L</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SD3.5M</td>
+<td>baseline</td>
+<td style="text-align: right;">74.0</td>
+<td style="text-align: right;">73.2</td>
+<td style="text-align: right;">79.8</td>
+</tr>
+<tr class="even">
+<td>SD3.5M</td>
+<td>PickScore</td>
+<td style="text-align: right;">77.6</td>
+<td style="text-align: right;">76.3</td>
+<td style="text-align: right;">80.4</td>
+</tr>
+<tr class="odd">
+<td>SD3.5M</td>
+<td>VIEScore</td>
+<td style="text-align: right;">76.2</td>
+<td style="text-align: right;">72.9</td>
+<td style="text-align: right;">82.9</td>
+</tr>
+<tr class="even">
+<td>SD3.5M</td>
+<td>DVReward</td>
+<td style="text-align: right;"><strong>79.1</strong></td>
+<td style="text-align: right;"><strong>77.7</strong></td>
+<td style="text-align: right;"><strong>86.0</strong></td>
+</tr>
+<tr class="odd">
+<td>BAGEL</td>
+<td>baseline</td>
+<td style="text-align: right;">75.2</td>
+<td style="text-align: right;">78.6</td>
+<td style="text-align: right;">84.0</td>
+</tr>
+<tr class="even">
+<td>BAGEL</td>
+<td>HPSv3</td>
+<td style="text-align: right;">78.5</td>
+<td style="text-align: right;">77.1</td>
+<td style="text-align: right;">83.4</td>
+</tr>
+<tr class="odd">
+<td>BAGEL</td>
+<td>UnifiedReward</td>
+<td style="text-align: right;"><strong>79.2</strong></td>
+<td style="text-align: right;">77.3</td>
+<td style="text-align: right;">83.7</td>
+</tr>
+<tr class="even">
+<td>BAGEL</td>
+<td>VIEScore</td>
+<td style="text-align: right;">79.1</td>
+<td style="text-align: right;">77.9</td>
+<td style="text-align: right;">81.7</td>
+</tr>
+<tr class="odd">
+<td>BAGEL</td>
+<td>DVReward</td>
+<td style="text-align: right;">78.9</td>
+<td style="text-align: right;"><strong>79.5</strong></td>
+<td style="text-align: right;"><strong>85.1</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这里的信息量很大：</p>
+<ul>
+<li>一些常见 reward model 在某些 benchmark 上会退化</li>
+<li>VIEScore 尤其不稳</li>
+<li>DVReward 是最 consistently positive 的</li>
+</ul>
+<p>这正好呼应它的 pilot study：<br />
+<strong>不是所有“看起来懂图”的 MLLM reward 都能稳定转成训练信号。</strong></p>
+<h3 id="102-confidence-score-比-binary-score-更好">10.2 Confidence score 比 binary score 更好</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Reward scoring</th>
+<th style="text-align: right;">TIIF-S</th>
+<th style="text-align: right;">TIIF-L</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Binary</td>
+<td style="text-align: right;"><strong>79.0</strong></td>
+<td style="text-align: right;">78.9</td>
+<td style="text-align: right;">84.0</td>
+</tr>
+<tr class="even">
+<td>Confidence</td>
+<td style="text-align: right;">78.9</td>
+<td style="text-align: right;"><strong>79.5</strong></td>
+<td style="text-align: right;"><strong>85.1</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这说明作者的 intuition 是对的：</p>
+<ul>
+<li>binary 太粗</li>
+<li>confidence score 保留了 verifier 的不确定性</li>
+<li>对优化来说更平滑</li>
+</ul>
+<h3 id="103-fpr-有用">10.3 FPR 有用</h3>
+<table>
+<thead>
+<tr class="header">
+<th>FPR</th>
+<th style="text-align: right;">TIIF-S</th>
+<th style="text-align: right;">TIIF-L</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>on</td>
+<td style="text-align: right;"><strong>79.1</strong></td>
+<td style="text-align: right;"><strong>79.5</strong></td>
+<td style="text-align: right;"><strong>84.2</strong></td>
+</tr>
+<tr class="even">
+<td>off</td>
+<td style="text-align: right;">77.9</td>
+<td style="text-align: right;">77.8</td>
+<td style="text-align: right;">83.7</td>
+</tr>
+</tbody>
+</table>
+<p>提升不是爆炸性的，但很稳定。</p>
+<p>这类 ablation 很像“训练卫生指标”：</p>
+<ul>
+<li>没它也能训</li>
+<li>但会更容易被 noisy reward 带偏</li>
+</ul>
+<h3 id="104-quality-question-也重要">10.4 Quality question 也重要</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Semantic</th>
+<th>Quality</th>
+<th style="text-align: right;">TIIF-S</th>
+<th style="text-align: right;">TIIF-L</th>
+<th style="text-align: right;">GenEval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>on</td>
+<td>off</td>
+<td style="text-align: right;">76.3</td>
+<td style="text-align: right;">77.7</td>
+<td style="text-align: right;">87.3</td>
+</tr>
+<tr class="even">
+<td>on</td>
+<td>on</td>
+<td style="text-align: right;"><strong>78.7</strong></td>
+<td style="text-align: right;"><strong>79.5</strong></td>
+<td style="text-align: right;"><strong>87.4</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这说明：</p>
+<ul>
+<li>只看 semantic alignment 不够</li>
+<li>质量问题要显式问出来</li>
+<li>否则会出现“语义对了，但图变丑了”的情况</li>
+</ul>
+<h2 id="11-额外分析">11. 额外分析</h2>
+<h3 id="111-问题数量不能压太狠">11.1 问题数量不能压太狠</h3>
+<p>作者还做了 question count ablation：</p>
+<table>
+<thead>
+<tr class="header">
+<th>Questions</th>
+<th style="text-align: right;">TIIF-S</th>
+<th style="text-align: right;">TIIF-L</th>
+<th style="text-align: right;">GenEval</th>
+<th style="text-align: right;">Spatial</th>
+<th style="text-align: right;">Count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>baseline</td>
+<td style="text-align: right;">75.2</td>
+<td style="text-align: right;">78.6</td>
+<td style="text-align: right;">84.0</td>
+<td style="text-align: right;">71.0</td>
+<td style="text-align: right;">74.0</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td style="text-align: right;">78.2</td>
+<td style="text-align: right;">79.7</td>
+<td style="text-align: right;">81.1</td>
+<td style="text-align: right;">63.0</td>
+<td style="text-align: right;">71.8</td>
+</tr>
+<tr class="odd">
+<td>All</td>
+<td style="text-align: right;"><strong>78.9</strong></td>
+<td style="text-align: right;">79.5</td>
+<td style="text-align: right;"><strong>85.0</strong></td>
+<td style="text-align: right;"><strong>74.3</strong></td>
+<td style="text-align: right;"><strong>82.5</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这很有意思：</p>
+<ul>
+<li>少问题在 TIIF 上还行</li>
+<li>但在 GenEval，尤其 Spatial 和 Count 上明显掉</li>
+</ul>
+<p>说明：</p>
+<p><strong>把多个约束压缩成几个粗问题，会损伤细粒度 reward 的分辨率。</strong></p>
+<p>这和你前面一直在关心的“细粒度信号”高度一致。</p>
+<h3 id="112-人类偏好也更喜欢它">11.2 人类偏好也更喜欢它</h3>
+<p>200 个 real-user prompts 上的人类评估：</p>
+<ul>
+<li>Overall：<code>40.5%</code> 更偏好 AlphaGRPO，<code>30.5%</code> 偏好 BAGEL</li>
+<li>Prompt following：<code>36.5%</code> vs <code>25.5%</code></li>
+<li>Perceptual quality：<code>43.0%</code> vs <code>39.0%</code></li>
+</ul>
+<p>DVReward 在 pairwise 比较里也更多选择 AlphaGRPO：</p>
+<ul>
+<li><code>51.3%</code> vs <code>34.7%</code></li>
+</ul>
+<p>这至少说明：</p>
+<ul>
+<li>它的 reward 没有明显朝离谱方向 overfit</li>
+<li>和人类偏好的方向大体一致</li>
+</ul>
+<h3 id="113-inference-time-srr-不是零训练也行">11.3 Inference-time SRR 不是“零训练也行”</h3>
+<p>作者还比较了：</p>
+<ul>
+<li>BAGEL + inference-time SRR</li>
+<li>AlphaGRPO + inference-time SRR</li>
+</ul>
+<p>结果：</p>
+<ul>
+<li>BAGEL + Inf SRR 只有有限提升</li>
+<li>AlphaGRPO + Inf SRR 提升明显更大</li>
+</ul>
+<p>这说明：</p>
+<p><strong>不是只要在推理时让模型反思一下就行，训练阶段真的把 self-reflection 行为强化进去了。</strong></p>
+<h2 id="12-这篇工作的亮点">12. 这篇工作的亮点</h2>
+<h3 id="121-它把-rl-的-credit-assignment-真正跨过了文本到图像边界">12.1 它把 RL 的 credit assignment 真正跨过了“文本到图像”边界</h3>
+<p>很多多模态 RL 工作要么只训文本 reasoning，要么只训图像生成。</p>
+<p>这篇 paper 的一个漂亮点在于，它明确把：</p>
+<ul>
+<li>reasoning text</li>
+<li>diffusion image generation</li>
+</ul>
+<p>放进同一条轨迹里做 credit assignment。</p>
+<p>这在 unified model 上是很自然、但又不那么容易做好的事情。</p>
+<h3 id="122-dvreward-的思想很强">12.2 DVReward 的思想很强</h3>
+<p>我觉得这篇 paper 最可迁移的资产是：</p>
+<p><strong>把复杂 multimodal request 分解成 atomic verifiable questions，再用 token-level confidence 组合 reward。</strong></p>
+<p>这套思路不只适用于 T2I：</p>
+<ul>
+<li>image editing</li>
+<li>VLM grounded generation</li>
+<li>agentic perception / verification</li>
+<li>甚至你前面聊过的细粒度重要性估计</li>
+</ul>
+<p>都可以借鉴这个“先拆，再验”的信号构造方式。</p>
+<h3 id="123-self-reflective-refinement-这个任务定义很有未来感">12.3 self-reflective refinement 这个任务定义很有未来感</h3>
+<p>相比直接做 reasoning T2I，我觉得这篇更有意思的是：</p>
+<p><strong>让 unified model 学会先看自己画得哪里不对，再改。</strong></p>
+<p>这其实更接近长期想象中的“自校正生成系统”。</p>
+<h2 id="13-局限性">13. 局限性</h2>
+<p>论文在 appendix 里也承认了一些限制。</p>
+<h3 id="131-base-model-还不够稳">13.1 Base model 还不够稳</h3>
+<p>作者明确说：</p>
+<ul>
+<li>Bagel 在 512 分辨率下偶尔会有噪声或模糊伪影</li>
+<li>self-reflection 生成的 reasoning 也会出现意外模式</li>
+</ul>
+<p>所以 AlphaGRPO 的上限部分还被 base model 束缚。</p>
+<h3 id="132-目前还是-outcome-reward-为主">13.2 目前还是 outcome reward 为主</h3>
+<p>现在的 reward 主要看最终结果，没有真正做 process reward。</p>
+<p>作者提到未来可以加：</p>
+<ul>
+<li>refinement 前后的一致性奖励</li>
+<li>中间反思步骤是否识别了正确错误的监督</li>
+</ul>
+<p>这点我也很认同，因为：</p>
+<p><strong>如果只看最终图像，模型可能学会“胡乱自省但碰巧改对”，而不是学会“正确诊断错误”。</strong></p>
+<h3 id="133-训练代价不低">13.3 训练代价不低</h3>
+<p>尽管 reward server 做了大量优化，但整套训练仍然不便宜：</p>
+<ul>
+<li>64 A100</li>
+<li>外挂一个大 verifier</li>
+<li>需要复杂的异步 serving</li>
+</ul>
+<p>所以它目前更像一个“高端实验室 setting 下的方向验证”，还不是轻量方案。</p>
+<h2 id="14-对我们最有启发的点">14. 对我们最有启发的点</h2>
+<h3 id="141-如果你关心细粒度质量监督这篇很值得反复看">14.1 如果你关心“细粒度质量监督”，这篇很值得反复看</h3>
+<p>你前面一直在问：</p>
+<ul>
+<li>不依赖 attention score 的细粒度重要性</li>
+<li>更稳定的质量信号</li>
+<li>怎么避免粗糙标量指标的偏差</li>
+</ul>
+<p>DVReward 本质上就是一个很好的答案范式：</p>
+<ol type="1">
+<li>不直接问“整体好不好”</li>
+<li>把请求拆成多条可验证细项</li>
+<li>对每一项拿 soft confidence</li>
+<li>再聚合成最终 reward</li>
+</ol>
+<p>这比单一 scalar reward 要靠谱得多。</p>
+<h3 id="142-self-reflection-其实可以看成一种显式错误搜索">14.2 Self-reflection 其实可以看成一种“显式错误搜索”</h3>
+<p>这和你前面问 critical token 那里有点神似。</p>
+<p>在 critical token 那个问题里，你关心的是：</p>
+<ul>
+<li>哪一步开始走偏了</li>
+</ul>
+<p>在这里，作者关心的是：</p>
+<ul>
+<li>当前生成图里哪里偏了</li>
+<li>如何显式指出偏差，再做修正</li>
+</ul>
+<p>某种意义上，这篇 paper 是把“找出错误分叉点”这件事，从 token reasoning 扩展到了 multimodal generation 结果本身。</p>
+<h3 id="143-以后可以把-dvreward-搬到更细粒度-vlm-任务">14.3 以后可以把 DVReward 搬到更细粒度 VLM 任务</h3>
+<p>我觉得很自然的扩展包括：</p>
+<ul>
+<li>region-level grounded generation reward</li>
+<li>search-to-pixel verifier reward</li>
+<li>object-level compositional editing reward</li>
+<li>long-document VLM 中 page / region 级验证奖励</li>
+</ul>
+<p>尤其如果你后面想做：</p>
+<ul>
+<li>VLM 里的细粒度 agentic verification</li>
+<li>多阶段生成 / 多阶段感知中的局部质量回传</li>
+</ul>
+<p>这篇很有参考价值。</p>
+<h2 id="15-一句话总结">15. 一句话总结</h2>
+<p><strong>AlphaGRPO 最重要的不只是“把 GRPO 用到 unified multimodal generation 上”，而是它给出了一个很像样的答案：如果你想让统一模型学会自我反思和细粒度修正，奖励信号不能再是粗糙的一维分数，而要先把复杂请求拆开，再逐项验证。</strong></p>
+</main></body></html>

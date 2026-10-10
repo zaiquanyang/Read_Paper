@@ -1,0 +1,388 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Saliency R1 Enforcing Interpretable And Faithful Vision Language Reasoning Via Saliency Map Alignment Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}</style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><h1 id="saliency-r1-enforcing-interpretable-and-faithful-vision-language-reasoning-via-saliency-map-alignment-reward">Saliency-R1: Enforcing Interpretable and Faithful Vision-language Reasoning via Saliency-map Alignment Reward</h1>
+<h2 id="1-基本信息">1. 基本信息</h2>
+<ul>
+<li>arXiv ID: 2604.04500</li>
+<li>URL (abs/pdf): <a href="https://arxiv.org/abs/2604.04500">abs</a> / <a href="https://arxiv.org/pdf/2604.04500.pdf">pdf</a></li>
+<li>主题目录: vlm</li>
+<li>总结粒度: detailed</li>
+<li>作者: Shizhan Gong, Minda Hu, Qiyuan Zhang, Chen Ma, Qi Dou (CUHK / CityU Hong Kong)</li>
+<li>会议: CVPR 2026</li>
+<li>代码: <a href="https://github.com/peterant330/Saliency_R1">https://github.com/peterant330/Saliency_R1</a></li>
+</ul>
+<h2 id="2-背景与动机详细">2. 背景与动机（详细）</h2>
+<h3 id="21-任务定义与应用场景">2.1 任务定义与应用场景</h3>
+<p>VLM 在多模态推理中取得显著进展，但其可信度面临两个核心挑战：</p>
+<ol type="1">
+<li><strong>过度依赖文本线索</strong>：视觉信号在推理中扮演的角色相对较小</li>
+<li><strong>幻觉问题</strong>：模型生成未被图像支持的内容</li>
+</ol>
+<p>当前 VLM 推理使用 Chain-of-Thought (CoT) 或类似 DeepSeek-R1 的推理机制生成自然语言解释 (NLE)，但研究表明这些解释与最终答案之间可能存在不一致性——"思考"过程未必忠实反映解题过程。</p>
+<h3 id="22-核心洞察">2.2 核心洞察</h3>
+<p><strong>不同思维过程关注图像的不同区域，即使得出相同答案</strong>：</p>
+<ul>
+<li>有的推理真正关注与问题相关的区域</li>
+<li>有的关注不相关物体或背景</li>
+<li>后者本质上是对视觉信息的误用或幻觉</li>
+</ul>
+<p>本文的核心目标是：<strong>确保 VLM 的推理过程真正"看"到了正确的图像区域</strong>。</p>
+<p><img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/teaser.png" alt="动机图：不同思维过程关注不同区域" /></p>
+<h2 id="3-方法与框架详细">3. 方法与框架（详细）</h2>
+<h3 id="31-总体框架">3.1 总体框架</h3>
+<p>Saliency-R1 包含三个核心组件：</p>
+<ol type="1">
+<li><strong>Token-level Saliency Map 生成</strong>：通过 logits 分解高效生成显著性图</li>
+<li><strong>Attention Rollout 聚合</strong>：以 thinking tokens 为瓶颈，追踪视觉信息如何流向答案</li>
+<li><strong>GRPO + Saliency Alignment Reward</strong>：用显著性图与人工标注 bounding box 的对齐度作为奖励信号</li>
+</ol>
+<p><img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /></p>
+<h3 id="32-token-level-saliency-map-生成logits-分解">3.2 Token-level Saliency Map 生成（Logits 分解）</h3>
+<p>基于 Transformer 架构，将 token logits 分解为各 context token 的一阶贡献：</p>
+<p>$$c_p = \sum_{l=1}^{L}\sum_{j=1}^{H}\alpha_{i,j,p}^l \mathbf{W}<em>{o,j}^l \mathbf{W}</em>{v,j}^l \mathbf{h}_p^{l-1} \mathbf{E}_u$$</p>
+<p>其中 $\alpha_{i,j,p}^l$ 是 attention 权重，$\mathbf{W}_o$ 和 $\mathbf{W}_v$ 是输出和值投影矩阵。</p>
+<p><strong>关键实现细节</strong>：</p>
+<ul>
+<li>仅选取视觉 token 对应的 $c_p$ 值，按 patch 顺序重排</li>
+<li>应用 ReLU 忽略负贡献</li>
+<li>不需要额外的前向或反向传播——attention 权重和 KV cache 中的值向量已天然可用</li>
+<li>虽然忽略间接贡献（残差连接、FFN 部分），但文献表明直接贡献占主导地位</li>
+</ul>
+<p><strong>计算效率</strong>：生成显著性图的额外开销几乎为零，使其能无缝集成到训练 pipeline 中。</p>
+<h3 id="33-attention-rolloutthinking-tokens-作为瓶颈">3.3 Attention Rollout：Thinking Tokens 作为瓶颈</h3>
+<p>推理模型先生成思维链 (thinking tokens)，再生成答案。本文假设：</p>
+<ul>
+<li>Thinking 过程从图像中提取信息</li>
+<li>答案基于 thinking 过程的总结</li>
+</ul>
+<p>为了可视化这一流程，使用 attention rollout 追踪视觉信息如何通过 thinking tokens 流向答案：</p>
+<p>$$\tilde{\mathcal{A}}<em>{va}^{l,h} = \mathcal{A}</em>{vt}^{l,h} \cdot \mathcal{A}_{ta}^{l,h}$$</p>
+<p>其中 $\mathcal{A}<em>{vt}$ 是视觉→thinking 的注意力矩阵，$\mathcal{A}</em>{ta}$ 是 thinking→answer 的注意力矩阵。</p>
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li><strong>不对列做归一化</strong>：某些 answer token（如介词）接收很少的 thinking 贡献，某些 thinking token 接收很少的视觉贡献，这些 token 自然在 holistic saliency map 中影响更小</li>
+<li><strong>直接求和</strong> per-token map 得到最终的 holistic saliency map</li>
+<li>低置信度的 answer token（logits 小）贡献也更少</li>
+</ul>
+<h3 id="34-grpo--saliency-alignment-reward">3.4 GRPO + Saliency Alignment Reward</h3>
+<p><strong>Alignment Score</strong> 定义为 saliency map 在 bounding box 内的质量占比：</p>
+<p>$$\text{Alignment_Score} = \frac{\sum_{i \in \text{Bounding Box}} \text{Saliency_Score}(i)}{\sum_{i \in \text{Image}} \text{Saliency_Score}(i)}$$</p>
+<p><strong>完整的 Reward 设计</strong>：</p>
+<p>$$\mathcal{R}<em>{\text{overall}} = \mathcal{R}</em>{\text{accuracy}} + \mathcal{R}<em>{\text{format}} + \mathcal{R}</em>{\text{saliency}}$$</p>
+<table>
+<thead>
+<tr class="header">
+<th>Reward</th>
+<th>含义</th>
+<th>取值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>$\mathcal{R}_{\text{accuracy}}$</td>
+<td>LLM-as-judge 判断答案正确性</td>
+<td>0 或 1</td>
+</tr>
+<tr class="even">
+<td>$\mathcal{R}_{\text{format}}$</td>
+<td>输出格式遵循（think 标签 + 答案格式）</td>
+<td>0 或 1</td>
+</tr>
+<tr class="odd">
+<td>$\mathcal{R}_{\text{saliency}}$</td>
+<td>Saliency map 与 bbox 的对齐度</td>
+<td>[0, 1] 连续值</td>
+</tr>
+</tbody>
+</table>
+<p>使用 GRPO 优化，每问题采样 G=8 个 rollout，用组内相对优势作为 advantage。</p>
+<h2 id="4-实验分析详细">4. 实验分析（详细）</h2>
+<h3 id="41-实验设置">4.1 实验设置</h3>
+<p><strong>训练数据</strong>：</p>
+<ul>
+<li>SFT 冷启动：Saliency-R1-cold（Vision-R1-cold 的子集），272,881 样本</li>
+<li>GRPO：Saliency-r1-8k（Visual-CoT 子集），8,080 样本，含 bounding box 标注</li>
+</ul>
+<p><strong>实现细节</strong>：</p>
+<ul>
+<li>Base model: Qwen2.5-VL-3B/7B</li>
+<li>SFT: llama-factory, 2 epochs, lr=5e-5, LoRA rank=128</li>
+<li>GRPO: TRL, 3 epochs, lr=1e-5, LoRA rank=8 (Q/V 投影层), batch=128, rollout=8</li>
+<li>LLM judge: GPT-4o-mini</li>
+<li>硬件：8× A6000 GPU</li>
+</ul>
+<h3 id="42-saliency-map-忠实度评估">4.2 Saliency Map 忠实度评估</h3>
+<p>使用 deletion/insertion 测试评估 saliency map 的因果忠实度：</p>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>Deletion ↓ (5%/15%/30%)</th>
+<th>Insertion ↑ (5%/15%/30%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CAM</td>
+<td>86.19/82.44/78.34</td>
+<td>-0.10/2.47/28.02</td>
+</tr>
+<tr class="even">
+<td>Grad-CAM</td>
+<td>86.19/82.44/78.34</td>
+<td>-0.10/2.47/28.02</td>
+</tr>
+<tr class="odd">
+<td>ATTN-LRP</td>
+<td>76.42/64.22/52.92</td>
+<td>-0.06/12.10/45.67</td>
+</tr>
+<tr class="even">
+<td>TAM</td>
+<td>83.91/79.33/73.29</td>
+<td>0.02/23.54/45.24</td>
+</tr>
+<tr class="odd">
+<td><strong>Ours</strong></td>
+<td><strong>70.96/59.45/50.34</strong></td>
+<td>0.06/14.39/45.22</td>
+</tr>
+</tbody>
+</table>
+<p>COCO Caption 上：deletion 分数比第二优方法低 5.46%/4.77%/2.57%（5%/15%/30%），说明即使仅考虑直接贡献，方法仍能忠实捕捉视觉 patch 的相对重要性。</p>
+<h3 id="43-vqa-主结果">4.3 VQA 主结果</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>MMMU-Pro</th>
+<th>MMBench</th>
+<th>POPE</th>
+<th>MME</th>
+<th>MME-RW</th>
+<th>MMStar</th>
+<th>ChartQA</th>
+<th>IllusionVQA</th>
+<th>ScienceQA</th>
+<th>SalBench</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPT-4o</td>
+<td>54.0</td>
+<td>83.4</td>
+<td>85.6</td>
+<td>2329</td>
+<td>45.2</td>
+<td>63.9</td>
+<td>85.7</td>
+<td>49.1</td>
+<td>90.1</td>
+<td>89.2</td>
+</tr>
+<tr class="even">
+<td>InternVL2.5-8B</td>
+<td>38.2</td>
+<td>84.6</td>
+<td>90.6</td>
+<td>2344</td>
+<td>58.1</td>
+<td>63.2</td>
+<td>-</td>
+<td>-</td>
+<td>98.4</td>
+<td>-</td>
+</tr>
+<tr class="odd">
+<td>Qwen2.5-VL-7B</td>
+<td>36.2</td>
+<td>82.8</td>
+<td>86.7</td>
+<td>2302</td>
+<td>58.7</td>
+<td>62.4</td>
+<td>84.0</td>
+<td>37.5</td>
+<td>88.2</td>
+<td>49.1</td>
+</tr>
+<tr class="even">
+<td>+ SFT</td>
+<td>35.5</td>
+<td>78.8</td>
+<td>87.6</td>
+<td>2372</td>
+<td>60.6</td>
+<td>60.1</td>
+<td>87.2</td>
+<td>33.6</td>
+<td>93.8</td>
+<td>57.1</td>
+</tr>
+<tr class="odd">
+<td><strong>+ Saliency-R1</strong></td>
+<td><strong>37.6</strong></td>
+<td><strong>81.8</strong></td>
+<td><strong>88.1</strong></td>
+<td><strong>2385</strong></td>
+<td><strong>62.9</strong></td>
+<td><strong>62.6</strong></td>
+<td><strong>88.2</strong></td>
+<td><strong>38.4</strong></td>
+<td><strong>94.3</strong></td>
+<td><strong>63.7</strong></td>
+</tr>
+</tbody>
+</table>
+<p>核心发现：</p>
+<ul>
+<li>Saliency-R1-7B 在 POPE 上提升 +1.4%，ChartQA 上提升 +4.2%</li>
+<li>改进在 3B 和 7B 模型上一致</li>
+<li>在 MME、MME-RealWorld、ScienceQA 上超越商业模型（GPT-4o、Claude-3.5 Sonnet）</li>
+<li>SFT 单独也有提升但远小于 Saliency-R1</li>
+</ul>
+<h3 id="44-可解释性定量评估">4.4 可解释性定量评估</h3>
+<p>在 saliency-r1-8k 测试集上使用 pointing game 评估：</p>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>Energy-PG (%) ↑</th>
+<th>PG (%) ↑</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Qwen2.5-VL-7B</td>
+<td>19.26</td>
+<td>24.49</td>
+</tr>
+<tr class="even">
+<td>Saliency-R1-CI (仅 SFT)</td>
+<td>23.65</td>
+<td>29.04</td>
+</tr>
+<tr class="odd">
+<td>Vision-R1</td>
+<td>25.32</td>
+<td>32.58</td>
+</tr>
+<tr class="even">
+<td><strong>Saliency-R1-7B</strong></td>
+<td><strong>30.08</strong></td>
+<td><strong>38.63</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Saliency-R1 的 Energy-PG 比 base model 提升 <strong>10.82%</strong>，PG 提升 <strong>14.14%</strong>。</p>
+<h3 id="45-消融实验">4.5 消融实验</h3>
+<table>
+<thead>
+<tr class="header">
+<th>变体</th>
+<th>Avg (9 benchmarks)</th>
+<th>MME</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Saliency-R1 (完整)</td>
+<td>最高</td>
+<td>高</td>
+</tr>
+<tr class="even">
+<td>w/o SFT (Saliency-R1-zero)</td>
+<td>显著下降</td>
+<td>下降</td>
+</tr>
+<tr class="odd">
+<td>w/o saliency reward (= Vision-R1)</td>
+<td>-1.5%</td>
+<td>较低</td>
+</tr>
+<tr class="even">
+<td>仅 saliency reward (Saliency-R1-pure)</td>
+<td>-0.6%</td>
+<td><strong>最高</strong></td>
+</tr>
+<tr class="odd">
+<td>w/o attention rollout (Saliency-R1-attn)</td>
+<td>下降</td>
+<td>下降</td>
+</tr>
+<tr class="even">
+<td>直接聚合 thinking tokens (Saliency-R1-think)</td>
+<td>下降</td>
+<td>下降</td>
+</tr>
+</tbody>
+</table>
+<p>关键发现：</p>
+<ul>
+<li><strong>SFT 冷启动至关重要</strong>：直接从 base 开始 GRPO 导致严重退化</li>
+<li><strong>Saliency reward 的正面效果</strong>：比 Vision-R1（无 saliency reward）高 1.5%</li>
+<li><strong>仅用 saliency reward 也有效</strong>：比完整版仅低 0.6%，且在 MME 上更好，可省去 LLM judge 成本</li>
+<li><strong>Attention rollout 不可省略</strong>：比直接聚合 thinking tokens 的效果更好</li>
+<li>Saliency reward 与 accuracy 有正相关：关注正确区域 → 更可能给出正确答案</li>
+</ul>
+<h3 id="46-鲁棒性分析">4.6 鲁棒性分析</h3>
+<ul>
+<li><strong>噪声鲁棒性</strong>：向 POPE/MME 图像注入不同强度高斯噪声，Saliency-R1 优于 base model</li>
+<li><strong>OOD 泛化</strong>：在医学 VQA（VQA-RAD）上也有提升</li>
+<li><strong>多跳推理</strong>：在 ReasonVQA（需要关注多个图像区域）上优于 base model</li>
+<li><strong>反事实分析</strong>：Saliency-R1 在前景像素注入噪声时性能下降更大，背景噪声时下降更小 → 确实更依赖前景</li>
+</ul>
+<h3 id="47-定性分析">4.7 定性分析</h3>
+<p>SFT 模型（Saliency-R1-CI）的推理过程往往<strong>不必要地冗长</strong>，包含大量重复和无关内容，稀释了注意力。Saliency-R1 的推理更<strong>简洁有针对性</strong>，注意力集中在关键区域。</p>
+<h2 id="5-关键图表本地资源">5. 关键图表（本地资源）</h2>
+<ul>
+<li><strong>动机图</strong>: <code>assets/.../teaser.png</code></li>
+<li><strong>方法框架</strong>: <code>assets/.../framework.png</code></li>
+<li><strong>主结果 + 定性对比</strong>: <code>assets/.../result.jpg</code></li>
+<li><strong>消融实验</strong>: <code>assets/.../ablation.png</code></li>
+</ul>
+<h2 id="6-优点与局限">6. 优点与局限</h2>
+<h3 id="优点">优点</h3>
+<ol type="1">
+<li><strong>高效 saliency map 生成</strong>：基于 logits 分解，无需额外前向/反向传播，可无缝集成到训练 pipeline</li>
+<li><strong>Attention rollout 机制</strong>：以 thinking tokens 为瓶颈追踪视觉信息流，揭示推理过程与视觉上下文的对齐</li>
+<li><strong>Saliency alignment reward 设计巧妙</strong>：用 bounding box 对齐度作为连续 reward，与 accuracy 正相关，可单独使用</li>
+<li><strong>可解释性与性能双赢</strong>：不仅提升任务性能，还显著增强推理过程的可解释性（PG +14.14%）</li>
+<li><strong>Saliency-R1-pure 的发现</strong>：仅用 saliency reward 就接近完整版效果，降低了 LLM judge 依赖</li>
+<li><strong>多维度提升</strong>：在幻觉检测（POPE）、OCR（ChartQA）、一般理解（MME）等 benchmark 上一致提升</li>
+<li><strong>开源代码</strong></li>
+</ol>
+<h3 id="局限">局限</h3>
+<ol type="1">
+<li><strong>SFT 数据规模受限</strong>：某些指标在 SFT 后反而下降，可通过收集更多样化的冷启动数据改善</li>
+<li><strong>Bounding box 标注较粗</strong>：更细粒度的分割标注（如 SAM 3）可能进一步提升性能</li>
+<li><strong>仅在较小 base model 上评估</strong>：3B/7B 模型，未测试更大规模</li>
+<li><strong>Saliency map 仅考虑直接贡献</strong>：忽略间接贡献（残差连接、FFN），理论上不是最忠实的</li>
+<li><strong>Alignment score 用 recall 而非 IoU</strong>：只考虑 bbox 内的 saliency 比例，未惩罚 bbox 外的过度激活</li>
+</ol>
+<h2 id="7-复现与工程实现要点">7. 复现与工程实现要点</h2>
+<ol type="1">
+<li><strong>代码</strong>：github.com/peterant330/Saliency_R1</li>
+<li><strong>训练流程</strong>：SFT 冷启动（Vision-R1-cold 子集，272K 样本）→ GRPO（saliency-r1-8k，8K 样本）</li>
+<li><strong>SFT 超参</strong>：2 epochs, lr=5e-5, Cosine scheduler, warmup 0.05, LoRA rank=128</li>
+<li><strong>GRPO 超参</strong>：3 epochs, lr=1e-5, batch=128, rollout=8, LoRA rank=8 (Q/V), KL=0.001</li>
+<li><strong>Saliency map 实现</strong>：
+<ul>
+<li>从 attention weights 和 KV cache 中提取，无需额外计算</li>
+<li>ReLU 过滤负贡献</li>
+<li>考虑 RMSNorm 的线性性质，直接对各 token 贡献应用 normalization</li>
+</ul></li>
+<li><strong>LLM judge</strong>：GPT-4o-mini 用于 accuracy reward</li>
+<li><strong>数据</strong>：SFT 数据来自 LLaVA-CoT + Mulberry，GRPO 数据来自 Visual-CoT</li>
+</ol>
+<h2 id="8-对当前项目的启发与可落地尝试">8. 对当前项目的启发与可落地尝试</h2>
+<ol type="1">
+<li><strong>Saliency map 作为可解释性工具可直接复用</strong>：logits 分解方法零额外成本，可集成到任何 VLM 的推理可视化中</li>
+<li><strong>Saliency alignment reward 是一种新的 process-level reward</strong>：不需要逐步验证，用粗粒度的人工标注（bounding box）就能提供有意义的训练信号，比 outcome-only reward 更丰富</li>
+<li><strong>Saliency-R1-pure 的可行性</strong>：仅用 saliency reward 就足够，这意味着可以省去 LLM judge 的成本，大幅降低训练开销</li>
+<li><strong>Thinking tokens 作为瓶颈的 attention rollout</strong>：揭示推理过程中视觉信息的流动，可作为分析工具用于理解任何 CoT VLM 的推理质量</li>
+<li><strong>SFT 冷启动 + GRPO 的标准范式</strong>：与 SkillRL、OPD 等论文一致，冷启动后做 RL 是当前 agent/VLM 训练的通用最佳实践</li>
+<li><strong>Bounding box 标注成本低</strong>：相比精细分割标注，bounding box 更易获取，证明了用粗粒标注引导细粒注意力的可行性</li>
+<li><strong>与 MemOCR 的联系</strong>：两者都关注视觉信息的高效利用——MemOCR 用视觉布局控制信息密度，Saliency-R1 用 saliency alignment 确保模型关注正确区域</li>
+<li><strong>可扩展到更精细标注</strong>：用 SAM 等工具提供的分割标签替代 bbox 可能进一步提升效果</li>
+</ol>
+</main></body></html>
