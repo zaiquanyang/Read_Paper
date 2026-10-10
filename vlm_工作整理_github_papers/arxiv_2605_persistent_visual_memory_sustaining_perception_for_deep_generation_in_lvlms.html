@@ -11,12 +11,7 @@
 <p>使用 Qwen3-VL-8B-Instruct 在 COCO 2017 验证集上设计 <strong>“Blind Painter”</strong> 压力测试——要求模型以极端细节文本重构图像，迫使每个生成步骤都依赖视觉检索。</p>
 <p>关键发现： - 对数尺度分析确认 <span class="math inline"><em>Ω</em><sub>𝒱</sub></span> 紧密遵循 <span class="math inline">𝒪(<em>t</em><sup> − 1</sup>)</span> 衰减轨迹 - 衰减在<strong>中间层（Layer 8-27）</strong>最为显著——这些层恰恰是多模态推理的主要位置 - Text-to-Vision Ratio（TVR）从线性增长阶段过渡到饱和平台，文本质量超视觉质量近两个数量级</p>
 <h3 id="现有方法的不足visual-injection-的代价">2.4 现有方法的不足：Visual Injection 的代价</h3>
-<p>以往方法（重新注入视觉 token、融合处理特征等）直接将视觉检索信号注入串行自回归路径。虽然短期内有效，但会<strong>干扰语言推理的连贯性</strong>——通过扰动逐步演化的语义状态来强化视觉存在，造成“强化视觉 vs 保持逻辑精度”的权衡。</p>
-<h3 id="两条设计洞察">2.5 两条设计洞察</h3>
-<ul>
-<li><strong>Insight 1</strong>：由于自回归流倾向于稀释视觉信号，应建立<strong>与主干推理隔离的并行记忆通路</strong></li>
-<li><strong>Insight 2</strong>：为防止文本在分区函数中主导，检索机制需要<strong>独立的注意力归一化</strong>，完全限定在视觉域内</li>
-</ul>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：3. 方法与框架（详细）</h2><h3 id="总体架构">3.1 总体架构</h3>
 <p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/PVM.png" alt="PVM 框架" /> <em>PVM 框架总览：PVM 与冻结的 FFN 并行，通过瓶颈适配器（Projection → Cross-Attn → FFN → Restoration）检索原始视觉嵌入，经可学习门控注入主流</em></p>
 <p>PVM 作为<strong>并行分支</strong>集成到 Transformer Decoder Block 中，与 FFN 子层并行：</p>
@@ -202,121 +197,5 @@
 </table>
 <p>用处理后的隐藏状态替代原始视觉嵌入导致<strong>灾难性崩溃</strong>（59.4→33.4）——重新整合文本主导的隐藏状态会产生破坏性的自反循环。</p>
 <p><strong>注入层策略消融</strong>：</p>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: left;">策略</th>
-<th style="text-align: left;">Layers</th>
-<th style="text-align: center;">General</th>
-<th style="text-align: center;">Reasoning</th>
-<th style="text-align: center;">Avg.</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Peak Attention</td>
-<td style="text-align: left;">13, 17, 18</td>
-<td style="text-align: center;">72.9</td>
-<td style="text-align: center;">60.9</td>
-<td style="text-align: center;">68.4</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Max Decay</td>
-<td style="text-align: left;">14, 19, 22</td>
-<td style="text-align: center;">74.2</td>
-<td style="text-align: center;">61.2</td>
-<td style="text-align: center;">69.3</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><strong>Strided (Ours)</strong></td>
-<td style="text-align: left;"><strong>8, 16, 24</strong></td>
-<td style="text-align: center;"><strong>75.2</strong></td>
-<td style="text-align: center;"><strong>63.0</strong></td>
-<td style="text-align: center;"><strong>70.6</strong></td>
-</tr>
-</tbody>
-</table>
-<p>Strided 策略优于 Peak Attention 和 Max Decay——跨网络全深度的全局覆盖比在峰值/衰减最剧烈层集中注入更有效。</p>
-<p><strong>潜在维度消融</strong>：</p>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: left;">维度 <span class="math inline"><em>d</em>′</span></th>
-<th style="text-align: center;">General</th>
-<th style="text-align: center;">Reasoning</th>
-<th style="text-align: center;">Avg.</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;"><strong>512 (Ours)</strong></td>
-<td style="text-align: center;"><strong>75.2</strong></td>
-<td style="text-align: center;"><strong>63.0</strong></td>
-<td style="text-align: center;"><strong>70.6</strong></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">1024</td>
-<td style="text-align: center;">73.8</td>
-<td style="text-align: center;">61.4</td>
-<td style="text-align: center;">69.2</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">2048</td>
-<td style="text-align: center;">74.7</td>
-<td style="text-align: center;">61.6</td>
-<td style="text-align: center;">69.8</td>
-</tr>
-</tbody>
-</table>
-<p>增大维度反而退化——数据-容量不匹配：更大参数空间需要成比例的更多监督信号。</p>
-<p><strong>等参数控制</strong>：</p>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: left;">模型</th>
-<th style="text-align: center;">Avg.</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">SFT + GRPO</td>
-<td style="text-align: center;">68.3</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">MLP (SFT+GRPO)</td>
-<td style="text-align: center;">69.0</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><strong>PVM-8B (SFT+GRPO)</strong></td>
-<td style="text-align: center;"><strong>71.5</strong></td>
-</tr>
-</tbody>
-</table>
-<p>等参数 MLP 基线仅提升 +0.7pp，而 PVM 提升 +3.2pp——增益来自主动视觉检索机制而非单纯增加参数。</p>
-<h3 id="推理开销">4.6 推理开销</h3>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: left;">指标</th>
-<th style="text-align: center;">Baseline (Qwen3-VL)</th>
-<th style="text-align: center;">PVM-Enhanced</th>
-<th style="text-align: center;">Delta</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Throughput</td>
-<td style="text-align: center;">41.18 tokens/s</td>
-<td style="text-align: center;">39.28 tokens/s</td>
-<td style="text-align: center;">-4.61%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">TPOT</td>
-<td style="text-align: center;">24.28 ms</td>
-<td style="text-align: center;">25.46 ms</td>
-<td style="text-align: center;">+1.18 ms</td>
-</tr>
-</tbody>
-</table>
-<p>参数高效瓶颈设计使推理开销极小——仅增加 1.18ms/token。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

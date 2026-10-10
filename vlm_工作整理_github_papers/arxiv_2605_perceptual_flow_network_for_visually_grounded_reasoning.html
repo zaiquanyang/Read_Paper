@@ -97,19 +97,7 @@
 <p>其中： - <span class="math inline"><em>p</em><sub><em>ϕ</em></sub><sup>+</sup>(<em>z</em><sub><em>i</em></sub>) = <em>p</em><sub><em>ϕ</em></sub>(<em>c</em><sub><em>i</em></sub>|<em>I</em><sub><em>r</em><sub><em>i</em></sub></sub>)</span>：裁剪区域的 caption 似然（正例） - <span class="math inline"><em>p</em><sub><em>ϕ</em></sub><sup>−</sup>(<em>z</em><sub><em>i</em></sub>) = <em>p</em><sub><em>ϕ</em></sub>(<em>c</em><sub><em>i</em></sub>|<em>I</em> \ <em>I</em><sub><em>r</em><sub><em>i</em></sub></sub>)</span>：互补区域的 caption 似然（负例）</p>
 <p><strong>关键洞察</strong>：对比项本质上是一种<strong>特权信息蒸馏</strong>——在 reverse-KL 意义上，鼓励策略分布更接近裁剪区域的教师分布，同时远离噪声区域的分布。这促进视觉锚定且语义具体的 caption，抑制语言先验诱导的通用描述。</p>
 <p><strong>推理效用项</strong>：衡量 flow 提供的<strong>信息增益</strong>——最大化 <span class="math inline">log <em>p</em><sub><em>ϕ</em></sub>(<em>Y</em>|<em>z</em><sub>0 : <em>k</em></sub>⊤, <em>X</em>)</span> 倾向于选择对推导目标答案 <span class="math inline"><em>Y</em></span> 更有用的感知流。</p>
-<h3 id="vicinal-geometric-shaping领域几何塑形">3.5 Vicinal Geometric Shaping（领域几何塑形）</h3>
-<p>定义 <strong>Chamfer IoU 距离</strong>： <span class="math display"><em>d</em><sub><em>I</em><em>o</em><em>U</em></sub>(<em>A</em>, <em>B</em>) = 1 − 0.5 × (<em>I</em><em>o</em><em>U</em><sub><em>A</em> → <em>B</em></sub> + <em>I</em><em>o</em><em>U</em><sub><em>B</em> → <em>A</em></sub>)</span></p>
-<p>引入 <span class="math inline"><em>ε</em></span>-领域球 <span class="math inline">ℬ<sub><em>ε</em></sub>(<em>E</em>) = {<em>z</em><sub>0 : <em>k</em></sub>|<em>d</em><sub><em>I</em><em>o</em><em>U</em></sub>(<em>r</em><sub>1 : <em>k</em></sub>, <em>E</em>) ≤ <em>ε</em>}</span>，并定义能量权重： <span class="math display"><em>ω</em><sub><em>λ</em></sub>(<em>z</em><sub>0 : <em>k</em></sub>, <em>E</em>) = exp ( − <em>λ</em> ⋅ 𝕀(<em>z</em><sub>0 : <em>k</em></sub> ∉ ℬ<sub><em>ε</em></sub>(<em>E</em>)))</span></p>
-<p><strong>塑形后奖励</strong>： <span class="math display"><em>R</em><sub><em>λ</em></sub>(<em>z</em><sub>0 : <em>k</em></sub>⊤) = <em>R</em>(<em>z</em><sub>0 : <em>k</em></sub>⊤) ⋅ <em>ω</em><sub><em>λ</em></sub>(<em>z</em><sub>0 : <em>k</em></sub>, <em>E</em>)</span></p>
-<ul>
-<li>仅惩罚超出领域范围的轨迹，允许领域内的充分探索</li>
-<li>不同于严格 KL 正则化——更灵活，允许发现高效用感知行为</li>
-<li><span class="math inline"><em>ε</em> = 0.5, <em>λ</em> = 4.5</span> 为最优超参数设置</li>
-</ul>
-<h3 id="理论分析">3.6 理论分析</h3>
-<p><strong>定理 1（TV 距离界）</strong>：在理想化假设下，PFlowNet 的策略 <span class="math inline"><em>p</em><sub><em>θ</em><sup>*</sup></sub>(<em>Z</em>|<em>X</em>)</span> 与目标后验 <span class="math inline"><em>P</em><sub><em>V</em></sub>(<em>Z</em>|<em>X</em>, <em>Y</em>)</span> 之间的总变分距离存在上界，该界依赖于 <span class="math inline"><em>λ</em></span>、<span class="math inline"><em>ε</em></span>、有效维度 <span class="math inline"><em>d</em><sub><em>e</em><em>f</em><em>f</em></sub></span> 及有效支撑质量 <span class="math inline"><em>s</em><sub><em>V</em></sub></span>。</p>
-<p><strong>极限分析</strong>： - <span class="math inline"><em>λ</em> → 0</span>：退化为标准 MLE（<span class="math inline"><em>D</em><sub><em>T</em><em>V</em></sub> → 1 − <em>s</em><sub><em>V</em></sub></span>） - <span class="math inline"><em>λ</em> → ∞</span>：退化为专家引导的 RLVR（<span class="math inline"><em>D</em><sub><em>T</em><em>V</em></sub> → 1 − <em>q</em></span>，<span class="math inline"><em>q</em></span> 衡量专家偏差） - <span class="math inline"><em>ε</em> → 0</span>：领域收缩为奇点，奖励信号失去信息性 - <span class="math inline"><em>ε</em></span> 超过容忍度 <span class="math inline"><em>σ</em></span>：包含无效区域，稀释几何引导</p>
-<p><strong>定理 2（保证改进）</strong>：对适当校准的 <span class="math inline"><em>λ</em><sup>*</sup></span> 和 <span class="math inline"><em>ε</em></span>，PFlowNet 严格收紧标准 MLE 和专家引导 RLVR 的 TV 距离界。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">实验与核心结论：4. 实验分析（详细）</h2><h3 id="主结果">4.1 主结果</h3>
 <p><strong>基础模型</strong>：Qwen3-VL-8B</p>
 <h4 id="通用视觉任务treebench-mme-realworld-lite">通用视觉任务（TreeBench + MME-RealWorld-Lite）</h4>

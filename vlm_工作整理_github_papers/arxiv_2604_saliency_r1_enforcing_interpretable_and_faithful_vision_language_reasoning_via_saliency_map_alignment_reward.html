@@ -224,55 +224,5 @@
 </table>
 <p>Saliency-R1 的 Energy-PG 比 base model 提升 <strong>10.82%</strong>，PG 提升 <strong>14.14%</strong>。</p>
 <h3 id="消融实验">4.5 消融实验</h3>
-<table>
-<thead>
-<tr class="header">
-<th>变体</th>
-<th>Avg (9 benchmarks)</th>
-<th>MME</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Saliency-R1 (完整)</td>
-<td>最高</td>
-<td>高</td>
-</tr>
-<tr class="even">
-<td>w/o SFT (Saliency-R1-zero)</td>
-<td>显著下降</td>
-<td>下降</td>
-</tr>
-<tr class="odd">
-<td>w/o saliency reward (= Vision-R1)</td>
-<td>-1.5%</td>
-<td>较低</td>
-</tr>
-<tr class="even">
-<td>仅 saliency reward (Saliency-R1-pure)</td>
-<td>-0.6%</td>
-<td><strong>最高</strong></td>
-</tr>
-<tr class="odd">
-<td>w/o attention rollout (Saliency-R1-attn)</td>
-<td>下降</td>
-<td>下降</td>
-</tr>
-<tr class="even">
-<td>直接聚合 thinking tokens (Saliency-R1-think)</td>
-<td>下降</td>
-<td>下降</td>
-</tr>
-</tbody>
-</table>
-<p>关键发现： - <strong>SFT 冷启动至关重要</strong>：直接从 base 开始 GRPO 导致严重退化 - <strong>Saliency reward 的正面效果</strong>：比 Vision-R1（无 saliency reward）高 1.5% - <strong>仅用 saliency reward 也有效</strong>：比完整版仅低 0.6%，且在 MME 上更好，可省去 LLM judge 成本 - <strong>Attention rollout 不可省略</strong>：比直接聚合 thinking tokens 的效果更好 - Saliency reward 与 accuracy 有正相关：关注正确区域 → 更可能给出正确答案</p>
-<h3 id="鲁棒性分析">4.6 鲁棒性分析</h3>
-<ul>
-<li><strong>噪声鲁棒性</strong>：向 POPE/MME 图像注入不同强度高斯噪声，Saliency-R1 优于 base model</li>
-<li><strong>OOD 泛化</strong>：在医学 VQA（VQA-RAD）上也有提升</li>
-<li><strong>多跳推理</strong>：在 ReasonVQA（需要关注多个图像区域）上优于 base model</li>
-<li><strong>反事实分析</strong>：Saliency-R1 在前景像素注入噪声时性能下降更大，背景噪声时下降更小 → 确实更依赖前景</li>
-</ul>
-<h3 id="定性分析">4.7 定性分析</h3>
-<p>SFT 模型（Saliency-R1-CI）的推理过程往往<strong>不必要地冗长</strong>，包含大量重复和无关内容，稀释了注意力。Saliency-R1 的推理更<strong>简洁有针对性</strong>，注意力集中在关键区域。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>
