@@ -1,17 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Persistent Visual Memory Sustaining Perception For Deep Generation In Lvlms</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style><script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]]},svg:{fontCache:"global"}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="persistent-visual-memory-sustaining-perception-for-deep-generation-in-lvlms">Persistent Visual Memory: Sustaining Perception for Deep Generation in LVLMs</h1><section class="paper-summary"><div class="summary-block"><h3>问题与动机</h3><p>2.1 核心问题：视觉信号稀释（Visual Signal Dilution） 自回归 LVLM（如 Qwen3-VL、InternVL）在多模态任务上取得显著进步，但在深层生成（deep generation）场景——长对话、多步推理链——中面临一个根本性问题：视觉信号稀释。 在标准自回归框架中，视觉 token 作为固定的前驱 token 一次性注入序列开头，而文本 token 在生成过程中不断自我补充。随着文本历史累积，注意力的 Softmax 归一化机制将概率质量重新分配到越来越多的 token 上，导致视觉信号逐渐衰减。 2.2 理论分析：幂律衰减 本文对这一现象进行了严格的数学推导： 定义视觉注意力质量（Visual Attention Mass）： $$\Omega{\mathcal{V}}(t)</p></div><div class="summary-block"><h3>方法框架</h3><p>3.1 总体架构 PVM 框架总览：PVM 与冻结的 FFN 并行，通过瓶颈适配器（Projection → Cross-Attn → FFN → Restoration）检索原始视觉嵌入，经可学习门控注入主流 PVM 作为并行分支集成到 Transformer Decoder Block 中，与 FFN 子层并行： - 推理路径（原始 FFN）：冻结 FFN 处理隐藏状态，访问预训练静态知识和逻辑模式 - 视觉检索路径（PVM）：同一隐藏状态作为 Query，检索原始视觉嵌入 3.2 PVM 计算过程 三阶段计算： 1. 投影（Projection）：将输入隐藏状态和视觉特征降维到低维潜在空间 $d&#x27; &lt; d$ $$\mathbf{x}{\mathrm{lat}} = \mathbf{x} \mathbf{W</p></div><div class="summary-block"><h3>实验与结论</h3><p>4.1 实验设置 基座模型：Qwen3-VL-Instruct（4B 和 8B） 训练数据： - SFT 阶段：526K 样本（来自 OpenMMReasoner-SFT） - GRPO 阶段：3.6K 复杂推理 query（来自 MMK12、ThinkLite-VL-hard、ViRL39K、We-Math2.0-Pro） 训练流程： - Stage I（视觉记忆对齐，SFT）：冻结 backbone，仅优化 PVM 模块和门控标量 - Stage II（策略精炼，GRPO）：解冻 LLM backbone 和 PVM（Vision Encoder 保持冻结） 评估 Benchmark：MMMU、MMBench-CN/EN、MMStar、MMT、MathVerse、MathVision、AI2D（共 8 个）</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
-<h2 id="基本信息">1. 基本信息</h2>
-<ul>
-<li>arXiv ID: 2605.00814</li>
-<li>URL (abs/pdf): <a href="https://arxiv.org/abs/2605.00814">abs</a> / <a href="https://arxiv.org/pdf/2605.00814.pdf">pdf</a></li>
-<li>主题目录: vlm</li>
-<li>总结粒度: detailed</li>
-<li>发表会议: NeurIPS 2026</li>
-<li>作者团队: Shanghai AI Laboratory &amp; 上海交通大学 &amp; 香港中文大学 &amp; 南京大学 &amp; 同济大学 &amp; 武汉大学</li>
-<li>方法名: <strong>PVM</strong>（Persistent Visual Memory）</li>
-<li>代码: <a href="https://github.com/huaixuheqing/PVM">github.com/huaixuheqing/PVM</a></li>
-</ul>
-<h2 id="背景与动机详细">2. 背景与动机（详细）</h2>
-<h3 id="核心问题视觉信号稀释visual-signal-dilution">2.1 核心问题：视觉信号稀释（Visual Signal Dilution）</h3>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Persistent Visual Memory: Sustaining Perception for Deep Generation in LVLMs</title><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--muted:#555;--accent:#2d6cdf;--light:#e8f0fe;--border:#e2e8f0}*{box-sizing:border-box}body{margin:0;padding:2rem 1rem;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}.container{max-width:960px;margin:auto}.back{margin-bottom:1rem}.back a{color:var(--accent);text-decoration:none;font-weight:700}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px #0000000d;padding:clamp(1.25rem,3vw,2rem)}h1{font-size:1.65rem;line-height:1.35;margin:0 0 .8rem}.meta-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1.2rem;font-size:.84rem}.tag,.meta-row a{padding:2px 9px;border-radius:99px;background:var(--light);color:var(--accent);text-decoration:none;font-weight:700}.summary-box{background:#f0f7ff;border-left:4px solid var(--accent);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1.4rem}.section-title{font-size:1.12rem;margin:1.4rem 0 .6rem;border-bottom:1px dashed var(--border);padding-bottom:.3rem}.paper-card p,.paper-card li{font-size:.93rem;color:#333}.paper-card img{display:block;max-width:100%;height:auto;margin:1rem auto;border:1px solid var(--border);border-radius:8px}.paper-card table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}.paper-card th,.paper-card td{border:1px solid var(--border);padding:6px 9px}.paper-card th{background:var(--light)}.paper-card code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.pros-cons>div{padding:.7rem .9rem;border-radius:8px}.pros{background:#f0fdf4;border-left:3px solid #22c55e}.cons{background:#fef2f2;border-left:3px solid #ef4444}@media(max-width:640px){.pros-cons{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><article class="paper-card"><h1>Persistent Visual Memory: Sustaining Perception for Deep Generation in LVLMs</h1><div class="meta-row"><span class="tag">VLM</span><span class="tag">视觉推理</span><span class="tag">多模态</span><a href="https://arxiv.org/abs/2605.00814">arXiv 2605.00814</a></div><div class="summary-box"><strong>核心问题：</strong><h3 id="核心问题视觉信号稀释visual-signal-dilution">2.1 核心问题：视觉信号稀释（Visual Signal Dilution）</h3>
 <p>自回归 LVLM（如 Qwen3-VL、InternVL）在多模态任务上取得显著进步，但在<strong>深层生成</strong>（deep generation）场景——长对话、多步推理链——中面临一个根本性问题：<strong>视觉信号稀释</strong>。</p>
 <p>在标准自回归框架中，视觉 token 作为固定的前驱 token 一次性注入序列开头，而文本 token 在生成过程中不断自我补充。随着文本历史累积，注意力的 Softmax 归一化机制将概率质量重新分配到越来越多的 token 上，导致视觉信号逐渐衰减。</p>
 <h3 id="理论分析幂律衰减">2.2 理论分析：幂律衰减</h3>
@@ -30,8 +17,7 @@
 <li><strong>Insight 1</strong>：由于自回归流倾向于稀释视觉信号，应建立<strong>与主干推理隔离的并行记忆通路</strong></li>
 <li><strong>Insight 2</strong>：为防止文本在分区函数中主导，检索机制需要<strong>独立的注意力归一化</strong>，完全限定在视觉域内</li>
 </ul>
-<h2 id="方法与框架详细">3. 方法与框架（详细）</h2>
-<h3 id="总体架构">3.1 总体架构</h3>
+</div><h2 class="section-title">方法框架：3. 方法与框架（详细）</h2><h3 id="总体架构">3.1 总体架构</h3>
 <p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/PVM.png" alt="PVM 框架" /> <em>PVM 框架总览：PVM 与冻结的 FFN 并行，通过瓶颈适配器（Projection → Cross-Attn → FFN → Restoration）检索原始视觉嵌入，经可学习门控注入主流</em></p>
 <p>PVM 作为<strong>并行分支</strong>集成到 Transformer Decoder Block 中，与 FFN 子层并行：</p>
 <ul>
@@ -58,8 +44,7 @@
 <li><strong>瓶颈维度</strong>：<span class="math inline"><em>d</em>′ = 512</span>（消融验证最优，增大反而因数据-容量不匹配退化）</li>
 <li><strong>参数开销</strong>：仅增加 27.92M 参数（~0.32% 的 8B 模型大小）</li>
 </ul>
-<h2 id="实验分析详细">4. 实验分析（详细）</h2>
-<h3 id="实验设置">4.1 实验设置</h3>
+<h2 class="section-title">实验与核心结论：4. 实验分析（详细）</h2><h3 id="实验设置">4.1 实验设置</h3>
 <p><strong>基座模型</strong>：Qwen3-VL-Instruct（4B 和 8B）</p>
 <p><strong>训练数据</strong>： - SFT 阶段：526K 样本（来自 OpenMMReasoner-SFT） - GRPO 阶段：3.6K 复杂推理 query（来自 MMK12、ThinkLite-VL-hard、ViRL39K、We-Math2.0-Pro）</p>
 <p><strong>训练流程</strong>： - Stage I（视觉记忆对齐，SFT）：冻结 backbone，仅优化 PVM 模块和门控标量 - Stage II（策略精炼，GRPO）：解冻 LLM backbone 和 PVM（Vision Encoder 保持冻结）</p>
@@ -334,61 +319,4 @@
 </tbody>
 </table>
 <p>参数高效瓶颈设计使推理开销极小——仅增加 1.18ms/token。</p>
-<h2 id="关键图表本地资源">5. 关键图表（本地资源）</h2>
-<h3 id="视觉记忆机制对比">5.1 视觉记忆机制对比</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/pvm_intro.png" alt="Intro" /> <em>三种视觉记忆机制对比：Standard LVLM 退化为视觉稀释、Injection 方法造成串行干扰、PVM 建立独立检索通路</em></p>
-<h3 id="pvm-框架">5.2 PVM 框架</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/PVM.png" alt="PVM" /> <em>PVM 完整框架：并行于冻结 FFN 的瓶颈适配器，通过 Silencing Mask 选择性激活</em></p>
-<h3 id="视觉信号幂律衰减">5.3 视觉信号幂律衰减</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/attention_lineplot_log.png" alt="衰减趋势" /> <em>对数尺度分析确认 <span class="math inline"><em>Ω</em><sub>𝒱</sub></span> 紧密遵循 <span class="math inline">𝒪(<em>t</em><sup> − 1</sup>)</span> 幂律衰减</em></p>
-<h3 id="文本主导演化">5.4 文本主导演化</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/tvr_growth_analysis.png" alt="TVR" /> <em>Text-to-Vision Ratio 从线性增长到饱和平台——视觉信号被文本先验以数量级压制</em></p>
-<h3 id="层级注意力热力图">5.5 层级注意力热力图</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/attention_heatmap.png" alt="Heatmap" /> <em>36 层 Qwen3-VL 的视觉注意力质量热力图——中间层（8-27）衰减最显著</em></p>
-<h3 id="层级分布">5.6 层级分布</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/layer_profile.png" alt="Layer Profile" /> <em>各层平均视觉注意力质量分布——“Rise-Peak-Decay”模式指导注入层选择</em></p>
-<h3 id="长度-增益相关性">5.7 长度-增益相关性</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/analysis_length.png" alt="长度分析" /> <em>相对增益随 token 长度单调递增——“Long”组达 +27.3%</em></p>
-<h3 id="logitlens-收敛分析">5.8 LogitLens 收敛分析</h3>
-<p><img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/logitlens_comparison_pro.png" alt="LogitLens" /> <em>PVM 加速内部预测收敛——注入层后出现明显 Improvement Gap</em></p>
-<h2 id="优点与局限">6. 优点与局限</h2>
-<h3 id="优点">优点</h3>
-<ol type="1">
-<li><strong>严谨的理论分析</strong>：首次从注意力分区函数角度形式化推导视觉信号稀释的幂律衰减，并证明 PVM 的结构化缓解机制</li>
-<li><strong>架构设计优雅</strong>：并行于 FFN 的轻量级瓶颈适配器，不修改 backbone 结构，仅增加 0.32% 参数</li>
-<li><strong>显著且一致的实验增益</strong>：8B 模型 +4.8pp、4B 模型 +4.4pp，全面超越 Visual Injection 方法和 RL 推理模型</li>
-<li><strong>长度鲁棒性突出</strong>：长序列场景下增益达 +27.3%，直接验证了对视觉稀释的缓解效果</li>
-<li><strong>推理开销极小</strong>：TPOT 仅增加 1.18ms（+4.6%），参数高效设计确保实用性</li>
-<li><strong>消融实验严谨</strong>：检索源、注入层、潜在维度、等参数控制等多维度消融验证了设计选择的合理性</li>
-</ol>
-<h3 id="局限">局限</h3>
-<ol type="1">
-<li><strong>固定局部查询假设</strong>：理论保证依赖固定局部隐藏状态假设，全局自回归动态下的精确不变性未完全建模</li>
-<li><strong>仅验证 Qwen3-VL</strong>：虽然设计理论上 backbone 无关，但实验仅在 Qwen3-VL（4B/8B）上验证</li>
-<li><strong>静态视觉上下文</strong>：当前仅处理固定图像输入，未扩展到动态流式输入（如长视频理解）</li>
-<li><strong>注入层选择经验性</strong>：Strided 策略优于 Peak/Max Decay，但最优位置的选择仍有经验成分</li>
-<li><strong>仅处理视觉稀释</strong>：未考虑其他视觉退化因素（如编码器信息损失、投影层瓶颈等）</li>
-</ol>
-<h2 id="复现与工程实现要点">7. 复现与工程实现要点</h2>
-<ol type="1">
-<li><strong>基座模型</strong>：Qwen3-VL-Instruct（4B/8B）</li>
-<li><strong>PVM 注入层</strong>：8B → {8, 16, 24}，4B → {5, 11, 17}</li>
-<li><strong>瓶颈维度</strong>：<span class="math inline"><em>d</em>′ = 512</span></li>
-<li><strong>门控初始化</strong>：<span class="math inline"><em>λ</em> = 0</span></li>
-<li><strong>训练数据</strong>：SFT 526K（OpenMMReasoner-SFT）+ GRPO 3.6K（MMK12 + ThinkLite-VL-hard + ViRL39K + We-Math2.0-Pro）</li>
-<li><strong>SFT 超参</strong>：AdamW, lr=1e-4, Cosine, warmup=0.1, batch=64, ZeRO-2</li>
-<li><strong>GRPO 超参</strong>：AdamW, lr=1e-6, Constant, group_size=8, KL_coef=0, batch=64, ZeRO-3</li>
-<li><strong>硬件</strong>：8×H200-141GB, FlashAttention-2, gradient checkpointing</li>
-<li><strong>代码</strong>：<a href="https://github.com/huaixuheqing/PVM">github.com/huaixuheqing/PVM</a></li>
-</ol>
-<h2 id="对当前项目的启发与可落地尝试">8. 对当前项目的启发与可落地尝试</h2>
-<ol type="1">
-<li><strong>“并行记忆通路”的通用架构原则</strong>：PVM 证明了在自回归流中建立与主干推理隔离的并行信息检索通路可以有效对抗长序列信息衰减。这一原则可以推广到任何需要在长上下文生成中保持特定信号保真度的场景——例如长期对话 Agent 需要持续访问用户画像或历史事实</li>
-<li><strong>注意力分区函数分析框架</strong>：将视觉信号稀释形式化为分区函数中的概率质量竞争问题，这一分析框架可以应用于分析 Agent 在多轮对话中对工具定义、环境描述等静态上下文的遗忘问题</li>
-<li><strong>“跨深度全局注入”优于“峰值集中注入”</strong>：Strided 策略（均匀跨网络深度）优于 Peak Attention 和 Max Decay 策略——这提示在设计信息注入/检索机制时，覆盖处理阶段的全局分布比在最显著位置集中更有效</li>
-<li><strong>Silencing Mask 的选择性激活设计</strong>：仅对文本 token 触发视觉检索，防止视觉 token 的冗余自引用——这一“仅在需要时激活”的门控设计可以推广到 Agent 的条件性工具调用、选择性记忆检索等场景</li>
-<li><strong>GRPO 用于视觉 grounding 强化</strong>：Stage II 使用 GRPO 解冻 backbone 并精炼主动视觉检索策略——这与 GUI-SD 中用 GRPO/OPSD 优化 GUI grounding 的思路一致，可以考虑将 PVM 与 GUI-SD 结合用于长对话 GUI Agent</li>
-<li><strong>参数效率 vs 检索质量的权衡</strong>：<span class="math inline"><em>d</em>′ = 512</span> 是最优平衡点，增大反而因数据-容量不匹配退化——这提示在设计 Agent 的记忆/检索模块时，瓶颈维度应与可用训练数据规模匹配，而非一味追求更大容量</li>
-<li><strong>与 MemRouter 的互补性</strong>：PVM 解决的是“已知视觉信息在长序列中的衰减”问题，而 MemRouter 解决的是“多条记忆之间的路由选择”问题——两者可以组合：PVM 确保被选中记忆的信号保真度，MemRouter 确保选择正确记忆</li>
-</ol>
-</div></div></details></div></main></body></html>
+<h2 class="section-title">论文信息</h2></article></div></body></html>
