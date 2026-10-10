@@ -20,13 +20,8 @@
 <li>强 teacher 合成高质量数据</li>
 <li>再做额外 cold-start SFT</li>
 </ul></li>
-<li>但这样有个问题：
-<ul>
-<li>你很难分清性能提升到底来自 RL，还是来自 teacher distillation</li>
-</ul></li>
 </ol>
-<p>所以作者要做的是：</p>
-<p><strong>不加冷启动蒸馏阶段，直接在 AR-Diffusion unified model 上做 GRPO，看看能不能把这些 latent capability 激活出来。</strong></p>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：5. 方法总览</h2><figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /><figcaption aria-hidden="true">AlphaGRPO overview</figcaption>
 </figure>
@@ -165,41 +160,5 @@
 </ul>
 <h3 id="image-editing没专门训-editing也能涨">9.2 Image editing：没专门训 editing，也能涨</h3>
 <p>GEdit-Bench 上：</p>
-<table>
-<thead>
-<tr class="header">
-<th>Model</th>
-<th style="text-align: right;">G_SC</th>
-<th style="text-align: right;">G_PQ</th>
-<th style="text-align: right;">G_O</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>BAGEL</td>
-<td style="text-align: right;">7.36</td>
-<td style="text-align: right;">6.83</td>
-<td style="text-align: right;">6.52</td>
-</tr>
-<tr class="even">
-<td>AlphaGRPO (RT2I)</td>
-<td style="text-align: right;">7.54</td>
-<td style="text-align: right;">7.18</td>
-<td style="text-align: right;">6.85</td>
-</tr>
-<tr class="odd">
-<td>AlphaGRPO (SRR)</td>
-<td style="text-align: right;"><strong>7.67</strong></td>
-<td style="text-align: right;"><strong>7.46</strong></td>
-<td style="text-align: right;"><strong>7.08</strong></td>
-</tr>
-</tbody>
-</table>
-<p>这个结果很有说服力，因为作者说：</p>
-<ul>
-<li>没有在 editing task 上专门训练</li>
-<li>但 SRR 训练仍然显著提升 editing benchmark</li>
-</ul>
-<p>这进一步说明：</p>
-<p><strong>它强化的不是某个 narrow task，而是更一般的“看懂指令 - 发现偏差 - 做修正”能力。</strong></p>
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

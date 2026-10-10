@@ -12,16 +12,7 @@ think-answer VLM 的推理链很长，前面已经生成出来的大量文字本
 </blockquote>
 <p>这也是论文标题 <code>Hide to See</code> 的意思：<strong>先把容易偷懒用的文本线索藏起来，student 才会重新去“看”。</strong></p>
 <h3 id="论文用什么证据支持这个动机">2.1 论文用什么证据支持这个动机</h3>
-<ul>
-<li><code>intro_1_aa.png</code> 显示 naive distillation 下，随着 response 前缀不断累积，reverse KL 逐渐下降，说明后续 token 越来越容易靠已有文本上下文模仿出来。</li>
-<li><code>intro_warp.png</code> 显示每一步 next-token prediction 往往只依赖极少数高注意力 prefix token，说明存在明显的 salient textual cue。</li>
-<li>Appendix 里的 <code>training_loss.png</code> 进一步说明：<strong>mask response prefix</strong> 会显著放大 distillation loss，而 mask visual/question token 则不会，这说明 student 主要在“吃文本 shortcut”，不是主要在吃视觉信息。</li>
-</ul>
-<h3 id="一张图看懂问题设定">2.2 一张图看懂问题设定</h3>
-<figure>
-<img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_hide_to_see_reasoning_prefix_masking_for_visual_anchored_thinking_in_vlm_distillation/intro_10.png" alt="Reasoning-prefix masking intuition" /><figcaption aria-hidden="true">Reasoning-prefix masking intuition</figcaption>
-</figure>
-<p>这张图非常关键。左边是 naive distillation：student 可以直接看完整 reasoning prefix，于是当前 token 的预测主要靠前文文字。右边是 Masking-KD：把一部分 salient reasoning prefix 挡住后，student 为了继续模仿 teacher 的当前 token 分布，就必须更多看图。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：方法框架</h2><p>作者提出针对上述问题的视觉语言模型训练或推理框架。</p>
 <h2 class="section-title">实验与核心结论：实验与结论</h2><p>实验部分验证了方法在相关视觉语言任务上的有效性。</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

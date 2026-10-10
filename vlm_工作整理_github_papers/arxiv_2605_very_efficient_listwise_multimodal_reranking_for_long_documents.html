@@ -22,15 +22,7 @@
 </ul></li>
 </ol>
 <p>作者的核心观点是：</p>
-<blockquote>
-<p>现有工作很多只在“怎么让 reranking 更准”上发力，但对 long multimodal context 的推理路径做得还不够工程化。真正的高效方案，需要同时减少输入 token 和输出 token。</p>
-</blockquote>
-<p>所以 ZipRerank 不是只改一个点，而是做了一个比较完整的协同设计：</p>
-<ul>
-<li>训练时让模型学会“用第一步 logits 直接做 listwise ranking”</li>
-<li>推理时先做 query-aware visual token pruning</li>
-<li>最后只解一个 token，就把整组候选的排序分数拿出来</li>
-</ul>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：3. 方法总览</h2><figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_very_efficient_listwise_multimodal_reranking_for_long_documents/zipranker.png" alt="ZipRerank overview" /><figcaption aria-hidden="true">ZipRerank overview</figcaption>
 </figure>

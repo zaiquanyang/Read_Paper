@@ -79,12 +79,7 @@
 <li>模型再基于“少量、针对性的视觉证据”给出最终答案</li>
 </ul>
 <p>这个设计对应两种诊断结论：</p>
-<ul>
-<li>Stage I 主要应对 <strong>scaling paradox</strong></li>
-<li>Stage II 主要应对 <strong>modality paradox</strong></li>
-</ul>
-<p>换句话说，作者的观点不是“原始视觉上下文没用”，而是“原始视觉上下文不能粗暴堆进去，必须先组织，再按需访问”。</p>
-<hr />
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">实验与核心结论：7. 实验结果</h2><h3 id="gemma-4-31b-上的全任务结果">7.1 Gemma-4-31B 上的全任务结果</h3>
 <table>
 <thead>
@@ -225,11 +220,5 @@
 </ol>
 <h3 id="stage-ii-ablation-的含义">7.3 Stage-II ablation 的含义</h3>
 <p>从上表可以读出一个清楚结论：</p>
-<ul>
-<li><code>Descriptors only</code>：只保留文本 bank，不回看视觉证据，效果有限</li>
-<li><code>All evidence</code>：把所有 bank 证据都给模型，虽有提升，但不如自适应选择</li>
-<li><code>Adaptive evidence</code>：先 triage，再回看局部视觉证据，效果最好</li>
-</ul>
-<p>这说明真正有价值的不是“总结成文字”或“把所有图都给满”，而是<strong>让模型先做一次证据路由，再回到少量关键视觉证据上做核验</strong>。</p>
-<hr />
+<p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

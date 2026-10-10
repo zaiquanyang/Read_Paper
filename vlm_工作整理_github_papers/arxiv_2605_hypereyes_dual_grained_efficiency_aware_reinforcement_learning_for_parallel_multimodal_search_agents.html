@@ -32,13 +32,7 @@
 <li>只要答对了，就算好；</li>
 <li>至于中间用了多少轮工具、查了多少冗余信息、是不是把本来能并行的事情拆成串行，都没有被明确惩罚。</li>
 </ul>
-<p>所以模型很容易学出一种 brute-force 行为：</p>
-<ul>
-<li>能多搜就多搜；</li>
-<li>能再开一轮就再开一轮；</li>
-<li>最终虽然正确率上去了，但 latency 和工具调用成本非常差。</li>
-</ul>
-<p>HyperEyes 的核心贡献，就是把 <strong>效率</strong> 从一个隐含偏好，提升为训练目标里的第一类公民。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：3. 方法总览</h2><p>HyperEyes 整体由三块组成：</p>
 <ol type="1">
 <li>并行友好的动作空间：<code>Unified Grounded Search (UGS)</code></li>
