@@ -1,5 +1,5 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Saliency R1 Enforcing Interpretable And Faithful Vision Language Reasoning Via Saliency Map Alignment Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="saliency-r1-enforcing-interpretable-and-faithful-vision-language-reasoning-via-saliency-map-alignment-reward">Saliency-R1: Enforcing Interpretable and Faithful Vision-language Reasoning via Saliency-map Alignment Reward</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-基本信息">1. 基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Saliency R1 Enforcing Interpretable And Faithful Vision Language Reasoning Via Saliency Map Alignment Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="saliency-r1-enforcing-interpretable-and-faithful-vision-language-reasoning-via-saliency-map-alignment-reward">Saliency-R1: Enforcing Interpretable and Faithful Vision-language Reasoning via Saliency-map Alignment Reward</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2604.04500 URL (abs/pdf): abs / pdf 主题目录: vlm 总结粒度: detailed 作者: Shizhan Gong, Minda Hu, Qiyuan Zhang, Chen Ma, Qi Dou (CUHK / CityU Hong Kong) 会议: CVPR 2026 代码: https://github.com/peterant330/Saliency_R1</p></div><div class="summary-block"><h3>核心结论</h3><p>Saliency map 作为可解释性工具可直接复用 ：logits 分解方法零额外成本，可集成到任何 VLM 的推理可视化中 Saliency alignment reward 是一种新的 process-level reward ：不需要逐步验证，用粗粒度的人工标注（bounding box）就能提供有意义的训练信号，比 outcome-only reward 更丰富 Saliency-R1-pure 的可行性 ：仅用 salien</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="基本信息">1. 基本信息</h2>
 <ul>
 <li>arXiv ID: 2604.04500</li>
 <li>URL (abs/pdf): <a href="https://arxiv.org/abs/2604.04500">abs</a> / <a href="https://arxiv.org/pdf/2604.04500.pdf">pdf</a></li>
@@ -7,66 +7,46 @@
 <li>总结粒度: detailed</li>
 <li>作者: Shizhan Gong, Minda Hu, Qiyuan Zhang, Chen Ma, Qi Dou (CUHK / CityU Hong Kong)</li>
 <li>会议: CVPR 2026</li>
-<li>代码: <a href="https://github.com/peterant330/Saliency_R1">https://github.com/peterant330/Saliency_R1</a></li>
+<li>代码: https://github.com/peterant330/Saliency_R1</li>
 </ul>
-<h2 id="2-背景与动机详细">2. 背景与动机（详细）</h2>
-<h3 id="21-任务定义与应用场景">2.1 任务定义与应用场景</h3>
-<p>VLM 在多模态推理中取得显著进展，但其可信度面临两个核心挑战：</p>
-<ol type="1">
-<li><strong>过度依赖文本线索</strong>：视觉信号在推理中扮演的角色相对较小</li>
-<li><strong>幻觉问题</strong>：模型生成未被图像支持的内容</li>
-</ol>
-<p>当前 VLM 推理使用 Chain-of-Thought (CoT) 或类似 DeepSeek-R1 的推理机制生成自然语言解释 (NLE)，但研究表明这些解释与最终答案之间可能存在不一致性——"思考"过程未必忠实反映解题过程。</p>
-<h3 id="22-核心洞察">2.2 核心洞察</h3>
-<p><strong>不同思维过程关注图像的不同区域，即使得出相同答案</strong>：</p>
-<ul>
-<li>有的推理真正关注与问题相关的区域</li>
-<li>有的关注不相关物体或背景</li>
-<li>后者本质上是对视觉信息的误用或幻觉</li>
-</ul>
-<p>本文的核心目标是：<strong>确保 VLM 的推理过程真正"看"到了正确的图像区域</strong>。</p>
-<p><img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/teaser.png" alt="动机图：不同思维过程关注不同区域" /></p>
-<h2 id="3-方法与框架详细">3. 方法与框架（详细）</h2>
-<h3 id="31-总体框架">3.1 总体框架</h3>
+<h2 id="背景与动机详细">2. 背景与动机（详细）</h2>
+<h3 id="任务定义与应用场景">2.1 任务定义与应用场景</h3>
+<p>VLM 在多模态推理中取得显著进展，但其可信度面临两个核心挑战： 1. <strong>过度依赖文本线索</strong>：视觉信号在推理中扮演的角色相对较小 2. <strong>幻觉问题</strong>：模型生成未被图像支持的内容</p>
+<p>当前 VLM 推理使用 Chain-of-Thought (CoT) 或类似 DeepSeek-R1 的推理机制生成自然语言解释 (NLE)，但研究表明这些解释与最终答案之间可能存在不一致性——“思考”过程未必忠实反映解题过程。</p>
+<h3 id="核心洞察">2.2 核心洞察</h3>
+<p><strong>不同思维过程关注图像的不同区域，即使得出相同答案</strong>： - 有的推理真正关注与问题相关的区域 - 有的关注不相关物体或背景 - 后者本质上是对视觉信息的误用或幻觉</p>
+<p>本文的核心目标是：<strong>确保 VLM 的推理过程真正“看”到了正确的图像区域</strong>。</p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/teaser.png" alt="动机图：不同思维过程关注不同区域" /><figcaption aria-hidden="true">动机图：不同思维过程关注不同区域</figcaption>
+</figure>
+<h2 id="方法与框架详细">3. 方法与框架（详细）</h2>
+<h3 id="总体框架">3.1 总体框架</h3>
 <p>Saliency-R1 包含三个核心组件：</p>
 <ol type="1">
 <li><strong>Token-level Saliency Map 生成</strong>：通过 logits 分解高效生成显著性图</li>
 <li><strong>Attention Rollout 聚合</strong>：以 thinking tokens 为瓶颈，追踪视觉信息如何流向答案</li>
 <li><strong>GRPO + Saliency Alignment Reward</strong>：用显著性图与人工标注 bounding box 的对齐度作为奖励信号</li>
 </ol>
-<p><img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /></p>
-<h3 id="32-token-level-saliency-map-生成logits-分解">3.2 Token-level Saliency Map 生成（Logits 分解）</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /><figcaption aria-hidden="true">方法框架</figcaption>
+</figure>
+<h3 id="token-level-saliency-map-生成logits-分解">3.2 Token-level Saliency Map 生成（Logits 分解）</h3>
 <p>基于 Transformer 架构，将 token logits 分解为各 context token 的一阶贡献：</p>
-<p>$$c_p = \sum_{l=1}^{L}\sum_{j=1}^{H}\alpha_{i,j,p}^l \mathbf{W}<em>{o,j}^l \mathbf{W}</em>{v,j}^l \mathbf{h}_p^{l-1} \mathbf{E}_u$$</p>
-<p>其中 $\alpha_{i,j,p}^l$ 是 attention 权重，$\mathbf{W}_o$ 和 $\mathbf{W}_v$ 是输出和值投影矩阵。</p>
-<p><strong>关键实现细节</strong>：</p>
-<ul>
-<li>仅选取视觉 token 对应的 $c_p$ 值，按 patch 顺序重排</li>
-<li>应用 ReLU 忽略负贡献</li>
-<li>不需要额外的前向或反向传播——attention 权重和 KV cache 中的值向量已天然可用</li>
-<li>虽然忽略间接贡献（残差连接、FFN 部分），但文献表明直接贡献占主导地位</li>
-</ul>
+<p><span class="math display">$$c_p = \sum_{l=1}^{L}\sum_{j=1}^{H}\alpha_{i,j,p}^l \mathbf{W}_{o,j}^l \mathbf{W}_{v,j}^l \mathbf{h}_p^{l-1} \mathbf{E}_u$$</span></p>
+<p>其中 <span class="math inline"><em>α</em><sub><em>i</em>, <em>j</em>, <em>p</em></sub><sup><em>l</em></sup></span> 是 attention 权重，<span class="math inline"><strong>W</strong><sub><em>o</em></sub></span> 和 <span class="math inline"><strong>W</strong><sub><em>v</em></sub></span> 是输出和值投影矩阵。</p>
+<p><strong>关键实现细节</strong>： - 仅选取视觉 token 对应的 <span class="math inline"><em>c</em><sub><em>p</em></sub></span> 值，按 patch 顺序重排 - 应用 ReLU 忽略负贡献 - 不需要额外的前向或反向传播——attention 权重和 KV cache 中的值向量已天然可用 - 虽然忽略间接贡献（残差连接、FFN 部分），但文献表明直接贡献占主导地位</p>
 <p><strong>计算效率</strong>：生成显著性图的额外开销几乎为零，使其能无缝集成到训练 pipeline 中。</p>
-<h3 id="33-attention-rolloutthinking-tokens-作为瓶颈">3.3 Attention Rollout：Thinking Tokens 作为瓶颈</h3>
-<p>推理模型先生成思维链 (thinking tokens)，再生成答案。本文假设：</p>
-<ul>
-<li>Thinking 过程从图像中提取信息</li>
-<li>答案基于 thinking 过程的总结</li>
-</ul>
+<h3 id="attention-rolloutthinking-tokens-作为瓶颈">3.3 Attention Rollout：Thinking Tokens 作为瓶颈</h3>
+<p>推理模型先生成思维链 (thinking tokens)，再生成答案。本文假设： - Thinking 过程从图像中提取信息 - 答案基于 thinking 过程的总结</p>
 <p>为了可视化这一流程，使用 attention rollout 追踪视觉信息如何通过 thinking tokens 流向答案：</p>
-<p>$$\tilde{\mathcal{A}}<em>{va}^{l,h} = \mathcal{A}</em>{vt}^{l,h} \cdot \mathcal{A}_{ta}^{l,h}$$</p>
-<p>其中 $\mathcal{A}<em>{vt}$ 是视觉→thinking 的注意力矩阵，$\mathcal{A}</em>{ta}$ 是 thinking→answer 的注意力矩阵。</p>
-<p><strong>关键设计</strong>：</p>
-<ul>
-<li><strong>不对列做归一化</strong>：某些 answer token（如介词）接收很少的 thinking 贡献，某些 thinking token 接收很少的视觉贡献，这些 token 自然在 holistic saliency map 中影响更小</li>
-<li><strong>直接求和</strong> per-token map 得到最终的 holistic saliency map</li>
-<li>低置信度的 answer token（logits 小）贡献也更少</li>
-</ul>
-<h3 id="34-grpo--saliency-alignment-reward">3.4 GRPO + Saliency Alignment Reward</h3>
+<p><span class="math display">$$\tilde{\mathcal{A}}_{va}^{l,h} = \mathcal{A}_{vt}^{l,h} \cdot \mathcal{A}_{ta}^{l,h}$$</span></p>
+<p>其中 <span class="math inline">𝒜<sub><em>v</em><em>t</em></sub></span> 是视觉→thinking 的注意力矩阵，<span class="math inline">𝒜<sub><em>t</em><em>a</em></sub></span> 是 thinking→answer 的注意力矩阵。</p>
+<p><strong>关键设计</strong>： - <strong>不对列做归一化</strong>：某些 answer token（如介词）接收很少的 thinking 贡献，某些 thinking token 接收很少的视觉贡献，这些 token 自然在 holistic saliency map 中影响更小 - <strong>直接求和</strong> per-token map 得到最终的 holistic saliency map - 低置信度的 answer token（logits 小）贡献也更少</p>
+<h3 id="grpo-saliency-alignment-reward">3.4 GRPO + Saliency Alignment Reward</h3>
 <p><strong>Alignment Score</strong> 定义为 saliency map 在 bounding box 内的质量占比：</p>
-<p>$$\text{Alignment_Score} = \frac{\sum_{i \in \text{Bounding Box}} \text{Saliency_Score}(i)}{\sum_{i \in \text{Image}} \text{Saliency_Score}(i)}$$</p>
+<p><span class="math display">$$\text{Alignment\_Score} = \frac{\sum_{i \in \text{Bounding Box}} \text{Saliency\_Score}(i)}{\sum_{i \in \text{Image}} \text{Saliency\_Score}(i)}$$</span></p>
 <p><strong>完整的 Reward 设计</strong>：</p>
-<p>$$\mathcal{R}<em>{\text{overall}} = \mathcal{R}</em>{\text{accuracy}} + \mathcal{R}<em>{\text{format}} + \mathcal{R}</em>{\text{saliency}}$$</p>
+<p><span class="math display">ℛ<sub>overall</sub> = ℛ<sub>accuracy</sub> + ℛ<sub>format</sub> + ℛ<sub>saliency</sub></span></p>
 <table>
 <thead>
 <tr class="header">
@@ -77,39 +57,28 @@
 </thead>
 <tbody>
 <tr class="odd">
-<td>$\mathcal{R}_{\text{accuracy}}$</td>
+<td><span class="math inline">ℛ<sub>accuracy</sub></span></td>
 <td>LLM-as-judge 判断答案正确性</td>
 <td>0 或 1</td>
 </tr>
 <tr class="even">
-<td>$\mathcal{R}_{\text{format}}$</td>
+<td><span class="math inline">ℛ<sub>format</sub></span></td>
 <td>输出格式遵循（think 标签 + 答案格式）</td>
 <td>0 或 1</td>
 </tr>
 <tr class="odd">
-<td>$\mathcal{R}_{\text{saliency}}$</td>
+<td><span class="math inline">ℛ<sub>saliency</sub></span></td>
 <td>Saliency map 与 bbox 的对齐度</td>
 <td>[0, 1] 连续值</td>
 </tr>
 </tbody>
 </table>
 <p>使用 GRPO 优化，每问题采样 G=8 个 rollout，用组内相对优势作为 advantage。</p>
-<h2 id="4-实验分析详细">4. 实验分析（详细）</h2>
-<h3 id="41-实验设置">4.1 实验设置</h3>
-<p><strong>训练数据</strong>：</p>
-<ul>
-<li>SFT 冷启动：Saliency-R1-cold（Vision-R1-cold 的子集），272,881 样本</li>
-<li>GRPO：Saliency-r1-8k（Visual-CoT 子集），8,080 样本，含 bounding box 标注</li>
-</ul>
-<p><strong>实现细节</strong>：</p>
-<ul>
-<li>Base model: Qwen2.5-VL-3B/7B</li>
-<li>SFT: llama-factory, 2 epochs, lr=5e-5, LoRA rank=128</li>
-<li>GRPO: TRL, 3 epochs, lr=1e-5, LoRA rank=8 (Q/V 投影层), batch=128, rollout=8</li>
-<li>LLM judge: GPT-4o-mini</li>
-<li>硬件：8× A6000 GPU</li>
-</ul>
-<h3 id="42-saliency-map-忠实度评估">4.2 Saliency Map 忠实度评估</h3>
+<h2 id="实验分析详细">4. 实验分析（详细）</h2>
+<h3 id="实验设置">4.1 实验设置</h3>
+<p><strong>训练数据</strong>： - SFT 冷启动：Saliency-R1-cold（Vision-R1-cold 的子集），272,881 样本 - GRPO：Saliency-r1-8k（Visual-CoT 子集），8,080 样本，含 bounding box 标注</p>
+<p><strong>实现细节</strong>： - Base model: Qwen2.5-VL-3B/7B - SFT: llama-factory, 2 epochs, lr=5e-5, LoRA rank=128 - GRPO: TRL, 3 epochs, lr=1e-5, LoRA rank=8 (Q/V 投影层), batch=128, rollout=8 - LLM judge: GPT-4o-mini - 硬件：8× A6000 GPU</p>
+<h3 id="saliency-map-忠实度评估">4.2 Saliency Map 忠实度评估</h3>
 <p>使用 deletion/insertion 测试评估 saliency map 的因果忠实度：</p>
 <table>
 <thead>
@@ -148,7 +117,7 @@
 </tbody>
 </table>
 <p>COCO Caption 上：deletion 分数比第二优方法低 5.46%/4.77%/2.57%（5%/15%/30%），说明即使仅考虑直接贡献，方法仍能忠实捕捉视觉 patch 的相对重要性。</p>
-<h3 id="43-vqa-主结果">4.3 VQA 主结果</h3>
+<h3 id="vqa-主结果">4.3 VQA 主结果</h3>
 <table>
 <thead>
 <tr class="header">
@@ -233,14 +202,8 @@
 </tr>
 </tbody>
 </table>
-<p>核心发现：</p>
-<ul>
-<li>Saliency-R1-7B 在 POPE 上提升 +1.4%，ChartQA 上提升 +4.2%</li>
-<li>改进在 3B 和 7B 模型上一致</li>
-<li>在 MME、MME-RealWorld、ScienceQA 上超越商业模型（GPT-4o、Claude-3.5 Sonnet）</li>
-<li>SFT 单独也有提升但远小于 Saliency-R1</li>
-</ul>
-<h3 id="44-可解释性定量评估">4.4 可解释性定量评估</h3>
+<p>核心发现： - Saliency-R1-7B 在 POPE 上提升 +1.4%，ChartQA 上提升 +4.2% - 改进在 3B 和 7B 模型上一致 - 在 MME、MME-RealWorld、ScienceQA 上超越商业模型（GPT-4o、Claude-3.5 Sonnet） - SFT 单独也有提升但远小于 Saliency-R1</p>
+<h3 id="可解释性定量评估">4.4 可解释性定量评估</h3>
 <p>在 saliency-r1-8k 测试集上使用 pointing game 评估：</p>
 <table>
 <thead>
@@ -274,7 +237,7 @@
 </tbody>
 </table>
 <p>Saliency-R1 的 Energy-PG 比 base model 提升 <strong>10.82%</strong>，PG 提升 <strong>14.14%</strong>。</p>
-<h3 id="45-消融实验">4.5 消融实验</h3>
+<h3 id="消融实验">4.5 消融实验</h3>
 <table>
 <thead>
 <tr class="header">
@@ -316,31 +279,24 @@
 </tr>
 </tbody>
 </table>
-<p>关键发现：</p>
-<ul>
-<li><strong>SFT 冷启动至关重要</strong>：直接从 base 开始 GRPO 导致严重退化</li>
-<li><strong>Saliency reward 的正面效果</strong>：比 Vision-R1（无 saliency reward）高 1.5%</li>
-<li><strong>仅用 saliency reward 也有效</strong>：比完整版仅低 0.6%，且在 MME 上更好，可省去 LLM judge 成本</li>
-<li><strong>Attention rollout 不可省略</strong>：比直接聚合 thinking tokens 的效果更好</li>
-<li>Saliency reward 与 accuracy 有正相关：关注正确区域 → 更可能给出正确答案</li>
-</ul>
-<h3 id="46-鲁棒性分析">4.6 鲁棒性分析</h3>
+<p>关键发现： - <strong>SFT 冷启动至关重要</strong>：直接从 base 开始 GRPO 导致严重退化 - <strong>Saliency reward 的正面效果</strong>：比 Vision-R1（无 saliency reward）高 1.5% - <strong>仅用 saliency reward 也有效</strong>：比完整版仅低 0.6%，且在 MME 上更好，可省去 LLM judge 成本 - <strong>Attention rollout 不可省略</strong>：比直接聚合 thinking tokens 的效果更好 - Saliency reward 与 accuracy 有正相关：关注正确区域 → 更可能给出正确答案</p>
+<h3 id="鲁棒性分析">4.6 鲁棒性分析</h3>
 <ul>
 <li><strong>噪声鲁棒性</strong>：向 POPE/MME 图像注入不同强度高斯噪声，Saliency-R1 优于 base model</li>
 <li><strong>OOD 泛化</strong>：在医学 VQA（VQA-RAD）上也有提升</li>
 <li><strong>多跳推理</strong>：在 ReasonVQA（需要关注多个图像区域）上优于 base model</li>
 <li><strong>反事实分析</strong>：Saliency-R1 在前景像素注入噪声时性能下降更大，背景噪声时下降更小 → 确实更依赖前景</li>
 </ul>
-<h3 id="47-定性分析">4.7 定性分析</h3>
+<h3 id="定性分析">4.7 定性分析</h3>
 <p>SFT 模型（Saliency-R1-CI）的推理过程往往<strong>不必要地冗长</strong>，包含大量重复和无关内容，稀释了注意力。Saliency-R1 的推理更<strong>简洁有针对性</strong>，注意力集中在关键区域。</p>
-<h2 id="5-关键图表本地资源">5. 关键图表（本地资源）</h2>
+<h2 id="关键图表本地资源">5. 关键图表（本地资源）</h2>
 <ul>
 <li><strong>动机图</strong>: <code>assets/.../teaser.png</code></li>
 <li><strong>方法框架</strong>: <code>assets/.../framework.png</code></li>
 <li><strong>主结果 + 定性对比</strong>: <code>assets/.../result.jpg</code></li>
 <li><strong>消融实验</strong>: <code>assets/.../ablation.png</code></li>
 </ul>
-<h2 id="6-优点与局限">6. 优点与局限</h2>
+<h2 id="优点与局限">6. 优点与局限</h2>
 <h3 id="优点">优点</h3>
 <ol type="1">
 <li><strong>高效 saliency map 生成</strong>：基于 logits 分解，无需额外前向/反向传播，可无缝集成到训练 pipeline</li>
@@ -359,7 +315,7 @@
 <li><strong>Saliency map 仅考虑直接贡献</strong>：忽略间接贡献（残差连接、FFN），理论上不是最忠实的</li>
 <li><strong>Alignment score 用 recall 而非 IoU</strong>：只考虑 bbox 内的 saliency 比例，未惩罚 bbox 外的过度激活</li>
 </ol>
-<h2 id="7-复现与工程实现要点">7. 复现与工程实现要点</h2>
+<h2 id="复现与工程实现要点">7. 复现与工程实现要点</h2>
 <ol type="1">
 <li><strong>代码</strong>：github.com/peterant330/Saliency_R1</li>
 <li><strong>训练流程</strong>：SFT 冷启动（Vision-R1-cold 子集，272K 样本）→ GRPO（saliency-r1-8k，8K 样本）</li>
@@ -374,7 +330,7 @@
 <li><strong>LLM judge</strong>：GPT-4o-mini 用于 accuracy reward</li>
 <li><strong>数据</strong>：SFT 数据来自 LLaVA-CoT + Mulberry，GRPO 数据来自 Visual-CoT</li>
 </ol>
-<h2 id="8-对当前项目的启发与可落地尝试">8. 对当前项目的启发与可落地尝试</h2>
+<h2 id="对当前项目的启发与可落地尝试">8. 对当前项目的启发与可落地尝试</h2>
 <ol type="1">
 <li><strong>Saliency map 作为可解释性工具可直接复用</strong>：logits 分解方法零额外成本，可集成到任何 VLM 的推理可视化中</li>
 <li><strong>Saliency alignment reward 是一种新的 process-level reward</strong>：不需要逐步验证，用粗粒度的人工标注（bounding box）就能提供有意义的训练信号，比 outcome-only reward 更丰富</li>

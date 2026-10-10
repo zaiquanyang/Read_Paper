@@ -1,28 +1,28 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Semantic Enriched Latent Visual Reasoning</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="semantic-enriched-latent-visual-reasoning">Semantic-Enriched Latent Visual Reasoning</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-基本信息">1. 基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Semantic Enriched Latent Visual Reasoning</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="semantic-enriched-latent-visual-reasoning">Semantic-Enriched Latent Visual Reasoning</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2605.19342 标题: Semantic-Enriched Latent Visual Reasoning 主题: vlm 粒度: 细粒度 论文链接: https://arxiv.org/abs/2605.19342 PDF: https://arxiv.org/pdf/2605.19342 代码: https://github.com/tinnel123666888/slvr 本地 PDF: vlm/arxi</p></div><div class="summary-block"><h3>核心结论</h3><p>我对这篇的判断是: 它不是在 latent reasoning 上做一个很重的架构创新，而是抓住了一个更本质的问题，即 latent 到底该编码什么 。SLVR 的贡献主要体现在三个层面: 用 attribute-level supervision 提高 latent 的语义密度 用 same-region multi-query 数据把 latent 的可迁移性暴露出来 用 M-GRPO 明确优化 latent 在不同 query 下</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="基本信息">1. 基本信息</h2>
 <ul>
 <li>arXiv ID: <code>2605.19342</code></li>
 <li>标题: <code>Semantic-Enriched Latent Visual Reasoning</code></li>
 <li>主题: <code>vlm</code></li>
 <li>粒度: <code>细粒度</code></li>
-<li>论文链接: <a href="https://arxiv.org/abs/2605.19342"><a href="https://arxiv.org/abs/2605.19342">https://arxiv.org/abs/2605.19342</a></a></li>
-<li>PDF: <a href="https://arxiv.org/pdf/2605.19342"><a href="https://arxiv.org/pdf/2605.19342">https://arxiv.org/pdf/2605.19342</a></a></li>
-<li>代码: <a href="https://github.com/tinnel123666888/slvr"><a href="https://github.com/tinnel123666888/slvr">https://github.com/tinnel123666888/slvr</a></a></li>
+<li>论文链接: <a href="https://arxiv.org/abs/2605.19342">https://arxiv.org/abs/2605.19342</a></li>
+<li>PDF: <a href="https://arxiv.org/pdf/2605.19342">https://arxiv.org/pdf/2605.19342</a></li>
+<li>代码: <a href="https://github.com/tinnel123666888/slvr">https://github.com/tinnel123666888/slvr</a></li>
 <li>本地 PDF: <code>vlm/arxiv_2605_semantic_enriched_latent_visual_reasoning.pdf</code></li>
 </ul>
-<h2 id="2-一句话概括">2. 一句话概括</h2>
+<h2 id="一句话概括">2. 一句话概括</h2>
 <p>这篇工作提出 <code>SLVR</code>，核心目标是让 VLM 的 <code>latent visual reasoning</code> 不再只保留“视觉外观压缩信息”，而是显式注入 <code>attribute-level semantic supervision</code>，并进一步通过 <code>M-GRPO</code> 强化“同一视觉区域面对不同问题时，latent 仍能保持语义一致性与可复用性”。</p>
-<h2 id="3-论文要解决什么问题">3. 论文要解决什么问题</h2>
+<h2 id="论文要解决什么问题">3. 论文要解决什么问题</h2>
 <p>这篇文章针对的是近期 <code>thinking with images</code> / <code>latent visual reasoning</code> 路线中的一个关键短板。</p>
 <p>现有两类方法各有问题:</p>
 <ol type="1">
-<li><p>显式 visual reasoning</p>
+<li>显式 visual reasoning
 <ul>
 <li>比如 crop、zoom-in、OCR、visual tool invocation 这类方法。</li>
 <li>优点是中间视觉证据清晰。</li>
 <li>缺点是推理阶段要反复调用视觉操作，效率低，链路也长。</li>
 </ul></li>
-<li><p>latent visual reasoning</p>
+<li>latent visual reasoning
 <ul>
 <li>直接在紧凑 latent 空间里做视觉推理。</li>
 <li>优点是省掉显式 visual operations，更高效。</li>
@@ -36,15 +36,15 @@
 </ul>
 <p>因此，这篇文章想回答的问题是:</p>
 <p><code>能不能学出一种 region-centric latent，它不仅保留局部视觉证据，还显式编码对象属性、动作状态、空间关系、文本内容等语义，并且在同一区域的多问题设置下仍保持一致？</code></p>
-<h2 id="4-核心思路">4. 核心思路</h2>
+<h2 id="核心思路">4. 核心思路</h2>
 <p>作者提出 <code>SLVR (Semantic-Enriched Latent Visual Reasoning)</code>，是一个两阶段框架:</p>
 <ol type="1">
-<li><p><code>Stage 1: Structured Latent Learning</code></p>
+<li><code>Stage 1: Structured Latent Learning</code>
 <ul>
 <li>对 region latent 做视觉对齐。</li>
 <li>额外引入 semantic latent，并用 attribute embedding 对它做监督。</li>
 </ul></li>
-<li><p><code>Stage 2: Multi-query Group Relative Policy Optimization</code></p>
+<li><code>Stage 2: Multi-query Group Relative Policy Optimization</code>
 <ul>
 <li>针对同一视觉区域对应的多个不同问题，联合优化 visual latent 和 semantic latent。</li>
 <li>目标是让它们既能答对题，又能在多 query 间保持一致，同时不要偏离 Stage 1 学到的稳定分布太远。</li>
@@ -52,7 +52,9 @@
 </ol>
 <p>这篇文章最重要的观点不是“latent reasoning 比 text reasoning 更强”，而是:</p>
 <p><code>latent 本身也需要被显式塑形，尤其要塑造成能承载结构化视觉语义的 latent。</code></p>
-<p><img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/figure1_n.png" alt="概念对比图" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/figure1_n.png" alt="概念对比图" /><figcaption aria-hidden="true">概念对比图</figcaption>
+</figure>
 <p>上图对应论文 Figure 1。作者把三条路线放在一起对比:</p>
 <ul>
 <li>显式 chain-of-thought / cropped evidence</li>
@@ -60,32 +62,32 @@
 <li>他们提出的“视觉 + 语义联合监督”的 latent reasoning</li>
 </ul>
 <p>这张图传达得很直接: 他们认为已有 latent reasoning 的核心瓶颈不是 latent 不存在，而是 latent 的 <code>semantic richness</code> 不够。</p>
-<h2 id="5-数据构造">5. 数据构造</h2>
+<h2 id="数据构造">5. 数据构造</h2>
 <p>论文不仅提出训练框架，还构造了一整套支持数据，统称 <code>SLV-Set</code>，以及一个专门的新 benchmark <code>SV-QA</code>。</p>
-<h3 id="51-slv-set">5.1 SLV-Set</h3>
+<h3 id="slv-set">5.1 SLV-Set</h3>
 <p>SLV-Set 建立在 <code>Visual-CoT (ViSCoT)</code> 之上，分成两部分:</p>
 <ol type="1">
-<li><p><code>Attribute-Level Semantic Dataset</code></p>
+<li><code>Attribute-Level Semantic Dataset</code>
 <ul>
 <li>大约 <code>400K</code> region-level semantic profiles。</li>
 <li>每个关键区域都有结构化 attribute 描述。</li>
 </ul></li>
-<li><p><code>Multi-Query Dataset</code></p>
+<li><code>Multi-Query Dataset</code>
 <ul>
 <li>大约 <code>800K</code> region-centric QA pairs。</li>
 <li>每个区域生成两个语义不同但指向同一区域的问题。</li>
 </ul></li>
 </ol>
-<h3 id="52-sv-qa-benchmark">5.2 SV-QA Benchmark</h3>
+<h3 id="sv-qa-benchmark">5.2 SV-QA Benchmark</h3>
 <p><code>SV-QA</code> 是他们专门构造的评测集，用来测试 “同一视觉区域在不同语义提问下，latent 是否仍稳健”。</p>
 <ul>
 <li>总计 <code>591</code> 个 paired samples</li>
-<li>每个样本是 $(i, q_1, q_2, b)$</li>
+<li>每个样本是 <span class="math inline">(<em>i</em>, <em>q</em><sub>1</sub>, <em>q</em><sub>2</sub>, <em>b</em>)</span></li>
 <li>其中:
 <ul>
-<li>$i$ 是图像</li>
-<li>$q_1, q_2$ 是针对同一目标区域的两个不同问题</li>
-<li>$b$ 是共享 target region 的 bounding box</li>
+<li><span class="math inline"><em>i</em></span> 是图像</li>
+<li><span class="math inline"><em>q</em><sub>1</sub>, <em>q</em><sub>2</sub></span> 是针对同一目标区域的两个不同问题</li>
+<li><span class="math inline"><em>b</em></span> 是共享 target region 的 bounding box</li>
 </ul></li>
 </ul>
 <p>来源上，他们从已有 benchmark 里出发，包括:</p>
@@ -94,10 +96,12 @@
 <li><code>HRBench-4K</code></li>
 <li><code>HRBench-8K</code></li>
 </ul>
-<p>然后把原问题当作 $q_1$，再用 Qwen3-VL-235B 生成一个从不同语义角度询问同一区域的新问题 $q_2$。</p>
-<p><img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/dataset_region_multiq.png" alt="数据构造图" /></p>
+<p>然后把原问题当作 <span class="math inline"><em>q</em><sub>1</sub></span>，再用 Qwen3-VL-235B 生成一个从不同语义角度询问同一区域的新问题 <span class="math inline"><em>q</em><sub>2</sub></span>。</p>
+<figure>
+<img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/dataset_region_multiq.png" alt="数据构造图" /><figcaption aria-hidden="true">数据构造图</figcaption>
+</figure>
 <p>这张图很关键，因为它说明作者不是在做普通 multi-turn QA，而是在做 <code>same region, different semantic queries</code> 的控制变量设计。这样就能更直接测试 latent 是否真的学到了“共享区域语义”，而不是仅仅适配某个单一问题模板。</p>
-<h3 id="53-标注质量分析">5.3 标注质量分析</h3>
+<h3 id="标注质量分析">5.3 标注质量分析</h3>
 <p>论文还报告了自动标注后的人工核查结果。总共发现 <code>29,457</code> 个错误标注，整体错误率 <code>7.29%</code>。主要错误类型如下:</p>
 <table>
 <thead>
@@ -156,61 +160,65 @@
 </tbody>
 </table>
 <p>这个表说明作者至少认真检查了自动构造数据的噪声来源。最容易出错的是颜色、动作姿态和空间关系，这也恰好是细粒度视觉语义里最脆弱的部分。</p>
-<h2 id="6-方法细节">6. 方法细节</h2>
-<p><img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/figure2.png" alt="SLVR 总体框架" /></p>
+<h2 id="方法细节">6. 方法细节</h2>
+<figure>
+<img src="../vlm/assets/arxiv_2605_semantic_enriched_latent_visual_reasoning/figure2.png" alt="SLVR 总体框架" /><figcaption aria-hidden="true">SLVR 总体框架</figcaption>
+</figure>
 <p>Figure 2 是整篇文章最重要的图。它把 SLVR 的两阶段学习写得比较清楚。</p>
-<h3 id="61-stage-1-structured-latent-learning">6.1 Stage 1: Structured Latent Learning</h3>
-<p>输入是图像 $I$ 和原始问题 $q$，问题已经绑定到一个关键视觉区域。</p>
+<h3 id="stage-1-structured-latent-learning">6.1 Stage 1: Structured Latent Learning</h3>
+<p>输入是图像 <span class="math inline"><em>I</em></span> 和原始问题 <span class="math inline"><em>q</em></span>，问题已经绑定到一个关键视觉区域。</p>
 <p>作者做了两种 latent:</p>
 <ol type="1">
-<li><p><code>region-level visual latent</code></p>
+<li><code>region-level visual latent</code>
 <ul>
 <li>从 ROI 对应的视觉 patch 特征中取出一段专门的 latent segment。</li>
 <li>这段 latent 负责保留局部视觉细节。</li>
 </ul></li>
-<li><p><code>semantic latent</code></p>
+<li><code>semantic latent</code>
 <ul>
 <li>在 <code>vis_end</code> 后面插一个特殊 token <code>sem</code>。</li>
-<li>其 hidden state 记为 $z_{\text{sem}}$。</li>
+<li>其 hidden state 记为 <span class="math inline"><em>z</em><sub>sem</sub></span>。</li>
 <li>它负责聚合这个区域的语义信息。</li>
 </ul></li>
 </ol>
 <p>论文把 ROI latent 写为:</p>
-<p>[ \mathcal{H}_{\text{vis}} = {\mathbf{h}^{\text{lat}}<em>t}</em>{t=1}^{T_v} ]</p>
+<p>[ _{} = {<sup>{}<em>t}</em>{t=1}</sup>{T_v} ]</p>
 <p>并通过 vision encoder 的 ROI 特征做直接对齐:</p>
-<p>[ \mathcal{L}<em>{\text{vis}} = \sum</em>{t=1}^{T_v} \left| \mathbf{h}^{\text{lat}}_t - \mathbf{v}^{\text{enc}}_t \right|_2^2 ]</p>
+<p>[ <em>{} = </em>{t=1}^{T_v} | ^{}_t - ^{}_t |_2^2 ]</p>
 <p>这部分延续了 LVR 的基本精神: 让 latent 尽量贴近原始局部视觉表征。</p>
 <p>接着，semantic latent 用 attribute-level semantic embedding 来监督。每个区域会对应一个 <code>4096</code> 维 embedding:</p>
-<p>[ \mathbf{e} \in \mathbb{R}^{4096} ]</p>
+<p>[  ^{4096} ]</p>
 <p>semantic latent 先过一个投影头:</p>
-<p>[ \hat{\mathbf{e}}<em>{\text{sem}} = W z</em>{\text{sem}} ]</p>
+<p>[ <em>{} = W z</em>{} ]</p>
 <p>然后用均方误差与属性 embedding 对齐:</p>
-<p>[ \mathcal{L}<em>{\text{sem}} = \mathrm{MSE}!\left(\hat{\mathbf{e}}</em>{\text{sem}}, \mathbf{e}\right) = \frac{1}{4096}\left\lVert \hat{\mathbf{e}}_{\text{sem}} - \mathbf{e} \right\rVert_2^2 ]</p>
+<p>[ <em>{} = !(</em>{}, ) = _{} -  _2^2 ]</p>
 <p>最终 Stage 1 的目标就是:</p>
-<p>[ \mathcal{L}<em>{\text{stage1}} = \mathcal{L}</em>{\text{vis}} + \mathcal{L}_{\text{sem}} ]</p>
+<p>[ <em>{} = </em>{} + _{} ]</p>
 <p>这一步的本质是:</p>
 <ul>
 <li><code>H_vis</code> 学视觉保真</li>
 <li><code>z_sem</code> 学结构化语义摘要</li>
 </ul>
 <p>所以 Stage 1 相当于先把 latent 表示空间“拉开职责分工”。</p>
-<h3 id="62-stage-2-m-grpo">6.2 Stage 2: M-GRPO</h3>
+<h3 id="stage-2-m-grpo">6.2 Stage 2: M-GRPO</h3>
 <p>作者觉得只做 Stage 1 还不够，因为即便 latent 学到了语义，也未必能在不同问题之间稳定共享。于是提出 <code>M-GRPO (Multi-query Group Relative Policy Optimization)</code>。</p>
-<p>对同一区域、不同问题 $q_i$，模型会产生一对 latent:</p>
-<p>[ \big(H_{\text{vis}}^{(i)},, z_{\text{sem}}^{(i)}\big) = f(I, r, q_i) ]</p>
+<p>对同一区域、不同问题 <span class="math inline"><em>q</em><sub><em>i</em></sub></span>，模型会产生一对 latent:</p>
+<p>[ (H_{}^{(i)},, z_{}^{(i)}) = f(I, r, q_i) ]</p>
 <p>Stage 2 的奖励由三部分组成。</p>
-<h4 id="621-answer-correctness-reward">6.2.1 Answer Correctness Reward</h4>
-<p>[ \mathcal{R}_{\text{ans}}^{(i)} = \mathbb{I}\big(\hat{y}_i = y_i\big) ]</p>
+<h4 id="answer-correctness-reward">6.2.1 Answer Correctness Reward</h4>
+<p>[ _{}^{(i)} = (_i = y_i) ]</p>
 <p>这里的正确性由外部 judge model <code>Qwen3-Max</code> 二值判定。</p>
-<h4 id="622-latent-consistency-reward">6.2.2 Latent Consistency Reward</h4>
+<h4 id="latent-consistency-reward">6.2.2 Latent Consistency Reward</h4>
 <p>作者要求不同 query 生成出来的 visual latent 和 semantic latent 都不要偏得太开:</p>
-<p>[ \begin{aligned} \mathcal{R}<em>{\text{cons}} = - \sum</em>{i \neq j} \Bigg( &amp; \lambda_{\text{sem}} \left\lVert z_{\text{sem}}^{(i)} - z_{\text{sem}}^{(j)} \right\rVert_2 \ &amp; + \lambda_{\text{vis}} \frac{1}{T_v}\sum_{t=1}^{T_v} \left\lVert h_t^{(i)} - h_t^{(j)} \right\rVert_2 \Bigg). \end{aligned} ]</p>
+[
+<p>]</p>
 <p>这条式子非常关键。它明确地把 “同一区域、不同问题下 latent 的一致性” 写进了优化目标，而不是只看答案对不对。</p>
-<h4 id="623-stability-regularization">6.2.3 Stability Regularization</h4>
+<h4 id="stability-regularization">6.2.3 Stability Regularization</h4>
 <p>为了避免 Stage 2 训练把 Stage 1 学好的分布破坏掉，作者还把 Stage 1 产出的 latent 当作 reference anchor:</p>
-<p>[ \begin{aligned} \mathcal{R}<em>{\text{stab}}^{(i)} = &amp;- \max!\left(0,; \left\lVert z</em>{\text{sem}}^{(i)} - \bar{z}<em>{\text{sem}} \right\rVert_2 - \tau</em>{\text{sem}} \right) \ &amp;- \max!\left(0,; \frac{1}{T_v}\sum_{t=1}^{T_v}\left\lVert h_t^{(i)} - \bar{h}<em>t \right\rVert_2 - \tau</em>{\text{vis}} \right). \end{aligned} ]</p>
+[
+<p>]</p>
 <p>这一步可以理解成: 允许针对不同问题做适应，但不能漂得太远。</p>
-<h3 id="63-m-grpo-的整体目标">6.3 M-GRPO 的整体目标</h3>
+<h3 id="m-grpo-的整体目标">6.3 M-GRPO 的整体目标</h3>
 <p>M-GRPO 采用 group-based GRPO 目标，对每个共享区域的 query group 联合更新。论文给出的目标较长，核心结构就是:</p>
 <ul>
 <li>对同一区域的两个问题联合采样 rollout</li>
@@ -218,8 +226,8 @@
 <li>加上 KL 正则约束</li>
 </ul>
 <p>它的关键思想不是普通 RL，而是 <code>grouped multi-query latent policy optimization</code>。也就是，更新单位不再只是单问题样本，而是“同一区域上的问题组”。</p>
-<h2 id="7-实验设置">7. 实验设置</h2>
-<h3 id="71-公开-benchmark">7.1 公开 benchmark</h3>
+<h2 id="实验设置">7. 实验设置</h2>
+<h3 id="公开-benchmark">7.1 公开 benchmark</h3>
 <p>标准 VQA benchmark 包括:</p>
 <ul>
 <li><code>OKVQA</code></li>
@@ -234,24 +242,24 @@
 <li><code>VisualPuzzles</code></li>
 <li>新构造的 <code>SV-QA</code></li>
 </ul>
-<h3 id="72-比较方法">7.2 比较方法</h3>
+<h3 id="比较方法">7.2 比较方法</h3>
 <p>作者对比了两大类方法:</p>
 <ol type="1">
-<li><p><code>think-with-image</code></p>
+<li><code>think-with-image</code>
 <ul>
 <li><code>GRIT</code></li>
 <li><code>DeepEyes</code></li>
 <li><code>Visual-SR1</code></li>
 </ul></li>
-<li><p><code>latent reasoning</code></p>
+<li><code>latent reasoning</code>
 <ul>
 <li><code>LVR</code></li>
 <li>文中也提到 <code>Monet</code></li>
 </ul></li>
 </ol>
 <p>并且还拿 <code>Qwen2.5-VL-7B</code> 作为 text-only baseline。</p>
-<h2 id="8-主要结果">8. 主要结果</h2>
-<h3 id="81-标准-vqa-benchmark">8.1 标准 VQA benchmark</h3>
+<h2 id="主要结果">8. 主要结果</h2>
+<h3 id="标准-vqa-benchmark">8.1 标准 VQA benchmark</h3>
 <table>
 <thead>
 <tr class="header">
@@ -292,7 +300,7 @@
 <td style="text-align: right;">40.0</td>
 <td style="text-align: right;">45.5</td>
 <td style="text-align: right;">32.2</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">40.4</td>
 <td style="text-align: right;">37.0</td>
 </tr>
@@ -342,7 +350,7 @@
 <li><code>semantic-enriched latent</code> 对知识型、图文混合型、结构化感知型任务帮助明显，尤其是 <code>VizWiz</code> 和 <code>ChartQA</code>。</li>
 <li>它并不是在所有标准 benchmark 上都绝对碾压，像 <code>GQA</code> 和 <code>AI2D</code> 反而略低于 LVR，这说明语义增强不一定总能无损替代纯视觉 latent。</li>
 </ol>
-<h3 id="82-visualpuzzles">8.2 VisualPuzzles</h3>
+<h3 id="visualpuzzles">8.2 VisualPuzzles</h3>
 <table>
 <thead>
 <tr class="header">
@@ -392,7 +400,7 @@
 <li>Overall: <code>+4.8</code></li>
 </ul>
 <p>这里很能说明作者的观点: 当任务更依赖结构关系、空间属性、区域语义时，semantic-enriched latent 更有优势。</p>
-<h3 id="83-sv-qa-同一区域双问题评测">8.3 SV-QA: 同一区域双问题评测</h3>
+<h3 id="sv-qa-同一区域双问题评测">8.3 SV-QA: 同一区域双问题评测</h3>
 <p>论文最有辨识度的结果在 <code>SV-QA</code>。评价指标包括:</p>
 <ul>
 <li><code>Q1</code></li>
@@ -400,7 +408,20 @@
 <li><code>Both Correct</code></li>
 </ul>
 <p>其中 <code>Both Correct</code> 最重要，因为它要求同一区域的两个语义不同问题都答对。</p>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 7%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th>Setting</th>
@@ -506,13 +527,13 @@
 <p>这个结果很关键。SLVR 在很多场景里并不是 Q1 最强，但它在 <code>Q2</code> 和 <code>Both Correct</code> 上更加稳定。这和文章的中心论点高度一致:</p>
 <p><code>semantic-enriched latent 的价值不只是“答对一个问题”，而是“同一个 latent 能支撑多个语义视角”。</code></p>
 <p>DeepEyes 在一些 Q1 指标上更强，但它依赖显式 visual cropping，推理成本更高；SLVR 则是在纯 latent-space reasoning 下取得这些结果。</p>
-<h2 id="9-消融实验">9. 消融实验</h2>
+<h2 id="消融实验">9. 消融实验</h2>
 <p>作者做了两类消融:</p>
 <ol type="1">
 <li><code>text-only vs latent reasoning</code></li>
 <li><code>latent family 内部增量消融</code></li>
 </ol>
-<h3 id="91-text-only-baseline">9.1 Text-only baseline</h3>
+<h3 id="text-only-baseline">9.1 Text-only baseline</h3>
 <p>在 Qwen2.5-VL-7B 上:</p>
 <ul>
 <li><code>SFT (single-Q)</code></li>
@@ -522,7 +543,7 @@
 <p>可以看到多问题训练和 GRPO 都能带来一些提升，但即使最强的 text-only 配置，在 <code>Both Correct</code> 上仍然持续落后于 latent reasoning 变体。</p>
 <p>这说明:</p>
 <p><code>仅仅把多个问题写进文本推理链里，不足以获得稳定的共享区域语义表示。</code></p>
-<h3 id="92-latent-系列增量消融">9.2 Latent 系列增量消融</h3>
+<h3 id="latent-系列增量消融">9.2 Latent 系列增量消融</h3>
 <table>
 <thead>
 <tr class="header">
@@ -539,10 +560,10 @@
 <tbody>
 <tr class="odd">
 <td>LVR</td>
-<td style="text-align: right;">--</td>
-<td style="text-align: right;">--</td>
-<td style="text-align: right;">--</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">65.4</td>
 <td style="text-align: right;">57.9</td>
 <td style="text-align: right;">46.6</td>
@@ -550,9 +571,9 @@
 <tr class="even">
 <td>+ Stage 1</td>
 <td style="text-align: right;">yes</td>
-<td style="text-align: right;">--</td>
-<td style="text-align: right;">--</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">67.5</td>
 <td style="text-align: right;">59.6</td>
 <td style="text-align: right;">46.9</td>
@@ -560,9 +581,9 @@
 <tr class="odd">
 <td>+ GRPO (Single-Q)</td>
 <td style="text-align: right;">yes</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">yes</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">62.8</td>
 <td style="text-align: right;">57.6</td>
 <td style="text-align: right;">49.3</td>
@@ -572,17 +593,17 @@
 <td style="text-align: right;">yes</td>
 <td style="text-align: right;">yes</td>
 <td style="text-align: right;">yes</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">68.1</td>
 <td style="text-align: right;">60.3</td>
 <td style="text-align: right;">49.9</td>
 </tr>
 <tr class="odd">
 <td>LVR + Multi-Q</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">yes</td>
 <td style="text-align: right;">yes</td>
-<td style="text-align: right;">--</td>
+<td style="text-align: right;">–</td>
 <td style="text-align: right;">67.5</td>
 <td style="text-align: right;">60.0</td>
 <td style="text-align: right;">49.4</td>
@@ -607,29 +628,29 @@
 <li>完整 <code>M-GRPO</code> 最强，说明真正有效的不只是多问题训练，而是 <code>对多问题 latent 一致性进行显式约束</code>。</li>
 </ol>
 <p>换句话说，作者的关键创新不是 simple multi-query augmentation，而是 <code>multi-query consistency optimization</code>。</p>
-<h2 id="10-这篇工作的亮点">10. 这篇工作的亮点</h2>
-<h3 id="101-问题定义抓得准">10.1 问题定义抓得准</h3>
+<h2 id="这篇工作的亮点">10. 这篇工作的亮点</h2>
+<h3 id="问题定义抓得准">10.1 问题定义抓得准</h3>
 <p>它不是泛泛地说 latent reasoning 不够强，而是把问题定位为:</p>
 <ul>
 <li>latent 缺少细粒度语义</li>
 <li>同一 latent 难以支撑语义变化后的多个 query</li>
 </ul>
 <p>这个问题定义是清楚且有针对性的。</p>
-<h3 id="102-方法结构合理">10.2 方法结构合理</h3>
+<h3 id="方法结构合理">10.2 方法结构合理</h3>
 <p>两阶段设计很顺:</p>
 <ul>
 <li>Stage 1 先塑形表示</li>
 <li>Stage 2 再对齐跨 query 使用方式</li>
 </ul>
 <p>这比直接把各种奖励全塞进一次 RL 里更可控。</p>
-<h3 id="103-benchmark-设计很有辨识度">10.3 Benchmark 设计很有辨识度</h3>
+<h3 id="benchmark-设计很有辨识度">10.3 Benchmark 设计很有辨识度</h3>
 <p><code>SV-QA</code> 的价值挺高，因为它专门测 “same region, multiple semantic views”。这比普通 VQA accuracy 更能看出 latent 是否真的承载了共享区域语义。</p>
-<h2 id="11-局限与问题">11. 局限与问题</h2>
-<h3 id="111-语义监督依赖外部强模型自动构造">11.1 语义监督依赖外部强模型自动构造</h3>
+<h2 id="局限与问题">11. 局限与问题</h2>
+<h3 id="语义监督依赖外部强模型自动构造">11.1 语义监督依赖外部强模型自动构造</h3>
 <p>他们的 semantic profile、multi-query 数据、SV-QA 的生成都高度依赖 <code>Qwen3-VL-235B</code>。这意味着方法上存在数据构造成本，也带来 teacher bias。</p>
-<h3 id="112-semantic-embedding-的形式仍较粗">11.2 semantic embedding 的形式仍较粗</h3>
+<h3 id="semantic-embedding-的形式仍较粗">11.2 semantic embedding 的形式仍较粗</h3>
 <p>虽然用了 4096 维 attribute embedding，但本质上还是把结构化语义压成单个 dense vector。这样能否充分保留复杂关系，仍值得怀疑。</p>
-<h3 id="113-标准-benchmark-并非全面提升">11.3 标准 benchmark 并非全面提升</h3>
+<h3 id="标准-benchmark-并非全面提升">11.3 标准 benchmark 并非全面提升</h3>
 <p>在 <code>GQA</code>、<code>AI2D</code> 上不如 LVR，说明语义增强 latent 并不是对所有任务都天然更优。它可能更适合:</p>
 <ul>
 <li>区域属性</li>
@@ -637,9 +658,9 @@
 <li>多视角问题一致性</li>
 </ul>
 <p>而未必在所有 general VQA 任务上无差别获益。</p>
-<h3 id="114-外部-judge-带来额外系统复杂度">11.4 外部 judge 带来额外系统复杂度</h3>
+<h3 id="外部-judge-带来额外系统复杂度">11.4 外部 judge 带来额外系统复杂度</h3>
 <p>Stage 2 里 answer correctness 由 <code>Qwen3-Max</code> 评估，这增加了 RL 管线复杂度，也让训练依赖外部 judge 质量。</p>
-<h2 id="12-对-vlm-方向的启发">12. 对 VLM 方向的启发</h2>
+<h2 id="对-vlm-方向的启发">12. 对 VLM 方向的启发</h2>
 <p>如果把这篇放到 <code>VLM</code> 方向里，我觉得它最值得记住的是 4 点:</p>
 <ol type="1">
 <li><code>latent reasoning</code> 的提升空间不只在更长 latent、更强 policy，也在 latent 的监督形式。</li>
@@ -647,16 +668,16 @@
 <li>如果要做 latent RL，训练目标不应该只看单题 correctness，还应该看 <code>cross-query latent consistency</code>。</li>
 <li>很多 benchmark 只测单问题 accuracy，不足以暴露 latent 的语义脆弱性；<code>same-region multi-query</code> 是一个很有价值的评测范式。</li>
 </ol>
-<h2 id="13-可复用的研究想法">13. 可复用的研究想法</h2>
-<h3 id="131-把-semantic-latent-从单向量扩成结构化-latent">13.1 把 semantic latent 从单向量扩成结构化 latent</h3>
-<p>当前的 $z_{\text{sem}}$ 是单 token latent。后续可以考虑把它扩成:</p>
+<h2 id="可复用的研究想法">13. 可复用的研究想法</h2>
+<h3 id="把-semantic-latent-从单向量扩成结构化-latent">13.1 把 semantic latent 从单向量扩成结构化 latent</h3>
+<p>当前的 <span class="math inline"><em>z</em><sub>sem</sub></span> 是单 token latent。后续可以考虑把它扩成:</p>
 <ul>
 <li>attribute slots</li>
 <li>relation slots</li>
 <li>text-content slot</li>
 </ul>
 <p>也许比单向量更适合承载复杂视觉语义。</p>
-<h3 id="132-把-multi-query-consistency-扩展到更广义的-semantic-invariance">13.2 把 multi-query consistency 扩展到更广义的 semantic invariance</h3>
+<h3 id="把-multi-query-consistency-扩展到更广义的-semantic-invariance">13.2 把 multi-query consistency 扩展到更广义的 semantic invariance</h3>
 <p>不只可以对同一区域的两个问题做一致性，还可以对:</p>
 <ul>
 <li>paraphrase 问法</li>
@@ -665,7 +686,7 @@
 <li>region + counterfactual perturbation</li>
 </ul>
 <p>做统一 consistency 约束。</p>
-<h3 id="133-用到-ocr-heavy-或-chart-任务">13.3 用到 OCR-heavy 或 Chart 任务</h3>
+<h3 id="用到-ocr-heavy-或-chart-任务">13.3 用到 OCR-heavy 或 Chart 任务</h3>
 <p>这篇方法对 <code>ChartQA</code>、<code>VizWiz</code> 提升明显，说明 semantic-enriched latent 可能特别适合:</p>
 <ul>
 <li>OCR + region grounding</li>
@@ -673,7 +694,7 @@
 <li>document element reasoning</li>
 </ul>
 <p>这和你前面读的 OCR / Image2Code / chart 方向其实也能接起来。</p>
-<h2 id="14-总结评价">14. 总结评价</h2>
+<h2 id="总结评价">14. 总结评价</h2>
 <p>我对这篇的判断是: 它不是在 latent reasoning 上做一个很重的架构创新，而是抓住了一个更本质的问题，即 <code>latent 到底该编码什么</code>。SLVR 的贡献主要体现在三个层面:</p>
 <ul>
 <li>用 attribute-level supervision 提高 latent 的语义密度</li>

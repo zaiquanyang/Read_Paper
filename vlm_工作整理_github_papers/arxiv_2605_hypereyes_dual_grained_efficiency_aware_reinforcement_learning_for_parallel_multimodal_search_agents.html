@@ -1,5 +1,5 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Hypereyes Dual Grained Efficiency Aware Reinforcement Learning For Parallel Multimodal Search Agents</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="hypereyes-dual-grained-efficiency-aware-reinforcement-learning-for-parallel-multimodal-search-agents">HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-基本信息">1. 基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Hypereyes Dual Grained Efficiency Aware Reinforcement Learning For Parallel Multimodal Search Agents</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="hypereyes-dual-grained-efficiency-aware-reinforcement-learning-for-parallel-multimodal-search-agents">HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2605.07177v1 标题: HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents 作者: Guankai Li, Jiabin Chen, Yi Xu, Xichen Zhang, Yuan Lu 机构: Xiaohongshu Inc., University </p></div><div class="summary-block"><h3>核心结论</h3><p>这篇工作最有价值的地方，不是单纯把 multimodal agent 做得更会搜，而是把“并行搜索的能力”和“并行搜索的意愿”同时训练出来了：前者靠 UGS 与数据构造，后者靠 TRACE，而 OPD 则负责把失败轨迹里的细粒度错误真正修掉。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="基本信息">1. 基本信息</h2>
 <ul>
 <li>arXiv ID: <code>2605.07177v1</code></li>
 <li>标题: <code>HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents</code></li>
@@ -10,12 +10,12 @@
 <li>代码与数据: <a href="https://github.com/Guankai-Li/HyperEyes">GitHub</a></li>
 <li>URL:
 <ul>
-<li>abs: <a href="https://arxiv.org/abs/2605.07177">https://arxiv.org/abs/2605.07177</a></li>
-<li>pdf(v1): <a href="https://arxiv.org/pdf/2605.07177v1.pdf">https://arxiv.org/pdf/2605.07177v1.pdf</a></li>
+<li>abs: https://arxiv.org/abs/2605.07177</li>
+<li>pdf(v1): https://arxiv.org/pdf/2605.07177v1.pdf</li>
 </ul></li>
 </ul>
-<h2 id="2-背景与动机">2. 背景与动机</h2>
-<h3 id="21-这篇论文到底在解决什么">2.1 这篇论文到底在解决什么</h3>
+<h2 id="背景与动机">2. 背景与动机</h2>
+<h3 id="这篇论文到底在解决什么">2.1 这篇论文到底在解决什么</h3>
 <p>这篇工作讨论的不是“让 VLM 会不会搜索”，而是“让 multimodal search agent 搜得是否高效”。</p>
 <p>作者的核心观察是：</p>
 <ul>
@@ -41,7 +41,7 @@
 <li>不要把多个独立子检索任务串成长链；</li>
 <li>而是应该在同一轮里把多个 grounded query 一起发出去。</li>
 </ul>
-<h3 id="22-为什么有并行能力还不够">2.2 为什么“有并行能力”还不够</h3>
+<h3 id="为什么有并行能力还不够">2.2 为什么“有并行能力”还不够</h3>
 <p>这是论文最重要的出发点之一。</p>
 <p>即便模型已经支持 parallel tool calling，也不代表它会“高效地并行”。</p>
 <p>原因是大多数现有 search agent 训练目标还是围绕最终 <code>accuracy reward</code>：</p>
@@ -56,7 +56,7 @@
 <li>最终虽然正确率上去了，但 latency 和工具调用成本非常差。</li>
 </ul>
 <p>HyperEyes 的核心贡献，就是把 <strong>效率</strong> 从一个隐含偏好，提升为训练目标里的第一类公民。</p>
-<h2 id="3-方法总览">3. 方法总览</h2>
+<h2 id="方法总览">3. 方法总览</h2>
 <p>HyperEyes 整体由三块组成：</p>
 <ol type="1">
 <li>并行友好的动作空间：<code>Unified Grounded Search (UGS)</code></li>
@@ -64,41 +64,45 @@
 <li>双粒度效率感知强化学习：<code>TRACE + OPD</code></li>
 </ol>
 <p>其中最值得细看的是第 1 和第 3 部分。</p>
-<h3 id="31-整体框架图">3.1 整体框架图</h3>
+<h3 id="整体框架图">3.1 整体框架图</h3>
 <h4 id="串行-vs-并行搜索直觉">串行 vs 并行搜索直觉</h4>
-<p><img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/parallel_vs_serial.png" alt="Parallel vs Serial" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/parallel_vs_serial.png" alt="Parallel vs Serial" /><figcaption aria-hidden="true">Parallel vs Serial</figcaption>
+</figure>
 <p>这张图非常关键。它明确展示了作者想解决的问题：</p>
 <ul>
 <li>传统 agent: <code>crop -&gt; search -&gt; crop -&gt; search -&gt; ...</code></li>
 <li>HyperEyes: 一次把多个实体 grounding 出来，并在同一轮中同时发起搜索</li>
 </ul>
 <h4 id="训练框架总览">训练框架总览</h4>
-<p><img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/framework.png" alt="Framework" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/framework.png" alt="Framework" /><figcaption aria-hidden="true">Framework</figcaption>
+</figure>
 <p>这张图对应全文最核心的算法结构：</p>
 <ul>
 <li>前半部分是并行友好的数据构造与轨迹筛选</li>
 <li>后半部分是 RL 阶段的双粒度优化</li>
 </ul>
-<h2 id="4-问题形式化与动作空间">4. 问题形式化与动作空间</h2>
-<h3 id="41-agent-轨迹形式">4.1 Agent 轨迹形式</h3>
-<p>论文沿用 ReAct 风格的 agent 形式。给定问题 $q$，完整轨迹写成：</p>
-<p>[ \tau = \bigl(q, (r_0, a_0, o_0), (r_1, a_1, o_1), \dots, (r_T, a_T, o_T), y\bigr), ]</p>
+<h2 id="问题形式化与动作空间">4. 问题形式化与动作空间</h2>
+<h3 id="agent-轨迹形式">4.1 Agent 轨迹形式</h3>
+<p>论文沿用 ReAct 风格的 agent 形式。给定问题 <span class="math inline"><em>q</em></span>，完整轨迹写成：</p>
+<p>[ = (q, (r_0, a_0, o_0), (r_1, a_1, o_1), , (r_T, a_T, o_T), y), ]</p>
 <p>其中：</p>
 <ul>
-<li>$r_t$ 是第 $t$ 轮 reasoning trace</li>
-<li>$a_t$ 是工具调用</li>
-<li>$o_t$ 是环境返回的 observation</li>
-<li>$y$ 是最终答案</li>
+<li><span class="math inline"><em>r</em><sub><em>t</em></sub></span> 是第 <span class="math inline"><em>t</em></span> 轮 reasoning trace</li>
+<li><span class="math inline"><em>a</em><sub><em>t</em></sub></span> 是工具调用</li>
+<li><span class="math inline"><em>o</em><sub><em>t</em></sub></span> 是环境返回的 observation</li>
+<li><span class="math inline"><em>y</em></span> 是最终答案</li>
 </ul>
-<p>agent 每轮都在历史上下文 $h_t$ 上先想，再调工具，再读观察，直到输出答案或达到最大轮数。</p>
-<h3 id="42-工具集合">4.2 工具集合</h3>
+<p>agent 每轮都在历史上下文 <span class="math inline"><em>h</em><sub><em>t</em></sub></span> 上先想，再调工具，再读观察，直到输出答案或达到最大轮数。</p>
+<h3 id="工具集合">4.2 工具集合</h3>
 <p>HyperEyes 用两个基础工具：</p>
 <ul>
 <li><code>&lt;image_search&gt;</code>: 给定 grounded image，返回视觉相关检索结果</li>
 <li><code>&lt;text_search&gt;</code>: 给定文本 query，返回文本证据</li>
 </ul>
 <p>这两者本身不新，新的点在于它们如何与 grounding 结合。</p>
-<h3 id="43-unified-grounded-search-ugs">4.3 Unified Grounded Search (UGS)</h3>
+<h3 id="unified-grounded-search-ugs">4.3 Unified Grounded Search (UGS)</h3>
 <p>作者批评现有 multimodal agent 的常见范式是：</p>
 <ol type="1">
 <li>先做 crop / grounding</li>
@@ -124,8 +128,8 @@
 <li>同一轮里就把多个 grounded query 并发发出。</li>
 </ul>
 <p>这是 HyperEyes 能“search wider”而不是“search longer”的根本前提。</p>
-<h2 id="5-训练数据构造">5. 训练数据构造</h2>
-<h3 id="51-数据组成">5.1 数据组成</h3>
+<h2 id="训练数据构造">5. 训练数据构造</h2>
+<h3 id="数据组成">5.1 数据组成</h3>
 <p>论文的训练数据总量是 <code>271k</code> QA：</p>
 <table>
 <thead>
@@ -211,7 +215,7 @@
 </tbody>
 </table>
 <p>重点不是总量，而是作者专门为“并行搜索”补了两个新数据流。</p>
-<h3 id="52-visual-multi-entity-synthesis">5.2 Visual multi-entity synthesis</h3>
+<h3 id="visual-multi-entity-synthesis">5.2 Visual multi-entity synthesis</h3>
 <p>这部分是论文很有意思的数据工程设计。</p>
 <p>流程大致是：</p>
 <ol type="1">
@@ -239,7 +243,7 @@
 <li>漏掉任意一个实体，都不能推出正确答案。</li>
 </ul>
 <p>这样就天然逼模型去做多实体并行检索，而不是单实体串行问答。</p>
-<h3 id="53-textual-multi-constraint-synthesis">5.3 Textual multi-constraint synthesis</h3>
+<h3 id="textual-multi-constraint-synthesis">5.3 Textual multi-constraint synthesis</h3>
 <p>作者还做了文本侧的多约束 query 合成：</p>
 <ul>
 <li>从 Wikidata 做 multi-hop random walk</li>
@@ -247,13 +251,13 @@
 <li>构造交集唯一的答案集合</li>
 </ul>
 <p>这类 query 和传统 chain-style reasoning 不同，它不是一步接一步依赖，而是多个约束同时成立，因此也适合并行搜索范式。</p>
-<h3 id="54-tool-necessity-filtering">5.4 Tool-necessity filtering</h3>
+<h3 id="tool-necessity-filtering">5.4 Tool-necessity filtering</h3>
 <p>一个很重要的过滤步骤是：</p>
 <ul>
 <li>任何能被 <code>Qwen3-VL-235B</code> <strong>不借助外部工具</strong>直接答对的样本都会被丢掉。</li>
 </ul>
 <p>这样留下来的训练集更干净，因为它们是真正需要搜索工具才能解决的问题，而不是 parametric memory 就能蒙对的问题。</p>
-<h3 id="55-progressive-rejection-sampling-prs">5.5 Progressive Rejection Sampling (PRS)</h3>
+<h3 id="progressive-rejection-sampling-prs">5.5 Progressive Rejection Sampling (PRS)</h3>
 <p>作者发现 naive rollout 常常会：</p>
 <ul>
 <li>重复调工具</li>
@@ -275,7 +279,7 @@
 </ul>
 <p>最终把 <code>271k</code> 初始任务蒸成 <code>30k</code> 高质量 SFT 轨迹。</p>
 <p>这个结果后面在 ablation 里证明非常有效。</p>
-<h2 id="6-双粒度效率感知强化学习">6. 双粒度效率感知强化学习</h2>
+<h2 id="双粒度效率感知强化学习">6. 双粒度效率感知强化学习</h2>
 <p>这部分是论文真正的算法核心。</p>
 <p>作者把问题拆成两个层次：</p>
 <ol type="1">
@@ -287,17 +291,17 @@
 <li><code>TRACE</code> 负责宏观效率</li>
 <li><code>OPD</code> 负责微观纠错</li>
 </ul>
-<h3 id="61-总奖励">6.1 总奖励</h3>
+<h3 id="总奖励">6.1 总奖励</h3>
 <p>轨迹总奖励定义为：</p>
-<p>[ R = R_{\text{acc}} + R_{\text{fmt}} + R_{\text{tool}}, ]</p>
+<p>[ R = R_{} + R_{} + R_{}, ]</p>
 <p>其中：</p>
 <ul>
-<li>$R_{\text{acc}} \in {0,1}$: 最终答案是否正确</li>
-<li>$R_{\text{fmt}} \in {0, -\lambda_{\text{fmt}}}$: schema / 格式解析错误惩罚</li>
-<li>$R_{\text{tool}}$: 论文的核心效率奖励</li>
+<li><span class="math inline"><em>R</em><sub>acc</sub> ∈ {0, 1}</span>: 最终答案是否正确</li>
+<li><span class="math inline"><em>R</em><sub>fmt</sub> ∈ {0,  − <em>λ</em><sub>fmt</sub>}</span>: schema / 格式解析错误惩罚</li>
+<li><span class="math inline"><em>R</em><sub>tool</sub></span>: 论文的核心效率奖励</li>
 </ul>
-<h3 id="62-trace-tool-use-reference-adaptive-cost-efficiency">6.2 TRACE: Tool-use Reference-Adaptive Cost Efficiency</h3>
-<h4 id="621-为什么静态阈值不够">6.2.1 为什么静态阈值不够</h4>
+<h3 id="trace-tool-use-reference-adaptive-cost-efficiency">6.2 TRACE: Tool-use Reference-Adaptive Cost Efficiency</h3>
+<h4 id="为什么静态阈值不够">6.2.1 为什么静态阈值不够</h4>
 <p>作者指出，工具调用“多少算合理”是 query-dependent 的：</p>
 <ul>
 <li>有些题一轮搞定</li>
@@ -309,11 +313,11 @@
 <li>太紧了，又会把真正需要 multi-hop 的轨迹错罚掉</li>
 </ul>
 <p>TRACE 的做法是：<strong>让效率参考线在训练中自适应收紧</strong>。</p>
-<h4 id="622-两个计数维度">6.2.2 两个计数维度</h4>
+<h4 id="两个计数维度">6.2.2 两个计数维度</h4>
 <p>对一条轨迹，作者用两个量衡量工具使用：</p>
 <ul>
-<li>$t_c$: tool-call rounds 数</li>
-<li>$t_s$: 总工具调用数</li>
+<li><span class="math inline"><em>t</em><sub><em>c</em></sub></span>: tool-call rounds 数</li>
+<li><span class="math inline"><em>t</em><sub><em>s</em></sub></span>: 总工具调用数</li>
 </ul>
 <p>其中：</p>
 <ul>
@@ -321,27 +325,27 @@
 <li><code>total invocations</code> 对应总共开了多少具体工具</li>
 </ul>
 <p>这两个量一起用，是为了防止模型“在一轮里疯狂并行乱搜”来投机。</p>
-<h4 id="623-自适应参考线更新">6.2.3 自适应参考线更新</h4>
+<h4 id="自适应参考线更新">6.2.3 自适应参考线更新</h4>
 <p>对每个 medium-difficulty RL 样本，初始参考来自它在初始成功轨迹上的：</p>
 <ul>
-<li>$\hat{t}_c^{(0)}$</li>
-<li>$\hat{t}_s^{(0)}$</li>
+<li><span class="math inline"><em>t̂</em><sub><em>c</em></sub><sup>(0)</sup></span></li>
+<li><span class="math inline"><em>t̂</em><sub><em>s</em></sub><sup>(0)</sup></span></li>
 </ul>
 <p>训练过程中，轮数参考线按 epoch 单调收紧：</p>
-<p>[ \hat{t}_c^{(e+1)} = \min\bigl(\hat{t}_c^{(e)}, t_c^{(e+1)}\bigr). ]</p>
-<p>其中 $t_c^{(e+1)}$ 是第 $e+1$ 个 epoch 里成功 rollout 中最小的轮数。</p>
+<p>[ _c^{(e+1)} = (_c^{(e)}, t_c^{(e+1)}). ]</p>
+<p>其中 <span class="math inline"><em>t</em><sub><em>c</em></sub><sup>(<em>e</em> + 1)</sup></span> 是第 <span class="math inline"><em>e</em> + 1</span> 个 epoch 里成功 rollout 中最小的轮数。</p>
 <p>这条更新规则很关键，它意味着：</p>
 <ul>
 <li>参考线只会变得更严格，不会放松；</li>
 <li>但它又不是拍脑袋手设，而是跟着当前策略能达到的最好水平动态收紧；</li>
 <li>本质上形成了一个 implicit curriculum。</li>
 </ul>
-<h4 id="624-trace-奖励结构">6.2.4 TRACE 奖励结构</h4>
-<p>工具奖励 $R_{\text{tool}}$ 分四种情况：</p>
+<h4 id="trace-奖励结构">6.2.4 TRACE 奖励结构</h4>
+<p>工具奖励 <span class="math inline"><em>R</em><sub>tool</sub></span> 分四种情况：</p>
 <ol type="1">
 <li><strong>失败轨迹，且轮数太少或太多</strong>
 <ul>
-<li>给固定负惩罚 $-\lambda_{\text{red}}$</li>
+<li>给固定负惩罚 <span class="math inline"> − <em>λ</em><sub>red</sub></span></li>
 </ul></li>
 <li><strong>失败轨迹，但轮数在允许区间</strong>
 <ul>
@@ -349,32 +353,33 @@
 </ul></li>
 <li><strong>成功轨迹，且足够高效</strong>
 <ul>
-<li>给正奖励 $R_+$</li>
+<li>给正奖励 <span class="math inline"><em>R</em><sub>+</sub></span></li>
 </ul></li>
 <li><strong>成功轨迹，但仍有冗余</strong>
 <ul>
-<li>给负奖励或较低奖励 $R_-$</li>
+<li>给负奖励或较低奖励 <span class="math inline"><em>R</em><sub>−</sub></span></li>
 </ul></li>
 </ol>
 <p>形式上写成：</p>
-<p>[ R_{\text{tool}} = \begin{cases} -\lambda_{\text{red}}, &amp; R_{\text{acc}}=0 \text{ and } (t_c &lt; \hat{t}<em>c \text{ or } t_c &gt; \gamma \hat{t}<em>c) \ 0, &amp; R</em>{\text{acc}}=0 \text{ and } t_c \in [\hat{t}<em>c, \gamma \hat{t}<em>c] \ R</em>+ \in [r^+</em>{\min}, r^+</em>{\max}], &amp; R_{\text{acc}}=1, t_c&gt;0, t_c \le \hat{t}<em>c, t_s \le \hat{t}<em>s \ R</em>- \in [r^-</em>{\min}, r^-<em>{\max}], &amp; R</em>{\text{acc}}=1, t_c&gt;0, \text{ otherwise} \end{cases} ]</p>
-<p>其中 $\gamma &gt; 1$ 是冗余容忍因子。</p>
-<p>作者还对 $R_+$ 与 $R_-$ 做了 group 内 rank-based 插值：</p>
-<p>[ R_* = r^<em>_{\min} + \frac{G-\rho}{G-1}(r^{\max} - r^*</em>{\min}), \quad * \in {+, -}. ]</p>
-<p>这里 $\rho$ 是按 $t_c$ 排序后的名次，$\rho=1$ 表示最有效率。</p>
-<h4 id="625-trace-的两个关键设计点">6.2.5 TRACE 的两个关键设计点</h4>
+[ R_{} =
+<p>]</p>
+<p>其中 <span class="math inline"><em>γ</em> &gt; 1</span> 是冗余容忍因子。</p>
+<p>作者还对 <span class="math inline"><em>R</em><sub>+</sub></span> 与 <span class="math inline"><em>R</em><sub>−</sub></span> 做了 group 内 rank-based 插值：</p>
+<p>[ R_* = r^*_{} + (r^*_{} - r^*_{}), {+, -}. ]</p>
+<p>这里 <span class="math inline"><em>ρ</em></span> 是按 <span class="math inline"><em>t</em><sub><em>c</em></sub></span> 排序后的名次，<span class="math inline"><em>ρ</em> = 1</span> 表示最有效率。</p>
+<h4 id="trace-的两个关键设计点">6.2.5 TRACE 的两个关键设计点</h4>
 <ol type="1">
-<li><strong>只有同时满足 $t_c \le \hat{t}_c$ 且 $t_s \le \hat{t}_s$ 才给正奖励</strong>
+<li><strong>只有同时满足 <span class="math inline"><em>t</em><sub><em>c</em></sub> ≤ <em>t̂</em><sub><em>c</em></sub></span> 且 <span class="math inline"><em>t</em><sub><em>s</em></sub> ≤ <em>t̂</em><sub><em>s</em></sub></span> 才给正奖励</strong>
 <ul>
 <li>防止 reward hacking：模型把很多调用塞进一轮里伪装高效</li>
 </ul></li>
-<li><strong>正确但 $t_c=0$ 的轨迹不给工具奖励</strong>
+<li><strong>正确但 <span class="math inline"><em>t</em><sub><em>c</em></sub> = 0</span> 的轨迹不给工具奖励</strong>
 <ul>
 <li>防止模型靠参数记忆“猜对”而被误认为高效 search</li>
 </ul></li>
 </ol>
 <p>这两个限制非常必要，否则效率奖励会被投机路径钻空子。</p>
-<h3 id="63-为什么还需要-opd">6.3 为什么还需要 OPD</h3>
+<h3 id="为什么还需要-opd">6.3 为什么还需要 OPD</h3>
 <p>作者指出，TRACE 是 trajectory-level reward，所以对失败轨迹有一个严重问题：</p>
 <ul>
 <li>失败时，GRPO 会给整条轨迹一个统一负优势；</li>
@@ -383,18 +388,18 @@
 <li>稀疏 outcome reward 无法告诉模型“哪里错了”。</li>
 </ul>
 <p>这就是 credit assignment deficiency。</p>
-<h3 id="64-vlm-search-agent-场景下的-opd">6.4 VLM search agent 场景下的 OPD</h3>
+<h3 id="vlm-search-agent-场景下的-opd">6.4 VLM search agent 场景下的 OPD</h3>
 <p>作者的做法是：</p>
 <ul>
-<li>引入一个更强的 teacher $\pi_{\text{teacher}}$</li>
+<li>引入一个更强的 teacher <span class="math inline"><em>π</em><sub>teacher</sub></span></li>
 <li><strong>只对 failed rollout</strong> 做 token-level distillation</li>
 <li>最小化 completion token 上 student 与 teacher 的 reverse KL</li>
 </ul>
 <p>最终学生损失：</p>
-<p>[ L(\theta) = L_{\text{GRPO}}(\theta) + \lambda_{\text{kd}} , \mathbb{E}<em>{\tau \sim \pi</em>{\theta}^{\text{old}}} \left[ \mathbf{1}[R_{\text{acc}}(\tau)=0]\cdot \frac{1}{|A_\tau|} \sum_{t \in A_\tau} \mathrm{KL}\bigl(\pi_\theta(\cdot|s_t),|,\pi_{\text{teacher}}(\cdot|s_t)\bigr) \right]. ]</p>
+<p>[ L() = L_{}() + <em>{} , </em>{<em>{}^{}}   </em>{t A_} (<em>(|s_t),|,</em>{}(|s_t)) ]. ]</p>
 <p>其中：</p>
 <ul>
-<li>$A_\tau$ 是 completion token 集合</li>
+<li><span class="math inline"><em>A</em><sub><em>τ</em></sub></span> 是 completion token 集合</li>
 <li>只在失败轨迹上启用蒸馏</li>
 <li>teacher 冻结</li>
 <li>old policy 只负责采样，不参与梯度</li>
@@ -409,8 +414,8 @@
 <li>宏观上学“搜索得够不够短、够不够并行”</li>
 <li>微观上学“失败轨迹里具体哪一步 reasoning / action token 该怎么修”</li>
 </ul>
-<h2 id="7-imeb-benchmark">7. IMEB Benchmark</h2>
-<h3 id="71-为什么要新-benchmark">7.1 为什么要新 benchmark</h3>
+<h2 id="imeb-benchmark">7. IMEB Benchmark</h2>
+<h3 id="为什么要新-benchmark">7.1 为什么要新 benchmark</h3>
 <p>作者认为现有 multimodal search benchmark 的共同问题是：</p>
 <ul>
 <li>只看最终 accuracy</li>
@@ -418,8 +423,10 @@
 <li>所以模型即便很冗长、很啰嗦、上下文极 noisy，也不会在指标上吃亏</li>
 </ul>
 <p>为此他们提出 <code>IMEB</code>：Image Multi-Entity Benchmark。</p>
-<h3 id="72-imeb-的特点">7.2 IMEB 的特点</h3>
-<p><img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/IMEB.png" alt="IMEB" /></p>
+<h3 id="imeb-的特点">7.2 IMEB 的特点</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2605_hypereyes_dual_grained_efficiency_aware_reinforcement_learning_for_parallel_multimodal_search_agents/IMEB.png" alt="IMEB" /><figcaption aria-hidden="true">IMEB</figcaption>
+</figure>
 <p>IMEB：</p>
 <ul>
 <li>共 300 个实例</li>
@@ -438,24 +445,24 @@
 <li>Daily Life</li>
 </ul>
 <p>它的设计目标非常明确：测的是 <strong>多实体并行 grounded retrieval</strong>，而不是普通单实体 VQA。</p>
-<h3 id="73-cost-aware-score-cas">7.3 Cost-Aware Score (CAS)</h3>
+<h3 id="cost-aware-score-cas">7.3 Cost-Aware Score (CAS)</h3>
 <p>作者提出的统一指标为：</p>
-<p>[ CAS = \frac{Acc^2 \times 100}{N_{\text{tok}} + 2N_{\text{tool}} + 1}. ]</p>
+<p>[ CAS = . ]</p>
 <p>其中：</p>
 <ul>
-<li>$Acc$: 准确率</li>
-<li>$N_{\text{tok}}$: token 消耗，以千为单位</li>
-<li>$N_{\text{tool}}$: 顺序工具调用轮数</li>
+<li><span class="math inline"><em>A</em><em>c</em><em>c</em></span>: 准确率</li>
+<li><span class="math inline"><em>N</em><sub>tok</sub></span>: token 消耗，以千为单位</li>
+<li><span class="math inline"><em>N</em><sub>tool</sub></span>: 顺序工具调用轮数</li>
 </ul>
 <p>这个式子背后的设计直觉是：</p>
 <ol type="1">
-<li>用 $Acc^2$ 强调“正确率仍然是一号目标”</li>
+<li>用 <span class="math inline"><em>A</em><em>c</em><em>c</em><sup>2</sup></span> 强调“正确率仍然是一号目标”</li>
 <li>分母同时惩罚 token 和工具轮数</li>
 <li>给 <code>N_tool</code> 更重的权重，是因为一次 tool-call 往往对应显著 latency</li>
 </ol>
 <p>这个指标非常适合 agent 场景，因为它显式惩罚“答对但很拖沓”的行为。</p>
-<h2 id="8-主实验结果">8. 主实验结果</h2>
-<h3 id="81-六个-benchmark-的主结果">8.1 六个 benchmark 的主结果</h3>
+<h2 id="主实验结果">8. 主实验结果</h2>
+<h3 id="六个-benchmark-的主结果">8.1 六个 benchmark 的主结果</h3>
 <p>论文在 6 个 benchmark 上评估：</p>
 <ul>
 <li>MMSearch</li>
@@ -513,7 +520,7 @@
 <li>HyperEyes 用 UGS 把 entity grounding 与 retrieval 解耦并并发化</li>
 <li>因此同时减少了 latency 与级联错误</li>
 </ul>
-<h3 id="82-bcvl--imeb-上的成本感知对比">8.2 BCVL / IMEB 上的成本感知对比</h3>
+<h3 id="bcvl-imeb-上的成本感知对比">8.2 BCVL / IMEB 上的成本感知对比</h3>
 <p>Table 3 特别有说服力，因为它把 token、tool 数和 CAS 放在一起看：</p>
 <table>
 <thead>
@@ -557,8 +564,8 @@
 <li>IMEB 上 CAS 大约是次优开源方法的 <strong>7.6x</strong></li>
 </ul>
 <p>这基本证明了：在多实体场景里，并行 grounding + efficiency-aware RL 确实不是 cosmetic 优化，而是显著改变了单位计算成本的信息密度。</p>
-<h2 id="9-消融实验">9. 消融实验</h2>
-<h3 id="91-数据过滤比原始数据量更重要">9.1 数据过滤比原始数据量更重要</h3>
+<h2 id="消融实验">9. 消融实验</h2>
+<h3 id="数据过滤比原始数据量更重要">9.1 数据过滤比原始数据量更重要</h3>
 <p>Table 4 比较了：</p>
 <ul>
 <li><code>DBase</code>: 121k trajectories</li>
@@ -571,7 +578,7 @@
 </ul>
 <p>这说明在 agent 训练里，<strong>轨迹质量</strong> 比单纯堆数据量更重要。</p>
 <p>尤其是对“高效并行调工具”这种行为，如果示范轨迹本身就冗余，SFT 学到的只会是更冗余的 pattern。</p>
-<h3 id="92-trace-的作用">9.2 TRACE 的作用</h3>
+<h3 id="trace-的作用">9.2 TRACE 的作用</h3>
 <p>Table 5 的 reward ablation 很关键。</p>
 <p>从 <code>Qwen3-VL-30B + SFT</code> 出发：</p>
 <ul>
@@ -599,7 +606,7 @@
 <li>自适应更新的 TRACE 还能进一步提升 accuracy 与效率</li>
 </ol>
 <p>也就是说，动态参考线确实比静态阈值更合理。</p>
-<h3 id="93-opd-的作用与-teacher-选择">9.3 OPD 的作用与 teacher 选择</h3>
+<h3 id="opd-的作用与-teacher-选择">9.3 OPD 的作用与 teacher 选择</h3>
 <p>继续看 Table 5：</p>
 <ul>
 <li><code>+ TRACE</code>: Avg <code>62.7 / 2.2</code></li>
@@ -629,7 +636,7 @@
 </ul></li>
 </ul>
 <p>这点对于后续做 VLM agent OPD 很重要，因为它说明 teacher 的行为风格必须和 student 的目标一致，不能只看 teacher 规模更大。</p>
-<h3 id="94-没有-sft-冷启动会怎样">9.4 没有 SFT 冷启动会怎样</h3>
+<h3 id="没有-sft-冷启动会怎样">9.4 没有 SFT 冷启动会怎样</h3>
 <p>论文里还有一行：</p>
 <ul>
 <li><code>Qwen3-VL-30B + TRACE + OPD*</code>
@@ -644,9 +651,9 @@
 <li>并行工具使用能力不是单靠 reward 就能从零长出来的；</li>
 <li>必须先靠高质量 SFT 轨迹把 agent 拉到一个“会并行搜索”的可行域里。</li>
 </ul>
-<h2 id="10-这篇论文里-opd-的真正角色">10. 这篇论文里 OPD 的真正角色</h2>
+<h2 id="这篇论文里-opd-的真正角色">10. 这篇论文里 OPD 的真正角色</h2>
 <p>虽然这篇是 <code>vlm</code> 论文，不是纯 OPD 论文，但它对 OPD 的启发非常强。</p>
-<h3 id="101-opd-在这里不是主目标而是失败轨迹修复器">10.1 OPD 在这里不是主目标，而是“失败轨迹修复器”</h3>
+<h3 id="opd-在这里不是主目标而是失败轨迹修复器">10.1 OPD 在这里不是主目标，而是“失败轨迹修复器”</h3>
 <p>和一些纯 distillation work 不同，这里 OPD 不是整个训练框架的中心，而是：</p>
 <ul>
 <li>在 sparse trajectory reward 不能细分错误来源时；</li>
@@ -654,7 +661,7 @@
 <li>让 student 别把整个失败轨迹都当成“全错”。</li>
 </ul>
 <p>所以它承担的是 <strong>micro credit assignment repair</strong> 的角色。</p>
-<h3 id="102-为什么只在-failed-rollout-上蒸馏">10.2 为什么只在 failed rollout 上蒸馏</h3>
+<h3 id="为什么只在-failed-rollout-上蒸馏">10.2 为什么只在 failed rollout 上蒸馏</h3>
 <p>这个设计很干净：</p>
 <ul>
 <li>成功 rollout 上，TRACE 已经在奖励正确且高效的策略</li>
@@ -666,8 +673,8 @@
 <li>失败样本靠 teacher 做 token-level 纠偏</li>
 </ul>
 <p>这是一种很值得借鉴的 RL + OPD 结合方式。</p>
-<h2 id="11-优点与局限">11. 优点与局限</h2>
-<h3 id="111-优点">11.1 优点</h3>
+<h2 id="优点与局限">11. 优点与局限</h2>
+<h3 id="优点">11.1 优点</h3>
 <ul>
 <li>任务定义很清楚：
 <ul>
@@ -690,7 +697,7 @@
 <li>终于把多实体 multimodal retrieval 里的效率问题显式 benchmark 化。</li>
 </ul></li>
 </ul>
-<h3 id="112-局限">11.2 局限</h3>
+<h3 id="局限">11.2 局限</h3>
 <ul>
 <li>OPD 依赖更强的同家族 teacher
 <ul>
@@ -709,21 +716,21 @@
 <li>对真正强依赖 sequential multi-hop 的任务，收益可能没那么大。</li>
 </ul></li>
 </ul>
-<h2 id="12-对当前-vlm-项目的启发">12. 对当前 <code>vlm</code> 项目的启发</h2>
-<h3 id="121-方法层启发">12.1 方法层启发</h3>
+<h2 id="对当前-vlm-项目的启发">12. 对当前 <code>vlm</code> 项目的启发</h2>
+<h3 id="方法层启发">12.1 方法层启发</h3>
 <ol type="1">
 <li>多实体视觉检索任务里，<strong>并行 breadth</strong> 可能比继续拉长 reasoning depth 更重要。</li>
 <li>agent 训练时，<strong>效率必须进 reward</strong>，否则模型几乎一定会 over-retrieve。</li>
 <li>在 multimodal search 里，OPD 更适合作为 <strong>failed rollout 的 token-level credit repair</strong>，而不是简单全量蒸馏。</li>
 <li>teacher 不是越强越好，关键是 <strong>行为风格是否对齐</strong>。</li>
 </ol>
-<h3 id="122-可落地尝试">12.2 可落地尝试</h3>
+<h3 id="可落地尝试">12.2 可落地尝试</h3>
 <ol type="1">
 <li>如果你在做视觉搜索 agent，可以先看现有 action schema 能不能改成类似 UGS 的“一步 grounding + retrieval”。</li>
 <li>如果你已有 RL 版 agent，优先加一个 query-adaptive 的 tool efficiency reward，而不是只加固定工具惩罚。</li>
 <li>如果你想把 OPD 引入 VLM agent，建议先做“failed-rollout-only OPD”，再看是否需要扩大蒸馏范围。</li>
 <li>如果你在构建自己的 benchmark，最好像 IMEB 一样把 <code>accuracy + cost</code> 一起度量，而不是只看答对率。</li>
 </ol>
-<h2 id="13-一句话评价">13. 一句话评价</h2>
+<h2 id="一句话评价">13. 一句话评价</h2>
 <p>这篇工作最有价值的地方，不是单纯把 multimodal agent 做得更会搜，而是把“并行搜索的能力”和“并行搜索的意愿”同时训练出来了：前者靠 UGS 与数据构造，后者靠 TRACE，而 OPD 则负责把失败轨迹里的细粒度错误真正修掉。</p>
 </div></div></details></div></main></body></html>

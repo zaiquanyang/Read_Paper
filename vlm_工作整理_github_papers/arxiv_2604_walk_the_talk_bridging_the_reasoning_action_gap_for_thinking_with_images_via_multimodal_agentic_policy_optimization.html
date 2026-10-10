@@ -1,5 +1,5 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Walk The Talk Bridging The Reasoning Action Gap For Thinking With Images Via Multimodal Agentic Policy Optimization</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="walk-the-talk-bridging-the-reasoning-action-gap-for-thinking-with-images-via-multimodal-agentic-policy-optimization">Walk the Talk: Bridging the Reasoning-Action Gap for Thinking with Images via Multimodal Agentic Policy Optimization</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-基本信息">1. 基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Walk The Talk Bridging The Reasoning Action Gap For Thinking With Images Via Multimodal Agentic Policy Optimization</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="walk-the-talk-bridging-the-reasoning-action-gap-for-thinking-with-images-via-multimodal-agentic-policy-optimization">Walk the Talk: Bridging the Reasoning-Action Gap for Thinking with Images via Multimodal Agentic Policy Optimization</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2604.06777 URL: abs / pdf 主题: vlm 粒度: detailed 作者: Wenhao Yang, Yu Xia, Jinlong Huang, Shiyin Lu, Qing-Guo Chen, Zhao Xu, Weihua Luo 核心方法: MAPO (Multimodal Agentic Policy Optimization) 核心关键词: thinking with imag</p></div><div class="summary-block"><h3>核心结论</h3><p>如果任务依赖多步视觉探索，单纯 outcome reward 很容易掩盖错误动作执行。 让模型生成可验证的中间意图描述，是把过程监督引入 agent RL 的有效手段。 CLIP 这类轻量语义 verifier 可以作为中间 reward 构件，但最好结合任务特定 verifier 进一步增强。 高分辨率细粒度视觉推理，是这类过程一致性优化最能体现价值的场景。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="基本信息">1. 基本信息</h2>
 <ul>
 <li>arXiv ID: 2604.06777</li>
 <li>URL: <a href="https://arxiv.org/abs/2604.06777">abs</a> / <a href="https://arxiv.org/pdf/2604.06777.pdf">pdf</a></li>
@@ -9,7 +9,7 @@
 <li>核心方法: <code>MAPO (Multimodal Agentic Policy Optimization)</code></li>
 <li>核心关键词: <code>thinking with images</code>, <code>multimodal agent</code>, <code>process supervision</code>, <code>semantic alignment</code>, <code>tool use RL</code>, <code>CLIP reward</code></li>
 </ul>
-<h2 id="2-这篇论文想解决什么问题">2. 这篇论文想解决什么问题</h2>
+<h2 id="这篇论文想解决什么问题">2. 这篇论文想解决什么问题</h2>
 <p>这篇工作的切入点很明确: 现在很多 MLLM 已经不满足于“看一张图然后只在文本里推理”，而是开始进入 <code>thinking with images</code> 阶段，也就是在推理链中主动调用视觉工具，例如 crop、zoom-in、局部观察，再根据新的视觉观察继续推理。</p>
 <p>问题在于，现有 RL 训练大多只看最终答案是否正确，也就是只给 <code>outcome-based reward</code>。这会带来一个作者强调的核心问题:</p>
 <ul>
@@ -26,14 +26,16 @@
 <li>长程训练时可能 collapse</li>
 </ul>
 <p>从问题定义看，这篇论文的重点不是再发明一个更强的 outcome reward，而是给 agent 轨迹增加一种“过程一致性监督”: 模型不光要会想，还要让执行出来的视觉动作与它刚才说的意图一致。</p>
-<h2 id="3-核心直觉-先让模型说清楚再要求它说到做到">3. 核心直觉: 先让模型“说清楚”，再要求它“说到做到”</h2>
+<h2 id="核心直觉-先让模型说清楚再要求它说到做到">3. 核心直觉: 先让模型“说清楚”，再要求它“说到做到”</h2>
 <p>MAPO 的核心隐喻就是标题里的 <code>Walk the Talk</code>:</p>
 <ul>
 <li><code>talk</code>: 模型在调用视觉工具前，必须显式生成一个描述性 label，说明它预期将看到什么</li>
 <li><code>walk</code>: 模型真正执行 crop / zoom 等动作后，环境返回一个视觉 observation，再用 CLIP 去衡量 observation 是否和这个 label 语义一致</li>
 </ul>
 <p>这一步很关键。作者不是把 label 当成可有可无的 tool 参数，而是把它变成一个强制输出、可验证、可打分的中间监督信号。这样一来，原来不可见的“动作意图”被显式化了，轨迹就能被过程级监督。</p>
-<p><img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/MAPO_method.png" alt="MAPO 方法总览" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/MAPO_method.png" alt="MAPO 方法总览" /><figcaption aria-hidden="true">MAPO 方法总览</figcaption>
+</figure>
 <p>上图对应论文的主方法图。可以把它理解为一个三段式闭环:</p>
 <ol type="1">
 <li>模型生成文本推理、工具动作以及描述性 label。</li>
@@ -41,33 +43,33 @@
 <li>CLIP 比较 label 与 observation 的语义一致性，并把这个分数并入 advantage estimation。</li>
 </ol>
 <p>相比只在终点看答对没答对，这相当于在每一步动作执行后增加了“你刚才说要看这个，结果你真的看到了吗”的检查。</p>
-<h2 id="4-形式化建模">4. 形式化建模</h2>
-<p>作者把多轮视觉 agent 推理建模为 MDP。第 $t$ 步状态记为:</p>
-<p>[ s_t = {(X_0, I_0), (X_1, I_1), \dots, (X_t, I_t)} ]</p>
+<h2 id="形式化建模">4. 形式化建模</h2>
+<p>作者把多轮视觉 agent 推理建模为 MDP。第 <span class="math inline"><em>t</em></span> 步状态记为:</p>
+<p>[ s_t = {(X_0, I_0), (X_1, I_1), , (X_t, I_t)} ]</p>
 <p>其中:</p>
 <ul>
-<li>$(X_0, I_0)$ 表示原始问题与原图</li>
-<li>后续 $(X_t, I_t)$ 包含了文本推理、工具调用以及返回的新视觉观察</li>
+<li><span class="math inline">(<em>X</em><sub>0</sub>, <em>I</em><sub>0</sub>)</span> 表示原始问题与原图</li>
+<li>后续 <span class="math inline">(<em>X</em><sub><em>t</em></sub>, <em>I</em><sub><em>t</em></sub>)</span> 包含了文本推理、工具调用以及返回的新视觉观察</li>
 </ul>
 <p>在每一步，策略同时生成动作和描述标签:</p>
-<p>[ (a_t, y_t) \sim \pi_\theta(\cdot \mid s_t) ]</p>
+<p>[ (a_t, y_t) _(s_t) ]</p>
 <p>这里:</p>
 <ul>
-<li>$a_t$ 是视觉动作，例如 crop / zoom-in</li>
-<li>$y_t$ 是对“预期将看到的内容”的文字描述</li>
+<li><span class="math inline"><em>a</em><sub><em>t</em></sub></span> 是视觉动作，例如 crop / zoom-in</li>
+<li><span class="math inline"><em>y</em><sub><em>t</em></sub></span> 是对“预期将看到的内容”的文字描述</li>
 </ul>
-<p>执行动作后，环境返回新的视觉 observation $I_t$。随后用 CLIP 去比较 $y_t$ 和 $I_t$ 的一致性，得到 step-level semantic score:</p>
-<p>[ z_t = \mathrm{CLIP}(y_t, I_t) ]</p>
+<p>执行动作后，环境返回新的视觉 observation <span class="math inline"><em>I</em><sub><em>t</em></sub></span>。随后用 CLIP 去比较 <span class="math inline"><em>y</em><sub><em>t</em></sub></span> 和 <span class="math inline"><em>I</em><sub><em>t</em></sub></span> 的一致性，得到 step-level semantic score:</p>
+<p>[ z_t = (y_t, I_t) ]</p>
 <p>这一步的意义非常直接: 如果模型说“我要看红衣男子手里的手机”，结果 crop 出来的是一辆摩托车，那这个 step 的语义分数就会很低。</p>
-<h2 id="5-语义奖励设计">5. 语义奖励设计</h2>
-<h3 id="51-step-level-semantic-score">5.1 Step-level semantic score</h3>
+<h2 id="语义奖励设计">5. 语义奖励设计</h2>
+<h3 id="step-level-semantic-score">5.1 Step-level semantic score</h3>
 <p>MAPO 不是直接把所有 step 的 CLIP 分数简单求和，因为那样会鼓励模型故意拉长轨迹、刷更多中间奖励，形成 reward hacking。</p>
 <p>因此作者设计了一个 trajectory-aware discount：</p>
-<p>[ R_{\text{sem}} = \frac{1}{T}\sum_{t=1}^{T}\lambda^{T-t} z_t ]</p>
+<p>[ R_{} = _{t=1}<sup>{T}</sup>{T-t} z_t ]</p>
 <p>其中:</p>
 <ul>
-<li>$T$ 是整条轨迹的步数</li>
-<li>$\lambda$ 是折扣因子，论文默认设为 $0.95$</li>
+<li><span class="math inline"><em>T</em></span> 是整条轨迹的步数</li>
+<li><span class="math inline"><em>λ</em></span> 是折扣因子，论文默认设为 <span class="math inline">0.95</span></li>
 </ul>
 <p>这个设计有两层考虑:</p>
 <ul>
@@ -75,19 +77,19 @@
 <li>对过长轨迹施加折扣，防止模型靠无意义操作累计 semantic reward</li>
 </ul>
 <p>所以它不是普通的 dense reward，而是一个带轨迹长度意识的过程一致性奖励。</p>
-<h3 id="52-与-outcome-reward-的融合">5.2 与 outcome reward 的融合</h3>
+<h3 id="与-outcome-reward-的融合">5.2 与 outcome reward 的融合</h3>
 <p>最终，MAPO 不是用 semantic score 取代最终答案奖励，而是把两者结合起来。论文中的复合 advantage 写成:</p>
-<p>[ \widetilde{A}^{(i)} = \widehat{A}^{(i)}<em>{\text{out}} + \beta \widehat{A}^{(i)}</em>{\text{sem}} ]</p>
+<p>[ ^{(i)} = ^{(i)}<em>{} + ^{(i)}</em>{} ]</p>
 <p>其中:</p>
 <ul>
-<li>$\widehat{A}^{(i)}_{\text{out}}$ 是 final answer 的 group-normalized advantage</li>
-<li>$\widehat{A}^{(i)}_{\text{sem}}$ 是 semantic score 的 group-normalized advantage</li>
-<li>$\beta$ 是平衡系数，论文设为 $0.4$</li>
+<li><span class="math inline"><em>Â</em><sub>out</sub><sup>(<em>i</em>)</sup></span> 是 final answer 的 group-normalized advantage</li>
+<li><span class="math inline"><em>Â</em><sub>sem</sub><sup>(<em>i</em>)</sup></span> 是 semantic score 的 group-normalized advantage</li>
+<li><span class="math inline"><em>β</em></span> 是平衡系数，论文设为 <span class="math inline">0.4</span></li>
 </ul>
 <p>这意味着 MAPO 的优化目标不是单纯鼓励“答对”，而是鼓励“既答对，又在中间过程里说到做到”。</p>
-<h2 id="6-mapo-的优化目标">6. MAPO 的优化目标</h2>
+<h2 id="mapo-的优化目标">6. MAPO 的优化目标</h2>
 <p>论文把 MAPO 放进一个类似 GRPO/GSPO 的 policy optimization 框架中。它的核心目标可以写成:</p>
-<p>[ \mathcal{J}<em>{\text{MAPO}}(\theta) = \mathbb{E}</em>{q \sim \mathcal{D}, {\tau_i}<em>{i=1}^{G} \sim \pi</em>{\theta_{\text{old}}}(\cdot \mid q)}\left[\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|\tau_i|}\sum_{\mathcal{I}=1}^{|\tau_i|}\min\left(w_{\mathcal{I}}^{(i)}(\theta)\widetilde{A}^{(i)}, \mathrm{clip}(w_{\mathcal{I}}^{(i)}(\theta), 1-\epsilon, 1+\epsilon)\widetilde{A}^{(i)}\right)\right] ]</p>
+<p>[ <em>{}() = </em>{q , {<em>i}</em>{i=1}^{G} <em>{</em>{}}(q)}]</p>
 <p>这里的关键点不是公式本身，而是下面三个设计一起工作:</p>
 <ul>
 <li>同一 query 采样一个 group 的轨迹，做 group-based normalization</li>
@@ -95,7 +97,7 @@
 <li>用 clipping 控制策略更新幅度</li>
 </ul>
 <p>因此 MAPO 可以看成“把过程监督塞进 GRPO/GSPO 风格的组内相对优化中”。</p>
-<h2 id="7-为什么作者强调-label-必须是强约束细粒度的">7. 为什么作者强调 label 必须是强约束、细粒度的</h2>
+<h2 id="为什么作者强调-label-必须是强约束细粒度的">7. 为什么作者强调 label 必须是强约束、细粒度的</h2>
 <p>论文专门强调，以前一些工作虽然也在 tool 参数里放过 label 字段，但通常是 optional 或约束很弱的。这样模型容易退化成很泛的描述，比如:</p>
 <ul>
 <li><code>person</code></li>
@@ -104,15 +106,15 @@
 </ul>
 <p>这种 label 对 CLIP 验证几乎没用，因为它不能表达真正的视觉意图。MAPO 的一个隐含但很重要的贡献，是把 label 从“可选注释”提升为“必须具体、必须可验证的意图表达”。</p>
 <p>也就是说，这篇工作不只是加了一个 CLIP reward，而是重新定义了视觉工具调用时的中间表示。这个中间表示必须足够具体，才能把“推理意图”转换为“可判别的监督对象”。</p>
-<h2 id="8-理论分析-dual-variance-reduction">8. 理论分析: Dual Variance Reduction</h2>
+<h2 id="理论分析-dual-variance-reduction">8. 理论分析: Dual Variance Reduction</h2>
 <p>作者给 MAPO 提供了比较完整的理论解释，核心结论是它同时降低两类方差，因此训练更稳。</p>
-<h3 id="81-空间方差降低-group-aggregation">8.1 空间方差降低: group aggregation</h3>
-<p>同一个 query 下采样 $G$ 条轨迹，组内 reward 高相关。作者证明 MAPO/GRPO 这类 group baseline 本质上能充当 spatial control variate，把同一视觉 prompt 的共享难度抵消掉。</p>
+<h3 id="空间方差降低-group-aggregation">8.1 空间方差降低: group aggregation</h3>
+<p>同一个 query 下采样 <span class="math inline"><em>G</em></span> 条轨迹，组内 reward 高相关。作者证明 MAPO/GRPO 这类 group baseline 本质上能充当 spatial control variate，把同一视觉 prompt 的共享难度抵消掉。</p>
 <p>论文给出的近似关系是:</p>
-<p>[ \mathrm{Var}(g_{\text{group}}) \approx (1-\rho)\mathrm{Var}(g_{\text{std}}) + O(1/G) ]</p>
-<p>其中 $\rho$ 是同组样本 reward 的相关性。由于同一张图、同一道题生成的多个响应通常高度相关，所以 $\rho$ 往往比较高，因而组均值 baseline 会明显减少方差。</p>
+<p>[ (g_{}) (1-)(g_{}) + O(1/G) ]</p>
+<p>其中 <span class="math inline"><em>ρ</em></span> 是同组样本 reward 的相关性。由于同一张图、同一道题生成的多个响应通常高度相关，所以 <span class="math inline"><em>ρ</em></span> 往往比较高，因而组均值 baseline 会明显减少方差。</p>
 <p>作者把这个解释成一种 <code>spatial momentum</code> 或 <code>spatial control variate</code>: 不是沿时间维度聚合历史梯度，而是在同一 prompt 的多个候选上抵消 prompt-level 的偶然性。</p>
-<h3 id="82-信号方差降低-semantic-reward-denoising">8.2 信号方差降低: semantic reward denoising</h3>
+<h3 id="信号方差降低-semantic-reward-denoising">8.2 信号方差降低: semantic reward denoising</h3>
 <p>第二层方差降低来自 semantic score。作者认为 outcome reward 太 sparse，也太容易受偶然答对/答错影响；而 semantic reward 更贴近真实轨迹质量，因此条件方差更低。</p>
 <p>直觉上:</p>
 <ul>
@@ -121,21 +123,21 @@
 <li>它更直接约束动作执行是否与文本意图一致</li>
 </ul>
 <p>因此，semantic reward 可以被看作对 outcome reward 的去噪补充，而不是简单的额外 bonus。</p>
-<h3 id="83-收敛界">8.3 收敛界</h3>
+<h3 id="收敛界">8.3 收敛界</h3>
 <p>论文给出的结论形式是:</p>
-<p>[ \min_{0 \le t &lt; T}\mathbb{E}\left[\lVert \nabla J(\theta_t) \rVert^2\right] \le \frac{C_1 L \Delta}{\sqrt{T}} + \frac{C_2 L \sigma_{\text{MAPO}}^2}{\sqrt{T}} ]</p>
+<p>[ _{0 t &lt; T} +  ]</p>
 <p>作者进一步论证:</p>
-<p>[ \sigma_{\text{MAPO}}^2 \approx (1-\rho)\sigma_{\text{base}}^2 - \Delta_{\text{sem}} \ll \sigma_{\text{GRPO}}^2 ]</p>
+<p>[ <em>{}^2 (1-)</em>{}^2 - <em>{} </em>{}^2 ]</p>
 <p>要点不是严格证明细节，而是它把实验中的“更稳定、不容易 collapse”解释成了更低梯度方差带来的收敛优势。</p>
-<h2 id="9-实验设置">9. 实验设置</h2>
-<h3 id="91-backbone-与训练框架">9.1 Backbone 与训练框架</h3>
+<h2 id="实验设置">9. 实验设置</h2>
+<h3 id="backbone-与训练框架">9.1 Backbone 与训练框架</h3>
 <ul>
 <li>Backbone: <code>Ovis2.5-9B</code></li>
 <li>RL 框架: <code>verl</code></li>
 <li>Rollout 加速: <code>vLLM</code></li>
 <li>并行与显存优化: <code>FSDP</code>, optimizer offloading, gradient checkpointing, Triton fused kernels</li>
 </ul>
-<h3 id="92-任务与-benchmark">9.2 任务与 benchmark</h3>
+<h3 id="任务与-benchmark">9.2 任务与 benchmark</h3>
 <p>作者主要评测高分辨率、细粒度视觉推理，选择了:</p>
 <ul>
 <li><code>V*</code></li>
@@ -143,7 +145,7 @@
 <li><code>MME-Realworld-Lite</code></li>
 </ul>
 <p>这些 benchmark 都强调小目标、细节属性、相对位置与高分辨率局部观察能力，因此非常适合评估 <code>thinking with images</code> 场景下的 agentic exploration。</p>
-<h3 id="93-关键超参数">9.3 关键超参数</h3>
+<h3 id="关键超参数">9.3 关键超参数</h3>
 <p>根据正文和附录可整理出 MAPO 的主要超参数:</p>
 <table>
 <thead>
@@ -158,19 +160,19 @@
 <td style="text-align: right;">96</td>
 </tr>
 <tr class="even">
-<td>Group size $G$</td>
+<td>Group size <span class="math inline"><em>G</em></span></td>
 <td style="text-align: right;">8</td>
 </tr>
 <tr class="odd">
-<td>Clip ratio $\epsilon$</td>
+<td>Clip ratio <span class="math inline"><em>ϵ</em></span></td>
 <td style="text-align: right;">0.2</td>
 </tr>
 <tr class="even">
-<td>Semantic reward weight $\beta$</td>
+<td>Semantic reward weight <span class="math inline"><em>β</em></span></td>
 <td style="text-align: right;">0.4</td>
 </tr>
 <tr class="odd">
-<td>Discount factor $\lambda$</td>
+<td>Discount factor <span class="math inline"><em>λ</em></span></td>
 <td style="text-align: right;">0.95</td>
 </tr>
 <tr class="even">
@@ -179,7 +181,7 @@
 </tr>
 <tr class="odd">
 <td>Learning rate</td>
-<td style="text-align: right;">$1 \times 10^{-6}$</td>
+<td style="text-align: right;"><span class="math inline">1 × 10<sup> − 6</sup></span></td>
 </tr>
 <tr class="even">
 <td>KL coefficient</td>
@@ -187,15 +189,25 @@
 </tr>
 <tr class="odd">
 <td>Pixel range</td>
-<td style="text-align: right;">$[10^6, 2 \times 10^6]$</td>
+<td style="text-align: right;"><span class="math inline">[10<sup>6</sup>, 2 × 10<sup>6</sup>]</span></td>
 </tr>
 </tbody>
 </table>
 <p>另外，作者还提到对生成的 descriptive label 做了长度约束，以减少 reward hacking。</p>
-<h2 id="10-主要结果">10. 主要结果</h2>
-<h3 id="101-主结果表">10.1 主结果表</h3>
+<h2 id="主要结果">10. 主要结果</h2>
+<h3 id="主结果表">10.1 主结果表</h3>
 <p>论文主表如下，能够较完整展示 MAPO 与闭源模型、开源 agent 模型以及同 backbone 上不同 RL 方法的对比:</p>
 <table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th>方法</th>
@@ -355,29 +367,33 @@
 <li><code>MME-Real-Lite</code>: 55.8 vs 55.5</li>
 </ul>
 <p>这基本符合论文的主张: MAPO 最擅长解决“复杂视觉动作轨迹中的过程错配”，所以在高分辨率细粒度探索任务上最吃香。</p>
-<h2 id="11-定性分析-mapo-到底改进了什么">11. 定性分析: MAPO 到底改进了什么</h2>
-<h3 id="111-walk-the-talk-案例">11.1 Walk-the-Talk 案例</h3>
+<h2 id="定性分析-mapo-到底改进了什么">11. 定性分析: MAPO 到底改进了什么</h2>
+<h3 id="walk-the-talk-案例">11.1 Walk-the-Talk 案例</h3>
 <p>作者给了一个很直观的轨迹对比:</p>
-<p><img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/MAPO_walkthetalk_new.png" alt="MAPO 与 GRPO 的轨迹对比" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/MAPO_walkthetalk_new.png" alt="MAPO 与 GRPO 的轨迹对比" /><figcaption aria-hidden="true">MAPO 与 GRPO 的轨迹对比</figcaption>
+</figure>
 <p>这个例子能清楚看出 MAPO 的收益不是“语言更会编”，而是“动作执行更贴合语言意图”。</p>
 <ul>
 <li>GRPO 版本里，模型文字上知道应该看摩托车区域，但实际裁剪区域偏了，最后仍可能产生带有迷惑性的文本解释</li>
 <li>MAPO 版本里，模型先明确说出要观察的局部目标，再让 CLIP 对 observation 做一致性核对，因此更容易把 zoom/crop 落到正确区域</li>
 </ul>
 <p>这正是论文所谓 bridging the reasoning-action gap 的具体体现。</p>
-<h3 id="112-训练稳定性">11.2 训练稳定性</h3>
+<h3 id="训练稳定性">11.2 训练稳定性</h3>
 <p>论文还给出奖励曲线:</p>
-<p><img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/reward_plot_new.png" alt="MAPO 与 GRPO 的训练稳定性对比" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_walk_the_talk_bridging_the_reasoning_action_gap_for_thinking_with_images_via_multimodal_agentic_policy_optimization/reward_plot_new.png" alt="MAPO 与 GRPO 的训练稳定性对比" /><figcaption aria-hidden="true">MAPO 与 GRPO 的训练稳定性对比</figcaption>
+</figure>
 <p>作者观察到:</p>
 <ul>
 <li>GRPO 在后期出现明显振荡，甚至训练退化</li>
 <li>MAPO 曲线整体更平滑，并持续上升</li>
 </ul>
 <p>这个现象和理论分析是互相呼应的。因为 MAPO 对中间过程进行了约束，它不那么依赖“最终答对”这个噪声很大的单点信号，所以长程训练时更稳。</p>
-<h2 id="12-这篇工作的强项">12. 这篇工作的强项</h2>
-<h3 id="121-抓住了-agentic-vlm-里一个非常本质的问题">12.1 抓住了 agentic VLM 里一个非常本质的问题</h3>
+<h2 id="这篇工作的强项">12. 这篇工作的强项</h2>
+<h3 id="抓住了-agentic-vlm-里一个非常本质的问题">12.1 抓住了 agentic VLM 里一个非常本质的问题</h3>
 <p>很多视觉 RL 工作都在想“怎么设计更好的 reward”，但这篇文章点到的是更基础的一层: 模型的文字推理与工具执行可能完全脱节。这个问题一旦存在，reward 再强也会被错误轨迹污染。</p>
-<h3 id="122-方法非常轻量">12.2 方法非常轻量</h3>
+<h3 id="方法非常轻量">12.2 方法非常轻量</h3>
 <p>MAPO 并没有引入重型 verifier，也没有训练额外大模型。它只是:</p>
 <ul>
 <li>强制生成描述性 label</li>
@@ -385,29 +401,29 @@
 <li>把分数塞进 advantage</li>
 </ul>
 <p>从工程上看，这是非常划算的改动。</p>
-<h3 id="123-与现有-rl-框架兼容性强">12.3 与现有 RL 框架兼容性强</h3>
+<h3 id="与现有-rl-框架兼容性强">12.3 与现有 RL 框架兼容性强</h3>
 <p>MAPO 本质上是一个 reward/advantage augmentation 思路，可以嵌入 PPO、GRPO、GSPO 风格的训练框架中。作者也明确提到，这种“显式意图 + 执行核验”的范式不只适用于视觉工具，还可能迁移到:</p>
 <ul>
 <li>web browsing agent</li>
 <li>code interpreter agent</li>
 <li>API-calling agent</li>
 </ul>
-<h3 id="124-图像-agent-场景下收益很对症">12.4 图像 agent 场景下收益很对症</h3>
+<h3 id="图像-agent-场景下收益很对症">12.4 图像 agent 场景下收益很对症</h3>
 <p>论文最显著的提升出现在 HR-Bench 等高分辨率细粒度任务上，这说明 MAPO 的 supervision 的确在“看哪里、裁哪里、放大哪里”这些执行层面起作用了。</p>
-<h2 id="13-局限性与潜在问题">13. 局限性与潜在问题</h2>
-<h3 id="131-clip-相似度不一定等价于真正的任务相关一致性">13.1 CLIP 相似度不一定等价于真正的任务相关一致性</h3>
+<h2 id="局限性与潜在问题">13. 局限性与潜在问题</h2>
+<h3 id="clip-相似度不一定等价于真正的任务相关一致性">13.1 CLIP 相似度不一定等价于真正的任务相关一致性</h3>
 <p>CLIP 能判断语义相似，但不一定能精确判断“这个 observation 是否正好对应当前推理所需的信息”。如果 label 本身有歧义，或者多个局部都和 label 语义相近，CLIP 可能给出误导性高分。</p>
-<h3 id="132-label-质量成为新的瓶颈">13.2 label 质量成为新的瓶颈</h3>
+<h3 id="label-质量成为新的瓶颈">13.2 label 质量成为新的瓶颈</h3>
 <p>MAPO 的成立前提是模型能生成足够具体、足够可验证的 label。如果 label 仍然含糊、偷懒或者模板化，那么 semantic scoring 的有效性会明显下降。</p>
-<h3 id="133-奖励设计仍然是-task-specific-的">13.3 奖励设计仍然是 task-specific 的</h3>
+<h3 id="奖励设计仍然是-task-specific-的">13.3 奖励设计仍然是 task-specific 的</h3>
 <p>在视觉 crop/zoom 场景里，label 对 observation 的核验很自然；但如果动作变成复杂网页操作、代码执行或多模态工具链，如何定义可验证 observation 与匹配模型，就会更难。</p>
-<h3 id="134-主收益主要体现在高分辨率细粒度任务">13.4 主收益主要体现在高分辨率细粒度任务</h3>
+<h3 id="主收益主要体现在高分辨率细粒度任务">13.4 主收益主要体现在高分辨率细粒度任务</h3>
 <p>从表中看，MAPO 并不是在所有 benchmark 上都大幅领先。它的收益分布比较集中，说明该方法最适合“动作路径是否对齐”本身就是瓶颈的场景。</p>
-<h2 id="14-对这个仓库的启发">14. 对这个仓库的启发</h2>
+<h2 id="对这个仓库的启发">14. 对这个仓库的启发</h2>
 <p>如果你在这个仓库里关注的是 <code>vlm / multimodal agent / OCR_Image2Code / 过程监督 / reward 设计</code>，这篇论文有几个非常可迁移的想法:</p>
-<h3 id="141-把隐式中间意图显式化">14.1 把隐式中间意图显式化</h3>
+<h3 id="把隐式中间意图显式化">14.1 把隐式中间意图显式化</h3>
 <p>无论是视觉裁剪、网页点击，还是 UI element 定位，都可以先让模型显式输出“我下一步想看到什么 / 我认为目标区域应该包含什么”，再对执行结果做核验。</p>
-<h3 id="142-reward-不要只看最终答案">14.2 reward 不要只看最终答案</h3>
+<h3 id="reward-不要只看最终答案">14.2 reward 不要只看最终答案</h3>
 <p>对长轨迹任务，final outcome reward 太 sparse。可以考虑把 reward 分成:</p>
 <ul>
 <li>outcome correctness</li>
@@ -416,7 +432,7 @@
 <li>observation-target match</li>
 </ul>
 <p>然后在 advantage 里做可控融合。</p>
-<h3 id="143-对-ocr--image2code-方向尤其有借鉴价值">14.3 对 OCR / Image2Code 方向尤其有借鉴价值</h3>
+<h3 id="对-ocr-image2code-方向尤其有借鉴价值">14.3 对 OCR / Image2Code 方向尤其有借鉴价值</h3>
 <p>如果模型需要多步定位 UI 元素、读局部文本、理解布局，再生成代码，那么可以借鉴 MAPO 的范式:</p>
 <ul>
 <li>先生成要观察的局部元素描述</li>
@@ -425,7 +441,7 @@
 <li>再把核验结果变成中间 reward</li>
 </ul>
 <p>这样比只在最终代码渲染后打分，更能减少 credit assignment 的噪声。</p>
-<h3 id="144-可以进一步探索比-clip-更任务专用的-verifier">14.4 可以进一步探索比 CLIP 更任务专用的 verifier</h3>
+<h3 id="可以进一步探索比-clip-更任务专用的-verifier">14.4 可以进一步探索比 CLIP 更任务专用的 verifier</h3>
 <p>对你的项目，如果关注图表、UI、OCR 或 code generation，可能可以把 CLIP verifier 替换为更贴任务的判别器，例如:</p>
 <ul>
 <li>OCR text consistency scorer</li>
@@ -434,7 +450,7 @@
 <li>code-render alignment scorer</li>
 </ul>
 <p>这会比通用 CLIP 更细粒度。</p>
-<h2 id="15-我对这篇论文的总体判断">15. 我对这篇论文的总体判断</h2>
+<h2 id="我对这篇论文的总体判断">15. 我对这篇论文的总体判断</h2>
 <p>这篇工作最有价值的地方，不是提出了一个复杂的新 RL 算法，而是把多模态 agent 训练中的一个核心病灶讲清楚了: <code>会说</code> 不等于 <code>会做</code>，而 outcome reward 往往会把两者混在一起，导致错误轨迹被误强化。</p>
 <p>MAPO 给出的解决办法也很漂亮:</p>
 <ul>
@@ -443,7 +459,7 @@
 <li>最后把这种过程一致性信号注入 policy optimization</li>
 </ul>
 <p>对 <code>thinking with images</code> 这条线来说，这是一个很自然、很可扩展、也很工程友好的方向。它尤其适合作为今后各种 multimodal agent reward 设计的基础模板。</p>
-<h2 id="16-可直接复用的结论">16. 可直接复用的结论</h2>
+<h2 id="可直接复用的结论">16. 可直接复用的结论</h2>
 <ul>
 <li>如果任务依赖多步视觉探索，单纯 outcome reward 很容易掩盖错误动作执行。</li>
 <li>让模型生成可验证的中间意图描述，是把过程监督引入 agent RL 的有效手段。</li>

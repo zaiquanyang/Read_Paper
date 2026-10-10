@@ -1,5 +1,5 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 From Web To Pixels Bringing Agentic Search Into Visual Perception</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="from-web-to-pixels-bringing-agentic-search-into-visual-perception">From Web to Pixels: Bringing Agentic Search into Visual Perception</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-论文基本信息">1. 论文基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 From Web To Pixels Bringing Agentic Search Into Visual Perception</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="from-web-to-pixels-bringing-agentic-search-into-visual-perception">From Web to Pixels: Bringing Agentic Search into Visual Perception</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2605.12497 URL: abs / pdf 主题归档: vlm 总结粒度: detailed 作者: Bokang Yang, Xinyi Sun, Kaituo Feng, Xingping Dong, Dongming Wu, Xiangyu Yue 作者机构: Shenzhen Loop Area Institute / Wuhan University / CUHK MMLab 项目主页: pixel</p></div><div class="summary-block"><h3>核心结论</h3><p>这篇论文的核心不是“让模型多看网页”，而是提出了一个新问题：当目标身份藏在图外知识里时，视觉系统能不能先把对象是谁找出来，再把它精确落到图中的那个实例上。WebEyes 负责把这个问题测清楚，Pixel-Searcher 则给了一个相当干净的 agentic baseline。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="论文基本信息">1. 论文基本信息</h2>
 <ul>
 <li>arXiv ID: 2605.12497</li>
 <li>URL: <a href="https://arxiv.org/abs/2605.12497">abs</a> / <a href="https://arxiv.org/pdf/2605.12497.pdf">pdf</a></li>
@@ -14,7 +14,7 @@
 <li>核心方法: <strong>Pixel-Searcher</strong></li>
 <li>关键词: <code>agentic search</code>, <code>grounded perception</code>, <code>visual grounding</code>, <code>segmentation</code>, <code>search-based VQA</code>, <code>open-world perception</code></li>
 </ul>
-<h2 id="2-这篇论文到底在解决什么问题">2. 这篇论文到底在解决什么问题</h2>
+<h2 id="这篇论文到底在解决什么问题">2. 这篇论文到底在解决什么问题</h2>
 <p>这篇工作的切入点很新，而且和普通 grounding / segmentation 工作不太一样。</p>
 <p>传统视觉感知任务通常默认：</p>
 <ul>
@@ -44,14 +44,14 @@
 <p>一个视觉系统能不能先主动去网上搜证据、做身份解析，再把这个被外部知识解析出来的目标绑定到图像里的具体实例上，最后输出 box、mask 或 grounded answer。</p>
 </blockquote>
 <p>这是这篇论文最核心的贡献点。</p>
-<h2 id="3-论文提出了什么">3. 论文提出了什么</h2>
+<h2 id="论文提出了什么">3. 论文提出了什么</h2>
 <p>这篇 paper 实际上提出了两件事：</p>
 <ol type="1">
 <li>一个新的任务定义和 benchmark：<strong>WebEyes</strong></li>
 <li>一个基于这个任务的 agentic workflow：<strong>Pixel-Searcher</strong></li>
 </ol>
 <p>这两部分最好分开看。</p>
-<h3 id="31-从任务角度perception-deep-research">3.1 从任务角度：Perception Deep Research</h3>
+<h3 id="从任务角度perception-deep-research">3.1 从任务角度：Perception Deep Research</h3>
 <p>作者认为 open-world visual perception 里有一个被低估的 gap：</p>
 <ul>
 <li>不是“模型能不能看见对象”</li>
@@ -65,31 +65,35 @@
 </ul>
 <p>所以真正的关键是：</p>
 <p><strong>entity resolution + instance binding</strong></p>
-<h3 id="32-从系统角度pixel-searcher">3.2 从系统角度：Pixel-Searcher</h3>
+<h3 id="从系统角度pixel-searcher">3.2 从系统角度：Pixel-Searcher</h3>
 <p>作者没有直接拿一个更强的 VLM 去 end-to-end 预测 box/mask，而是做了一个可分解的 workflow：</p>
 <ul>
 <li>先做 agentic search and target resolution</li>
 <li>再做 agentic grounding and tool use</li>
 </ul>
 <p>也就是说，它的核心不只是“多搜一下”，而是把搜到的 evidence 结构化成一个适合视觉 grounding 的 target hypothesis。</p>
-<h2 id="4-webeyes-benchmark">4. WebEyes Benchmark</h2>
-<p><img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/compare2.png" alt="Perception Deep Research teaser" /></p>
-<p><img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/compare.png" alt="WebEyes generation and Pixel-Searcher inference" /></p>
+<h2 id="webeyes-benchmark">4. WebEyes Benchmark</h2>
+<figure>
+<img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/compare2.png" alt="Perception Deep Research teaser" /><figcaption aria-hidden="true">Perception Deep Research teaser</figcaption>
+</figure>
+<figure>
+<img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/compare.png" alt="WebEyes generation and Pixel-Searcher inference" /><figcaption aria-hidden="true">WebEyes generation and Pixel-Searcher inference</figcaption>
+</figure>
 <p>WebEyes 是这篇论文最重要的资产之一。它不是简单造一批“要搜索”的视觉问答题，而是围绕<strong>对象级标注</strong>来组织整个 benchmark。</p>
-<h3 id="41-webeyes-的任务形式">4.1 WebEyes 的任务形式</h3>
+<h3 id="webeyes-的任务形式">4.1 WebEyes 的任务形式</h3>
 <p>WebEyes 建在统一的 object-level annotation layer 上，支持三种 task view：</p>
 <ol type="1">
-<li><p><strong>Search-based Grounding (SearchGround)</strong></p>
+<li><strong>Search-based Grounding (SearchGround)</strong>
 <ul>
 <li>输入：image + knowledge-intensive query</li>
 <li>输出：目标对象的 bounding box</li>
 </ul></li>
-<li><p><strong>Search-based Segmentation (SearchSeg)</strong></p>
+<li><strong>Search-based Segmentation (SearchSeg)</strong>
 <ul>
 <li>输入：image + knowledge-intensive query</li>
 <li>输出：目标对象的 mask</li>
 </ul></li>
-<li><p><strong>Search-based VQA (SearchVQA)</strong></p>
+<li><strong>Search-based VQA (SearchVQA)</strong>
 <ul>
 <li>输入：image + highlighted region + answer options</li>
 <li>输出：与高亮区域匹配的正确知识型描述</li>
@@ -102,7 +106,7 @@
 <li>region-level knowledge verification</li>
 </ul>
 <p>所以它不是单一输出格式 benchmark，而是一个“从外部证据到视觉实例”的多视图评测平台。</p>
-<h3 id="42-数据规模">4.2 数据规模</h3>
+<h3 id="数据规模">4.2 数据规模</h3>
 <p>WebEyes 的规模不算特别大，但设计得很密：</p>
 <ul>
 <li>120 张图像</li>
@@ -123,7 +127,7 @@
 <li>grounded output</li>
 </ul>
 <p>所以它强调的是<strong>traceable evidence-to-pixel evaluation</strong>。</p>
-<h3 id="43-为什么-webeyes-跟已有-benchmark-不一样">4.3 为什么 WebEyes 跟已有 benchmark 不一样</h3>
+<h3 id="为什么-webeyes-跟已有-benchmark-不一样">4.3 为什么 WebEyes 跟已有 benchmark 不一样</h3>
 <p>论文里把它和 RefCOCO、ReasonSeg、MMSearch、BrowseComp-VL 做了对比。核心差异可以概括成一句话：</p>
 <p><strong>已有任务要么有 grounding 但没 web evidence，要么有 search 但没有 object-level grounded verification。</strong></p>
 <p>WebEyes 则同时具备：</p>
@@ -136,37 +140,39 @@
 <li>fine-grained evaluation</li>
 </ul>
 <p>这意味着它评的不是纯搜索能力，也不是纯 perception 能力，而是两者的耦合质量。</p>
-<h3 id="44-webeyes-的构建流程">4.4 WebEyes 的构建流程</h3>
-<p><img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/data_gen.png" alt="WebEyes construction pipeline" /></p>
+<h3 id="webeyes-的构建流程">4.4 WebEyes 的构建流程</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/data_gen.png" alt="WebEyes construction pipeline" /><figcaption aria-hidden="true">WebEyes construction pipeline</figcaption>
+</figure>
 <p>作者的构建 pipeline 很系统，大致分四步：</p>
 <ol type="1">
-<li><p><strong>多实例图像收集</strong></p>
+<li><strong>多实例图像收集</strong>
 <ul>
 <li>从 web image search、新闻页面、社交媒体等收图</li>
 <li>偏好多前景实例、易混淆、存在 distractor 的图像</li>
 </ul></li>
-<li><p><strong>对象标注与视觉解析</strong></p>
+<li><strong>对象标注与视觉解析</strong>
 <ul>
 <li>人工标 foreground instance</li>
 <li>用 SAM3 精修 mask</li>
 <li>记录 mask、box、object name、category</li>
 <li>生成 visual feature text</li>
 </ul></li>
-<li><p><strong>链式证据检索</strong></p>
+<li><strong>链式证据检索</strong>
 <ul>
 <li>对每个对象做三轮 chained search</li>
 <li>先解析成可检索实体</li>
 <li>再在标注前六个月时间窗内抓取公共证据</li>
 <li>构建支持 multi-hop 的 evidence paths</li>
 </ul></li>
-<li><p><strong>知识型问题生成</strong></p>
+<li><strong>知识型问题生成</strong>
 <ul>
 <li>隐去实体名和直接视觉属性</li>
 <li>保留能推导出身份的非视觉事实</li>
 <li>构成 single-hop / multi-hop query</li>
 </ul></li>
 </ol>
-<h3 id="45-质量控制">4.5 质量控制</h3>
+<h3 id="质量控制">4.5 质量控制</h3>
 <p>作者的质控也很严格，专门过滤三类 shortcut：</p>
 <ol type="1">
 <li><strong>Closed-book shortcuts</strong></li>
@@ -176,10 +182,12 @@
 <p>自动过滤直接砍掉了 <strong>38.2%</strong> 候选； 过了自动过滤后，人工审核又砍掉了 <strong>49.2%</strong>。</p>
 <p>这说明作者很在意一个问题：</p>
 <p><strong>不能让模型绕开“先搜证据再做实例绑定”这条主路径。</strong></p>
-<h2 id="5-pixel-searcher-方法">5. Pixel-Searcher 方法</h2>
-<p><img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/method.png" alt="Pixel-Searcher overview" /></p>
+<h2 id="pixel-searcher-方法">5. Pixel-Searcher 方法</h2>
+<figure>
+<img src="../vlm/assets/arxiv_2605_from_web_to_pixels_bringing_agentic_search_into_visual_perception/method.png" alt="Pixel-Searcher overview" /><figcaption aria-hidden="true">Pixel-Searcher overview</figcaption>
+</figure>
 <p>Pixel-Searcher 是一个 reference workflow，不是那种大规模 end-to-end 训练出来的单体模型。它更像是一个 agentic pipeline。</p>
-<h3 id="51-两阶段结构">5.1 两阶段结构</h3>
+<h3 id="两阶段结构">5.1 两阶段结构</h3>
 <p>Pixel-Searcher 分成两个阶段：</p>
 <ol type="1">
 <li><strong>Agentic Search &amp; Target Resolution</strong></li>
@@ -196,7 +204,7 @@
 <li>这个解析出来的目标在图里是哪一个实例</li>
 <li>怎么输出 box / mask / answer</li>
 </ul>
-<h3 id="52-结构化-target-hypothesis">5.2 结构化 target hypothesis</h3>
+<h3 id="结构化-target-hypothesis">5.2 结构化 target hypothesis</h3>
 <p>作者把 hidden target 解析成：</p>
 <p><code>h = {e, c, K}</code></p>
 <p>其中：</p>
@@ -212,7 +220,7 @@
 <li>web evidence 是冗长的</li>
 <li><code>h</code> 是可以直接喂给视觉 binding 的“中间语义骨架”</li>
 </ul>
-<h3 id="53-agentic-search-and-target-resolution">5.3 Agentic Search and Target Resolution</h3>
+<h3 id="agentic-search-and-target-resolution">5.3 Agentic Search and Target Resolution</h3>
 <p>这一阶段的逻辑是一个 adaptive search-reason loop：</p>
 <ul>
 <li><code>Search</code>: 检索外部证据</li>
@@ -232,7 +240,7 @@
 <li>是否与视觉上下文冲突</li>
 </ul>
 <p>所以它更像一个“面向视觉绑定的实体解析器”。</p>
-<h3 id="54-agentic-grounding-and-tool-use">5.4 Agentic Grounding and Tool Use</h3>
+<h3 id="agentic-grounding-and-tool-use">5.4 Agentic Grounding and Tool Use</h3>
 <p>第二阶段就是把 <code>h</code> 绑定到图像实例上。</p>
 <p>作者把它写成：</p>
 <p><code>b* = A_bind(I, h)</code></p>
@@ -245,24 +253,24 @@
 </ul>
 <p>然后针对不同任务：</p>
 <ol type="1">
-<li><p><strong>SearchGround</strong></p>
+<li><strong>SearchGround</strong>
 <ul>
 <li>直接输出 <code>b*</code></li>
 </ul></li>
-<li><p><strong>SearchSeg</strong></p>
+<li><strong>SearchSeg</strong>
 <ul>
 <li>先找到 <code>b*</code></li>
 <li>再把 <code>b*</code> 喂给 <code>SAM3</code></li>
 <li>让 segmentation tool 负责边界细化</li>
 </ul></li>
-<li><p><strong>SearchVQA</strong></p>
+<li><strong>SearchVQA</strong>
 <ul>
 <li>给定 highlighted region</li>
 <li>把每个 answer option 解析成 entity-level summary</li>
 <li>选出和该 region 最匹配的选项</li>
 </ul></li>
 </ol>
-<h3 id="55-这套方法最值得注意的地方">5.5 这套方法最值得注意的地方</h3>
+<h3 id="这套方法最值得注意的地方">5.5 这套方法最值得注意的地方</h3>
 <p>我觉得 Pixel-Searcher 真正有价值的点不在“它搜了网页”，而在于它明确把问题分成了：</p>
 <ul>
 <li><strong>identity resolution</strong></li>
@@ -273,8 +281,8 @@
 <blockquote>
 <p>search 不是为了直接生成答案，而是为了把目标身份解出来；视觉模块不是泛泛地找相似区域，而是要验证“这个实例是不是刚刚解析出的那个对象”。</p>
 </blockquote>
-<h2 id="6-实验设置">6. 实验设置</h2>
-<h3 id="61-评测方式">6.1 评测方式</h3>
+<h2 id="实验设置">6. 实验设置</h2>
+<h3 id="评测方式">6.1 评测方式</h3>
 <p>所有方法：</p>
 <ul>
 <li>用同样的 WebEyes 输入和 split</li>
@@ -287,13 +295,13 @@
 <li>SearchVQA：image + target box + options</li>
 <li>Pixel-Searcher：在 grounding 前插入 hidden-entity search</li>
 </ul>
-<h3 id="62-指标">6.2 指标</h3>
+<h3 id="指标">6.2 指标</h3>
 <ul>
 <li>SearchGround: <code>IoU</code>, <code>Recall@0.5</code></li>
 <li>SearchSeg: <code>gIoU</code>, <code>cIoU</code></li>
 <li>SearchVQA: exact-match accuracy</li>
 </ul>
-<h3 id="63-使用模型">6.3 使用模型</h3>
+<h3 id="使用模型">6.3 使用模型</h3>
 <p>基线里既有 closed-source，也有 open-source。</p>
 <p>比较显眼的几点：</p>
 <ul>
@@ -302,8 +310,8 @@
 <li>closed-source 有 <code>Doubao</code>, <code>GPT-4.1</code>, <code>GPT-5.4</code>, <code>Gemini-3.1</code></li>
 </ul>
 <p>作者特别提到，他们用 <code>Qwen3-VL-8B-Instruct</code> 而不是 Qwen 3.5，是因为 3.5 在 preliminary grounding 里 instruction following 更弱，经常连合法 box 都输出不出来。</p>
-<h2 id="7-主要结果">7. 主要结果</h2>
-<h3 id="71-search-based-grounding">7.1 Search-based Grounding</h3>
+<h2 id="主要结果">7. 主要结果</h2>
+<h3 id="search-based-grounding">7.1 Search-based Grounding</h3>
 <p>论文最核心的主结果之一是 SearchGround。</p>
 <p>下面先摘 overall 指标：</p>
 <table>
@@ -311,7 +319,7 @@
 <tr class="header">
 <th>Method</th>
 <th style="text-align: right;">Overall IoU</th>
-<th style="text-align: right;">Overall <a href="mailto:R@0.5">R@0.5</a></th>
+<th style="text-align: right;">Overall R@0.5</th>
 </tr>
 </thead>
 <tbody>
@@ -348,7 +356,7 @@
 <li>相比 <code>Qwen3-VL-8B</code>：
 <ul>
 <li>IoU: <code>26.81 -&gt; 34.17</code></li>
-<li><a href="mailto:R@0.5">R@0.5</a>: <code>32.61 -&gt; 41.30</code></li>
+<li>R@0.5: <code>32.61 -&gt; 41.30</code></li>
 </ul></li>
 </ul>
 <p>提升最明显的类别包括：</p>
@@ -358,7 +366,7 @@
 <li>Product</li>
 </ul>
 <p>这很符合任务设定，因为这些类别往往实例多、外观近、必须依赖外部身份线索。</p>
-<h3 id="72-search-based-segmentation">7.2 Search-based Segmentation</h3>
+<h3 id="search-based-segmentation">7.2 Search-based Segmentation</h3>
 <p>SearchSeg 的整体结果也很强：</p>
 <table>
 <thead>
@@ -407,7 +415,7 @@
 <li>更好的 entity resolution 会传递给后续 mask 细化</li>
 </ul>
 <p>换句话说，分割结果差很多时候不是 mask tool 不行，而是前面的 target instance 先找错了。</p>
-<h3 id="73-search-based-vqa">7.3 Search-based VQA</h3>
+<h3 id="search-based-vqa">7.3 Search-based VQA</h3>
 <p>SearchVQA 的 overall accuracy：</p>
 <table>
 <thead>
@@ -450,7 +458,7 @@
 <li>Anime</li>
 </ul>
 <p>这里说明 search-to-pixel 不只对定位类任务有用，对 <strong>grounded region semantics verification</strong> 也有帮助。</p>
-<h2 id="8-这些结果说明了什么">8. 这些结果说明了什么</h2>
+<h2 id="这些结果说明了什么">8. 这些结果说明了什么</h2>
 <p>论文里一个很重要的观察是：</p>
 <p><strong>WebEyes 真正难的，不是“分割边界够不够细”，而是“能不能先把隐藏身份解析对，再把它绑定到对的实例上”。</strong></p>
 <p>从结果上也能看出来：</p>
@@ -459,15 +467,15 @@
 <li>但那个对象未必和外部证据解析出来的身份一致</li>
 </ul>
 <p>这和普通 referring expression 很不一样。普通 referring 里视觉属性通常足够区分对象；WebEyes 里往往不是。</p>
-<h2 id="9-ablation-与失败分析">9. Ablation 与失败分析</h2>
-<h3 id="91-ablation">9.1 Ablation</h3>
+<h2 id="ablation-与失败分析">9. Ablation 与失败分析</h2>
+<h3 id="ablation">9.1 Ablation</h3>
 <p>作者做了 component ablation：</p>
 <table>
 <thead>
 <tr class="header">
 <th>Variant</th>
 <th style="text-align: right;">IoU</th>
-<th style="text-align: right;"><a href="mailto:R@0.5">R@0.5</a></th>
+<th style="text-align: right;">R@0.5</th>
 <th style="text-align: right;">gIoU</th>
 <th style="text-align: right;">cIoU</th>
 </tr>
@@ -526,12 +534,12 @@
 </table>
 <p>这里最值得注意的是两点：</p>
 <ol type="1">
-<li><p><strong>去掉 direct candidates 掉得最狠</strong></p>
+<li><strong>去掉 direct candidates 掉得最狠</strong>
 <ul>
 <li>IoU 从 <code>34.17</code> 掉到 <code>20.14</code></li>
-<li><a href="mailto:R@0.5">R@0.5</a> 从 <code>41.30</code> 掉到 <code>19.72</code></li>
+<li>R@0.5 从 <code>41.30</code> 掉到 <code>19.72</code></li>
 </ul></li>
-<li><p><strong>只靠 direct grounding 也远不够</strong></p>
+<li><strong>只靠 direct grounding 也远不够</strong>
 <ul>
 <li><code>direct only</code> 也明显弱于 full system</li>
 </ul></li>
@@ -542,7 +550,7 @@
 <li>只靠证据支持也不够</li>
 <li>必须把 direct grounding、reference matching、contradiction checking 这些环节组合起来</li>
 </ul>
-<h3 id="92-失败分析">9.2 失败分析</h3>
+<h3 id="失败分析">9.2 失败分析</h3>
 <p>论文里给出的失败统计非常有启发性：</p>
 <ul>
 <li>总共有 389 个 segmentation failure</li>
@@ -565,8 +573,8 @@
 <blockquote>
 <p>在这种 open-world grounded perception 里，真正的瓶颈不是 segmentation tool，而是 search-to-identity-to-instance 这条链。</p>
 </blockquote>
-<h2 id="10-这篇论文的亮点">10. 这篇论文的亮点</h2>
-<h3 id="101-任务定义很有辨识度">10.1 任务定义很有辨识度</h3>
+<h2 id="这篇论文的亮点">10. 这篇论文的亮点</h2>
+<h3 id="任务定义很有辨识度">10.1 任务定义很有辨识度</h3>
 <p>很多论文会把“需要外部知识”的视觉任务做成：</p>
 <ul>
 <li>搜索增强 VQA</li>
@@ -576,7 +584,7 @@
 <p>这篇 paper 不一样，它把问题钉在：</p>
 <p><strong>“外部知识最终必须落到像素级或区域级输出上”</strong></p>
 <p>这个定义很清楚，也让 benchmark 更有新意。</p>
-<h3 id="102-benchmark-设计比单纯堆数据更用心">10.2 benchmark 设计比单纯堆数据更用心</h3>
+<h3 id="benchmark-设计比单纯堆数据更用心">10.2 benchmark 设计比单纯堆数据更用心</h3>
 <p>WebEyes 的价值不在于规模巨大，而在于它把以下东西串起来了：</p>
 <ul>
 <li>object annotation</li>
@@ -585,20 +593,20 @@
 <li>grounded verification</li>
 </ul>
 <p>这让它特别适合做 error diagnosis。</p>
-<h3 id="103-把search变成-perception-前端而不是回答后端">10.3 把“search”变成 perception 前端，而不是回答后端</h3>
+<h3 id="把search变成-perception-前端而不是回答后端">10.3 把“search”变成 perception 前端，而不是回答后端</h3>
 <p>这是我个人最喜欢的一个点。</p>
 <p>很多 agentic search 工作把 search 当作“生成答案之前的知识补充”； 这篇工作把 search 当作：</p>
 <p><strong>视觉绑定之前的身份解析模块</strong></p>
 <p>这在 conceptual framing 上非常清楚。</p>
-<h2 id="11-局限性">11. 局限性</h2>
+<h2 id="局限性">11. 局限性</h2>
 <p>这篇工作也有一些很明显的限制。</p>
-<h3 id="111-benchmark-规模还不大">11.1 benchmark 规模还不大</h3>
+<h3 id="benchmark-规模还不大">11.1 benchmark 规模还不大</h3>
 <ul>
 <li>120 images</li>
 <li>473 instances</li>
 </ul>
 <p>对新方向 benchmark 来说可以接受，但如果要支撑更强的泛化结论，还偏小。</p>
-<h3 id="112-pixel-searcher-更像-workflow而不是统一训练好的强模型">11.2 Pixel-Searcher 更像 workflow，而不是统一训练好的强模型</h3>
+<h3 id="pixel-searcher-更像-workflow而不是统一训练好的强模型">11.2 Pixel-Searcher 更像 workflow，而不是统一训练好的强模型</h3>
 <p>它的优势在于可解释、可分解； 但劣势也明显：</p>
 <ul>
 <li>工程链路更长</li>
@@ -606,12 +614,12 @@
 <li>依赖外部工具</li>
 <li>latency 和部署复杂度不一定低</li>
 </ul>
-<h3 id="113-search-reliability-仍是硬约束">11.3 search reliability 仍是硬约束</h3>
+<h3 id="search-reliability-仍是硬约束">11.3 search reliability 仍是硬约束</h3>
 <p>如果外部证据搜不到、搜偏了、或时间敏感信息过期， 整个后续 pipeline 都会被拖偏。</p>
-<h3 id="114-closed-source-仍然更强">11.4 closed-source 仍然更强</h3>
+<h3 id="closed-source-仍然更强">11.4 closed-source 仍然更强</h3>
 <p>虽然 Pixel-Searcher 是开源方法里最强的，但整体上离最好的 closed-source 结果还有差距，尤其在 segmentation 与 VQA 上依然明显。</p>
-<h2 id="12-对我们最有启发的地方">12. 对我们最有启发的地方</h2>
-<h3 id="121-可以把先解析身份再做视觉绑定视为一个独立模块">12.1 可以把“先解析身份，再做视觉绑定”视为一个独立模块</h3>
+<h2 id="对我们最有启发的地方">12. 对我们最有启发的地方</h2>
+<h3 id="可以把先解析身份再做视觉绑定视为一个独立模块">12.1 可以把“先解析身份，再做视觉绑定”视为一个独立模块</h3>
 <p>这篇 paper 对 VLM 研究者最大的提醒之一是：</p>
 <p><strong>不要把所有困难都扔给 end-to-end grounding。</strong></p>
 <p>对于很多 open-world 任务，更合理的拆法是：</p>
@@ -621,14 +629,14 @@
 <li>output rendering</li>
 </ol>
 <p>这个 decomposition 很值得借鉴。</p>
-<h3 id="122-它把-agentic-search-和细粒度视觉任务真正接上了">12.2 它把 agentic search 和细粒度视觉任务真正接上了</h3>
+<h3 id="它把-agentic-search-和细粒度视觉任务真正接上了">12.2 它把 agentic search 和细粒度视觉任务真正接上了</h3>
 <p>你前面一直在强调“细粒度”。这篇论文其实就是一个很典型的例子：</p>
 <ul>
 <li>search 不停留在文本答案层</li>
 <li>最终要落到 box / mask / highlighted region answer 上</li>
 </ul>
 <p>这就是很实打实的 <strong>fine-grained VLM + agentic search</strong>。</p>
-<h3 id="123-对未来工作一个自然方向是把-search-hypothesis-学成更结构化的-latent-state">12.3 对未来工作，一个自然方向是把 search hypothesis 学成更结构化的 latent state</h3>
+<h3 id="对未来工作一个自然方向是把-search-hypothesis-学成更结构化的-latent-state">12.3 对未来工作，一个自然方向是把 search hypothesis 学成更结构化的 latent state</h3>
 <p>现在 <code>h = {e, c, K}</code> 还是比较人工设计的 structured hypothesis。</p>
 <p>后续可以想：</p>
 <ul>
@@ -637,7 +645,7 @@
 <li>把多个候选 entity 做概率式绑定</li>
 <li>用 region-level verifier 学“身份一致性分数”</li>
 </ul>
-<h3 id="124-还可以往更强的-benchmark-方向扩展">12.4 还可以往更强的 benchmark 方向扩展</h3>
+<h3 id="还可以往更强的-benchmark-方向扩展">12.4 还可以往更强的 benchmark 方向扩展</h3>
 <p>WebEyes 之后很自然的扩展包括：</p>
 <ul>
 <li>更长时间跨度的时序知识</li>
@@ -645,6 +653,6 @@
 <li>视频版 search-to-pixel</li>
 <li>OCR-heavy / chart-heavy 文档视觉场景</li>
 </ul>
-<h2 id="13-一句话总结">13. 一句话总结</h2>
+<h2 id="一句话总结">13. 一句话总结</h2>
 <p><strong>这篇论文的核心不是“让模型多看网页”，而是提出了一个新问题：当目标身份藏在图外知识里时，视觉系统能不能先把对象是谁找出来，再把它精确落到图中的那个实例上。WebEyes 负责把这个问题测清楚，Pixel-Searcher 则给了一个相当干净的 agentic baseline。</strong></p>
 </div></div></details></div></main></body></html>

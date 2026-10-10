@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Improving Vision Language Models With Perception Centric Process Reward Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="perceval-以感知为中心的过程奖励模型改进视觉语言模型">Perceval: 以感知为中心的过程奖励模型改进视觉语言模型</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Improving Vision Language Models With Perception Centric Process Reward Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="perceval-以感知为中心的过程奖励模型改进视觉语言模型">Perceval: 以感知为中心的过程奖励模型改进视觉语言模型</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>标题 : Improving Vision-Language Models with Perception-Centric Process Reward Models ArXiv ID : 2604.24583 链接 : Abs | PDF 机构 : 中国人民大学、字节跳动、UCSD、香港科技大学 会议 : CVPR 2026 代码 : https://github.com/RUCAIBox/Perceval</p></div><div class="summary-block"><h3>核心结论</h3><p>扩展 PRM 到逻辑推理 ：当前 PRM 仅检测感知幻觉，扩展到逻辑错误检测（如数学推理中的因果错误）可进一步提升推理能力 更强的自反思训练 ：在 RL 训练数据中加入反思样例，可能提升 Truncate-Thinking 策略的效果 PRM 与工具调用结合 ：将 Perceval 的检测结果与外部视觉工具（放大、裁剪）结合，形成检测-修正闭环 更大规模验证 ：在 70B+ 模型上验证 token 级监督的收益是否更大 自动化 PRM </p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
 <h2 id="基本信息">基本信息</h2>
 <ul>
 <li><strong>标题</strong>: Improving Vision-Language Models with Perception-Centric Process Reward Models</li>
@@ -6,7 +6,7 @@
 <li><strong>链接</strong>: <a href="https://arxiv.org/abs/2604.24583">Abs</a> | <a href="https://arxiv.org/pdf/2604.24583.pdf">PDF</a></li>
 <li><strong>机构</strong>: 中国人民大学、字节跳动、UCSD、香港科技大学</li>
 <li><strong>会议</strong>: CVPR 2026</li>
-<li><strong>代码</strong>: <a href="https://github.com/RUCAIBox/Perceval">https://github.com/RUCAIBox/Perceval</a></li>
+<li><strong>代码</strong>: https://github.com/RUCAIBox/Perceval</li>
 </ul>
 <hr />
 <h2 id="核心问题与动机">核心问题与动机</h2>
@@ -15,10 +15,10 @@
 <hr />
 <h2 id="方法概述">方法概述</h2>
 <h3 id="perceval感知级过程奖励模型">Perceval：感知级过程奖励模型</h3>
-<p>Perceval 是一个<strong>生成式</strong>过程奖励模型，给定图像 $v$、问题 $q$、模型回答 $o$，输出结构化的验证结果：</p>
+<p>Perceval 是一个<strong>生成式</strong>过程奖励模型，给定图像 <span class="math inline"><em>v</em></span>、问题 <span class="math inline"><em>q</em></span>、模型回答 <span class="math inline"><em>o</em></span>，输出结构化的验证结果：</p>
 <ol type="1">
-<li><strong><think>...</think></strong>：逐条分析回答中每个感知 claim 是否与图像视觉证据一致</li>
-<li><strong><answer>...</answer></strong>：若无错误输出 <code>"The response is correct."</code>；否则输出一个 Python 列表，包含被识别为幻觉的<strong>原文子串</strong></li>
+<li><strong><think>…</think></strong>：逐条分析回答中每个感知 claim 是否与图像视觉证据一致</li>
+<li><strong><answer>…</answer></strong>：若无错误输出 <code>"The response is correct."</code>；否则输出一个 Python 列表，包含被识别为幻觉的<strong>原文子串</strong></li>
 </ol>
 <p>这种设计直接定位错误 span，而非给出单一标量分数。</p>
 <h3 id="prm-训练流程四阶段">PRM 训练流程（四阶段）</h3>
@@ -29,28 +29,30 @@
 <li><strong>监督微调</strong>：在聚合数据上 SFT 训练 Perceval 模型</li>
 </ol>
 <h3 id="rlvr-中的过程级监督">RLVR 中的过程级监督</h3>
-<p>标准 GRPO 的优势值 $\hat{A}_i$ 是<strong>序列级</strong>的，对同一回答中所有 token 一视同仁。Perceval 的改进：</p>
+<p>标准 GRPO 的优势值 <span class="math inline"><em>Â</em><sub><em>i</em></sub></span> 是<strong>序列级</strong>的，对同一回答中所有 token 一视同仁。Perceval 的改进：</p>
 <ol type="1">
-<li>用 Perceval 识别每个回答中的幻觉 token span，构建二值掩码 $M_i$</li>
+<li>用 Perceval 识别每个回答中的幻觉 token span，构建二值掩码 <span class="math inline"><em>M</em><sub><em>i</em></sub></span></li>
 <li>将序列级优势改为<strong>token 级优势</strong>：</li>
 </ol>
-<p>$$\hat{A}'_{i,t} = \hat{A}<em>i - \alpha \cdot m</em>{i,t} \cdot |\hat{A}_i|$$</p>
+<p><span class="math display"><em>Â</em>′<sub><em>i</em>, <em>t</em></sub> = <em>Â</em><sub><em>i</em></sub> − <em>α</em> ⋅ <em>m</em><sub><em>i</em>, <em>t</em></sub> ⋅ |<em>Â</em><sub><em>i</em></sub>|</span></p>
 <ul>
-<li>正确 token ($m=0$)：保持原优势 $\hat{A}_i$</li>
-<li>幻觉 token ($m=1$)：优势被削弱——winner 序列变为 $\hat{A}_i(1-\alpha)$，loser 序列变为 $\hat{A}_i(1+\alpha)$（惩罚更重）</li>
+<li>正确 token (<span class="math inline"><em>m</em> = 0</span>)：保持原优势 <span class="math inline"><em>Â</em><sub><em>i</em></sub></span></li>
+<li>幻觉 token (<span class="math inline"><em>m</em> = 1</span>)：优势被削弱——winner 序列变为 <span class="math inline"><em>Â</em><sub><em>i</em></sub>(1 − <em>α</em>)</span>，loser 序列变为 <span class="math inline"><em>Â</em><sub><em>i</em></sub>(1 + <em>α</em>)</span>（惩罚更重）</li>
 </ul>
 <ol start="3" type="1">
-<li>将 $\hat{A}'_{i,t}$ 替换进 GRPO 目标函数</li>
+<li>将 <span class="math inline"><em>Â</em>′<sub><em>i</em>, <em>t</em></sub></span> 替换进 GRPO 目标函数</li>
 </ol>
 <p>关键设计：<strong>仅在感知相关数据上使用 Perceval 干预</strong>，数学推理等其他数据仍使用标准 GRPO。这使得可以验证感知增强是否能泛化到其他推理领域。</p>
 <h3 id="推理时的-test-time-scaling">推理时的 Test-Time Scaling</h3>
 <p>Perceval 在推理阶段也可用于迭代纠错，设计了两种策略：</p>
 <ol type="1">
 <li><strong>Truncate–then–Regenerate</strong>：检测到幻觉后，截断错误 span 之前的内容，保留已验证的前缀，让模型从该位置重新生成</li>
-<li><strong>Truncate–Thinking–then–Regenerate</strong>：在截断后插入反思提示（如 "Wait, I need to reconsider..."），引导模型反思后再生</li>
+<li><strong>Truncate–Thinking–then–Regenerate</strong>：在截断后插入反思提示（如 “Wait, I need to reconsider…”），引导模型反思后再生</li>
 </ol>
-<p>两种策略均可迭代最多 $k$ 次，直到 Perceval 不再检测到错误。</p>
-<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/final-main.png" alt="方法概览" /></p>
+<p>两种策略均可迭代最多 <span class="math inline"><em>k</em></span> 次，直到 Perceval 不再检测到错误。</p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/final-main.png" alt="方法概览" /><figcaption aria-hidden="true">方法概览</figcaption>
+</figure>
 <hr />
 <h2 id="主要实验结果">主要实验结果</h2>
 <h3 id="表-1主实验结果3b-和-7b-模型">表 1：主实验结果（3B 和 7B 模型）</h3>
@@ -442,20 +444,24 @@
 <li>初期<strong>下降</strong>：模型成功学习减少幻觉</li>
 <li>后期<strong>稳定</strong>：未持续下降 → 模型未学会欺骗 PRM → 无明显 reward hacking</li>
 </ul>
-<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/hallucination_rate.png" alt="幻觉率曲线" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/hallucination_rate.png" alt="幻觉率曲线" /><figcaption aria-hidden="true">幻觉率曲线</figcaption>
+</figure>
 <h3 id="图-3定性分析案例">图 3：定性分析案例</h3>
 <p>任务：判断高分辨率图中蓝色车辆与白色车辆的相对位置</p>
 <ul>
-<li><strong>GRPO 基线</strong>：跳过感知步骤，直接输出 "left"（典型幻觉）</li>
+<li><strong>GRPO 基线</strong>：跳过感知步骤，直接输出 “left”（典型幻觉）</li>
 <li><strong>Perceval 方法</strong>：逐步定位白色车辆 → 搜索蓝色车辆 → 正确推断相对位置</li>
 </ul>
-<p><img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/case.png" alt="定性分析" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/case.png" alt="定性分析" /><figcaption aria-hidden="true">定性分析</figcaption>
+</figure>
 <hr />
 <h2 id="优势">优势</h2>
 <ol type="1">
 <li><strong>细粒度监督</strong>：token 级优势重分配，比序列级 GRPO 奖励更精准地定位和纠正幻觉</li>
 <li><strong>抗 reward hacking</strong>：不直接输出标量分数，而是通过修改优势值间接干预，更难被策略模型利用</li>
-<li><strong>感知泛化</strong>：仅在感知数据上施加 PRM 干预，但数学/图表推理也获得一致提升——"能力迁移"效应显著</li>
+<li><strong>感知泛化</strong>：仅在感知数据上施加 PRM 干预，但数学/图表推理也获得一致提升——“能力迁移”效应显著</li>
 <li><strong>推理时可扩展</strong>：Truncate 策略在推理阶段也能使用，且随迭代次数增加持续提升</li>
 <li><strong>无需外部工具</strong>：7B 模型在视觉搜索上媲美使用外部工具（如 DeepEyes、Pixel-Reasoner）的 SOTA 方法</li>
 </ol>
@@ -468,7 +474,7 @@
 <li><strong>反思策略效果弱于 Truncate</strong>：可能因训练数据中缺少反思样例，导致模型对反思 prompt 的遵循质量不足</li>
 </ol>
 <hr />
-<h2 id="复现--实现要点">复现 / 实现要点</h2>
+<h2 id="复现-实现要点">复现 / 实现要点</h2>
 <ul>
 <li><strong>基础模型</strong>：Qwen2.5-VL（3B / 7B）作为 PRM 和策略模型的骨干</li>
 <li><strong>PRM 训练数据</strong>：来自 DeepEyes 和 SophiaVL-R1，每条 rollout 3 次</li>

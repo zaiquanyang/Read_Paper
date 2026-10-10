@@ -1,5 +1,5 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Alphagrpo Unlocking Self Reflective Multimodal Generation In Umms Via Decompositional Verifiable Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="alphagrpo-unlocking-self-reflective-multimodal-generation-in-unified-multimodal-models-via-decompositional-verifiable-reward">AlphaGRPO: Unlocking Self-Reflective Multimodal Generation in Unified Multimodal Models via Decompositional Verifiable Reward</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
-<h2 id="1-论文基本信息">1. 论文基本信息</h2>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2605 Alphagrpo Unlocking Self Reflective Multimodal Generation In Umms Via Decompositional Verifiable Reward</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="alphagrpo-unlocking-self-reflective-multimodal-generation-in-unified-multimodal-models-via-decompositional-verifiable-reward">AlphaGRPO: Unlocking Self-Reflective Multimodal Generation in Unified Multimodal Models via Decompositional Verifiable Reward</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>arXiv ID: 2605.12495 URL: abs / pdf 主题归档: vlm 总结粒度: detailed 作者: Runhui Huang, Jie Wu, Rui Yang, Zhe Liu, Hengshuang Zhao 作者机构: The University of Hong Kong / Bytedance Seed 核心方法: AlphaGRPO 核心奖励: DVReward ( Decompositiona</p></div><div class="summary-block"><h3>核心结论</h3><p>AlphaGRPO 最重要的不只是“把 GRPO 用到 unified multimodal generation 上”，而是它给出了一个很像样的答案：如果你想让统一模型学会自我反思和细粒度修正，奖励信号不能再是粗糙的一维分数，而要先把复杂请求拆开，再逐项验证。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
+<h2 id="论文基本信息">1. 论文基本信息</h2>
 <ul>
 <li>arXiv ID: 2605.12495</li>
 <li>URL: <a href="https://arxiv.org/abs/2605.12495">abs</a> / <a href="https://arxiv.org/pdf/2605.12495.pdf">pdf</a></li>
@@ -12,7 +12,7 @@
 <li>项目页: <a href="https://huangrh99.github.io/AlphaGRPO/">huangrh99.github.io/AlphaGRPO</a></li>
 <li>关键词: <code>UMM</code>, <code>AR-Diffusion</code>, <code>GRPO</code>, <code>self-reflective refinement</code>, <code>reasoning text-to-image</code>, <code>decompositional reward</code>, <code>multimodal RL</code></li>
 </ul>
-<h2 id="2-这篇论文在解决什么问题">2. 这篇论文在解决什么问题</h2>
+<h2 id="这篇论文在解决什么问题">2. 这篇论文在解决什么问题</h2>
 <p>这篇 paper 的目标很明确：</p>
 <p><strong>能不能不用额外的 cold-start SFT，只靠 RL，把 unified multimodal model 里“潜在但没被激活”的 reasoning / self-reflection / refinement 能力逼出来，用来提升 multimodal generation？</strong></p>
 <p>这里的对象不是普通 text-to-image diffusion model，而是 <strong>Unified Multimodal Models (UMMs)</strong>，尤其是这种：</p>
@@ -23,66 +23,70 @@
 </ul>
 <p>作者的核心判断是：</p>
 <ol type="1">
-<li><p>这类 unified model 在大规模预训练后，其实已经有一些“隐式原语”</p>
+<li>这类 unified model 在大规模预训练后，其实已经有一些“隐式原语”
 <ul>
 <li>比如视觉理解</li>
 <li>prompt-following</li>
 <li>局部 reasoning</li>
 <li>甚至自我诊断的潜力</li>
 </ul></li>
-<li><p>过去很多工作想让它做更强的 reasoning T2I 或 image refinement，主要靠：</p>
+<li>过去很多工作想让它做更强的 reasoning T2I 或 image refinement，主要靠：
 <ul>
 <li>强 teacher 合成高质量数据</li>
 <li>再做额外 cold-start SFT</li>
 </ul></li>
-<li><p>但这样有个问题：</p>
+<li>但这样有个问题：
 <ul>
 <li>你很难分清性能提升到底来自 RL，还是来自 teacher distillation</li>
 </ul></li>
 </ol>
 <p>所以作者要做的是：</p>
 <p><strong>不加冷启动蒸馏阶段，直接在 AR-Diffusion unified model 上做 GRPO，看看能不能把这些 latent capability 激活出来。</strong></p>
-<h2 id="3-这篇论文最重要的两个点">3. 这篇论文最重要的两个点</h2>
+<h2 id="这篇论文最重要的两个点">3. 这篇论文最重要的两个点</h2>
 <p>论文的贡献其实可以浓缩成两件事：</p>
 <ol type="1">
 <li><strong>把 GRPO 扩展到 AR-Diffusion unified multimodal trajectory</strong></li>
 <li><strong>提出更稳定的 multimodal reward：DVReward</strong></li>
 </ol>
 <p>前者解决“怎么训”，后者解决“拿什么信号训”。</p>
-<h2 id="4-为什么作者觉得这件事可行">4. 为什么作者觉得这件事可行</h2>
-<h3 id="41-它先做了一个-pilot-study">4.1 它先做了一个 pilot study</h3>
+<h2 id="为什么作者觉得这件事可行">4. 为什么作者觉得这件事可行</h2>
+<h3 id="它先做了一个-pilot-study">4.1 它先做了一个 pilot study</h3>
 <p>这篇 paper 不错的一点是，没有一上来就堆方法，而是先问两个前提是否成立：</p>
 <ol type="1">
 <li>预训练好的 UMM 到底有没有 latent self-reflection 能力？</li>
 <li>通用 MLLM 能不能给 visual generation 提供稳定、可区分的 reward？</li>
 </ol>
 <p>这两个问题分别对应它后面方法的两个核心部件。</p>
-<h3 id="42-发现-1让模型找错比让它判断对错更能激活推理">4.2 发现 1：让模型“找错”比让它“判断对错”更能激活推理</h3>
-<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study1.png" alt="Verification vs reflection" /></p>
+<h3 id="发现-1让模型找错比让它判断对错更能激活推理">4.2 发现 1：让模型“找错”比让它“判断对错”更能激活推理</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study1.png" alt="Verification vs reflection" /><figcaption aria-hidden="true">Verification vs reflection</figcaption>
+</figure>
 <p>作者用 Bagel 做了两个 probing task：</p>
 <ol type="1">
-<li><p><strong>Verification</strong></p>
+<li><strong>Verification</strong>
 <ul>
 <li>问模型：这张图有没有问题？</li>
 </ul></li>
-<li><p><strong>Reflection</strong></p>
+<li><strong>Reflection</strong>
 <ul>
 <li>明确告诉模型：这张图有错误，请你找出来</li>
 </ul></li>
 </ol>
 <p>结果很有意思：</p>
 <ul>
-<li><p>在 Verification 模式下，模型经常有明显的 <strong>confirmation bias</strong></p>
+<li>在 Verification 模式下，模型经常有明显的 <strong>confirmation bias</strong>
 <ul>
 <li>即使图里有明显错误，也倾向于说“整体符合用户意图”</li>
 </ul></li>
-<li><p>在 Reflection 模式下，模型反而更容易认真检查细节，指出错位、属性冲突等问题</p></li>
+<li>在 Reflection 模式下，模型反而更容易认真检查细节，指出错位、属性冲突等问题</li>
 </ul>
 <p>这个结论很关键，因为它说明：</p>
 <p><strong>UMM 不是没有理解能力，而是“验证有没有错”这件事本身不够容易激活它；反过来，“请你找错”更像一个能触发 latent reasoning 的开关。</strong></p>
 <p>这其实直接支撑了后面的 self-reflective refinement 训练设计。</p>
-<h3 id="43-发现-2问具体问题比直接打分更容易得到可区分-reward">4.3 发现 2：问具体问题，比直接打分更容易得到可区分 reward</h3>
-<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study2_v3.png" alt="Score reward vs question reward" /></p>
+<h3 id="发现-2问具体问题比直接打分更容易得到可区分-reward">4.3 发现 2：问具体问题，比直接打分更容易得到可区分 reward</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/pilot_study2_v3.png" alt="Score reward vs question reward" /><figcaption aria-hidden="true">Score reward vs question reward</figcaption>
+</figure>
 <p>作者做了另一个很重要的比较：</p>
 <ul>
 <li>同一个 prompt 生成两张图</li>
@@ -90,12 +94,12 @@
 </ul>
 <p>然后对比两种 reward：</p>
 <ol type="1">
-<li><p><strong>Holistic scalar reward</strong></p>
+<li><strong>Holistic scalar reward</strong>
 <ul>
 <li>直接让模型打 0-10 分</li>
 <li>用的是 VIEScore 一类方式</li>
 </ul></li>
-<li><p><strong>Question-based reward</strong></p>
+<li><strong>Question-based reward</strong>
 <ul>
 <li>不让模型给抽象分数</li>
 <li>而是直接问一个关键问题，比如：
@@ -113,8 +117,10 @@
 <p>作者据此得出的结论非常重要：</p>
 <p><strong>通用 MLLM 不是不能分辨好坏，而是“不擅长把复杂视觉语义直接映射成稳定标量”；但如果把任务拆成可验证问题，它的判别能力会被更稳定地激活。</strong></p>
 <p>这就是 DVReward 的出发点。</p>
-<h2 id="5-方法总览">5. 方法总览</h2>
-<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /></p>
+<h2 id="方法总览">5. 方法总览</h2>
+<figure>
+<img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/method.png" alt="AlphaGRPO overview" /><figcaption aria-hidden="true">AlphaGRPO overview</figcaption>
+</figure>
 <p>AlphaGRPO 的整体结构由三部分组成：</p>
 <ol type="1">
 <li><strong>统一轨迹建模</strong></li>
@@ -132,8 +138,8 @@
 <blockquote>
 <p>reasoning text 是 image generation 的因果前驱，所以同一个 reward 可以反传到文本和图像两边。</p>
 </blockquote>
-<h2 id="6-alphagrpo-的核心机制">6. AlphaGRPO 的核心机制</h2>
-<h3 id="61-统一轨迹先想再画">6.1 统一轨迹：先想，再画</h3>
+<h2 id="alphagrpo-的核心机制">6. AlphaGRPO 的核心机制</h2>
+<h3 id="统一轨迹先想再画">6.1 统一轨迹：先想，再画</h3>
 <p>作者把 multimodal generation 看成统一生成过程：</p>
 <ul>
 <li>先采样 reasoning text token <code>y</code></li>
@@ -141,11 +147,11 @@
 </ul>
 <p>这样一来，它就能统一描述两类任务：</p>
 <ol type="1">
-<li><p><strong>Reasoning T2I</strong></p>
+<li><strong>Reasoning T2I</strong>
 <ul>
 <li>文本中间链条负责补世界知识、做空间规划、拆约束</li>
 </ul></li>
-<li><p><strong>Self-Reflective Refinement</strong></p>
+<li><strong>Self-Reflective Refinement</strong>
 <ul>
 <li>文本中间链条负责诊断先前图像的错误，再引导修正</li>
 </ul></li>
@@ -155,7 +161,7 @@
 <li>先出文本 reasoning</li>
 <li>再出图像 trajectory</li>
 </ul>
-<h3 id="62-统一-grpo-目标">6.2 统一 GRPO 目标</h3>
+<h3 id="统一-grpo-目标">6.2 统一 GRPO 目标</h3>
 <p>AlphaGRPO 的关键不是“对 image 做 RL”，而是对<strong>整条混合轨迹</strong>做 RL。</p>
 <p>对每个 context <code>C</code>，采样一组 trajectories：</p>
 <ul>
@@ -179,7 +185,7 @@
 <p>这一步的直觉是：</p>
 <p><strong>如果某张最终图像更好，那生成它的前置 reasoning 也应该被 credit assignment 奖励。</strong></p>
 <p>这就是 unified trajectory RL 的核心。</p>
-<h3 id="63-false-positive-rectification-fpr">6.3 False-Positive Rectification (FPR)</h3>
+<h3 id="false-positive-rectification-fpr">6.3 False-Positive Rectification (FPR)</h3>
 <p>这是这篇 paper 里一个挺实用的工程点。</p>
 <p>在 self-reflective refinement 任务中，作者需要比较：</p>
 <ul>
@@ -206,9 +212,9 @@
 <li>防止模型学会“看起来在修，实际在瞎改”</li>
 </ul>
 <p>这个设计很像给 self-refinement 加了一个 hard validity constraint。</p>
-<h2 id="7-dvreward这篇最值钱的部分">7. DVReward：这篇最值钱的部分</h2>
+<h2 id="dvreward这篇最值钱的部分">7. DVReward：这篇最值钱的部分</h2>
 <p>我觉得这篇 paper 最有意思、最可能迁移到别处的，不一定是 AlphaGRPO 本身，而是 <strong>DVReward</strong>。</p>
-<h3 id="71-为什么不用-holistic-scalar-score">7.1 为什么不用 holistic scalar score</h3>
+<h3 id="为什么不用-holistic-scalar-score">7.1 为什么不用 holistic scalar score</h3>
 <p>作者明确批评了像 VIEScore 这类 holistic scalar reward：</p>
 <ul>
 <li>分数标定不稳定</li>
@@ -217,18 +223,18 @@
 <li>对 GRPO 来说，reward 噪声太大会直接污染优化</li>
 </ul>
 <p>这和你前面一直关心的“细粒度质量信号”其实高度一致。</p>
-<h3 id="72-request-decomposition">7.2 Request decomposition</h3>
+<h3 id="request-decomposition">7.2 Request decomposition</h3>
 <p>DVReward 的第一步是让 LLM 先把用户请求拆成一组 <strong>atomic, verifiable questions</strong>。</p>
 <p>拆分的内容分两类：</p>
 <ol type="1">
-<li><p><strong>Semantic questions</strong></p>
+<li><strong>Semantic questions</strong>
 <ul>
 <li>entity existence</li>
 <li>属性</li>
 <li>空间关系</li>
 <li>组合约束</li>
 </ul></li>
-<li><p><strong>Quality questions</strong></p>
+<li><strong>Quality questions</strong>
 <ul>
 <li>几何完整性</li>
 <li>纹理保真度</li>
@@ -243,7 +249,7 @@
 <li>而是问 “杯子上方有没有蒸汽”</li>
 </ul>
 <p>这个设计非常强，因为它把抽象 reward 转成了一组更接近可验证观测的问题。</p>
-<h3 id="73-confidence-scoring">7.3 Confidence scoring</h3>
+<h3 id="confidence-scoring">7.3 Confidence scoring</h3>
 <p>DVReward 不是让 verifier 回答一个硬二值 0/1，也不是让它打整体分。</p>
 <p>它做的是：</p>
 <ul>
@@ -259,24 +265,24 @@
 <li>“高度确定地对”</li>
 </ul>
 <p>不会被压成一样的 1。</p>
-<h3 id="74-最终-reward-组合">7.4 最终 reward 组合</h3>
+<h3 id="最终-reward-组合">7.4 最终 reward 组合</h3>
 <p>最终 reward 用 semantic score 和 quality score 的几何平均：</p>
 <p><code>r(z) = sqrt(v_sem * v_qua)</code></p>
 <p>这个组合说明作者不想让模型只追 semantic correctness，而忽略视觉质量； 也不想只追画质，而忽略 prompt alignment。</p>
 <p>这点很像把“对齐”和“保真”绑定成一个更稳的联合优化信号。</p>
-<h2 id="8-训练数据与训练设置">8. 训练数据与训练设置</h2>
-<h3 id="81-训练数据primitive-to-prompt">8.1 训练数据：Primitive-to-Prompt</h3>
+<h2 id="训练数据与训练设置">8. 训练数据与训练设置</h2>
+<h3 id="训练数据primitive-to-prompt">8.1 训练数据：Primitive-to-Prompt</h3>
 <p>作者采用一个 bottom-up 的 prompt 合成方式：</p>
 <ul>
-<li><p>先准备视觉原语池</p>
+<li>先准备视觉原语池
 <ul>
 <li>objects</li>
 <li>attributes</li>
 <li>spatial relations</li>
 </ul></li>
-<li><p>参考 TIIF-Bench taxonomy 定义 39 种 compositional task</p></li>
-<li><p>用 Qwen3-235B-A22B 合成 prompt</p></li>
-<li><p>按 Easy / Medium / Hard 三档采样</p></li>
+<li>参考 TIIF-Bench taxonomy 定义 39 种 compositional task</li>
+<li>用 Qwen3-235B-A22B 合成 prompt</li>
+<li>按 Easy / Medium / Hard 三档采样</li>
 </ul>
 <p>总共生成：</p>
 <ul>
@@ -290,7 +296,7 @@
 <li><code>Q_qua</code></li>
 </ul>
 <p>也就是说，训练前就把 decomposer 跑完，在线训练时主要是 verifier 在看生成图是否满足这些问题。</p>
-<h3 id="82-训练细节">8.2 训练细节</h3>
+<h3 id="训练细节">8.2 训练细节</h3>
 <p>论文给了不少实现细节：</p>
 <ul>
 <li>base model: <strong>Bagel</strong></li>
@@ -343,7 +349,7 @@
 <li>初始生成和 refinement 都用 40 steps</li>
 </ul></li>
 </ul>
-<h3 id="83-训练效率">8.3 训练效率</h3>
+<h3 id="训练效率">8.3 训练效率</h3>
 <p>DVReward 需要多次 verifier 调用，本来会很慢。作者通过几件事把这个问题压下去：</p>
 <ol type="1">
 <li>KV cache 复用</li>
@@ -360,9 +366,11 @@
 <li><code>9.72e-6 s</code></li>
 </ul>
 <p>这个结果很夸张，但至少说明作者在 reward serving 上下了不少工程功夫。</p>
-<h2 id="9-主要实验结果">9. 主要实验结果</h2>
-<h3 id="91-text-to-image-总体结果">9.1 Text-to-Image 总体结果</h3>
-<p><img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/teaser.png" alt="Qualitative and quantitative teaser" /></p>
+<h2 id="主要实验结果">9. 主要实验结果</h2>
+<h3 id="text-to-image-总体结果">9.1 Text-to-Image 总体结果</h3>
+<figure>
+<img src="../vlm/assets/arxiv_2605_alphagrpo_unlocking_self_reflective_multimodal_generation_in_umms_via_decompositional_verifiable_reward/teaser.png" alt="Qualitative and quantitative teaser" /><figcaption aria-hidden="true">Qualitative and quantitative teaser</figcaption>
+</figure>
 <p>论文主表横跨多个 benchmark：</p>
 <ul>
 <li>TIIF-Bench</li>
@@ -371,7 +379,7 @@
 <li>GenEval</li>
 </ul>
 <p>下面只抓最核心的对比。</p>
-<h4 id="512-分辨率">512 分辨率</h4>
+<h4 id="分辨率">512 分辨率</h4>
 <table>
 <thead>
 <tr class="header">
@@ -421,7 +429,7 @@
 </ol>
 <p>也就是说，这篇 paper 不是只证明“训练某个特定任务能涨这个任务”，而是在强调：</p>
 <p><strong>self-reflective refinement 这种训练形态本身能学到比较通用的 multimodal generation alignment。</strong></p>
-<h4 id="1024-分辨率">1024 分辨率</h4>
+<h4 id="分辨率-1">1024 分辨率</h4>
 <table>
 <thead>
 <tr class="header">
@@ -475,7 +483,7 @@
 <li>学到的不是像素层面的投机技巧</li>
 <li>更像是更稳的 semantic alignment / reasoning behavior</li>
 </ul>
-<h3 id="92-image-editing没专门训-editing也能涨">9.2 Image editing：没专门训 editing，也能涨</h3>
+<h3 id="image-editing没专门训-editing也能涨">9.2 Image editing：没专门训 editing，也能涨</h3>
 <p>GEdit-Bench 上：</p>
 <table>
 <thead>
@@ -514,8 +522,8 @@
 </ul>
 <p>这进一步说明：</p>
 <p><strong>它强化的不是某个 narrow task，而是更一般的“看懂指令 - 发现偏差 - 做修正”能力。</strong></p>
-<h2 id="10-ablationdvreward-和-fpr-是否真的重要">10. Ablation：DVReward 和 FPR 是否真的重要</h2>
-<h3 id="101-对比其他-reward-model">10.1 对比其他 reward model</h3>
+<h2 id="ablationdvreward-和-fpr-是否真的重要">10. Ablation：DVReward 和 FPR 是否真的重要</h2>
+<h3 id="对比其他-reward-model">10.1 对比其他 reward model</h3>
 <table>
 <thead>
 <tr class="header">
@@ -600,7 +608,7 @@
 </ul>
 <p>这正好呼应它的 pilot study：<br />
 <strong>不是所有“看起来懂图”的 MLLM reward 都能稳定转成训练信号。</strong></p>
-<h3 id="102-confidence-score-比-binary-score-更好">10.2 Confidence score 比 binary score 更好</h3>
+<h3 id="confidence-score-比-binary-score-更好">10.2 Confidence score 比 binary score 更好</h3>
 <table>
 <thead>
 <tr class="header">
@@ -631,7 +639,7 @@
 <li>confidence score 保留了 verifier 的不确定性</li>
 <li>对优化来说更平滑</li>
 </ul>
-<h3 id="103-fpr-有用">10.3 FPR 有用</h3>
+<h3 id="fpr-有用">10.3 FPR 有用</h3>
 <table>
 <thead>
 <tr class="header">
@@ -662,7 +670,7 @@
 <li>没它也能训</li>
 <li>但会更容易被 noisy reward 带偏</li>
 </ul>
-<h3 id="104-quality-question-也重要">10.4 Quality question 也重要</h3>
+<h3 id="quality-question-也重要">10.4 Quality question 也重要</h3>
 <table>
 <thead>
 <tr class="header">
@@ -696,8 +704,8 @@
 <li>质量问题要显式问出来</li>
 <li>否则会出现“语义对了，但图变丑了”的情况</li>
 </ul>
-<h2 id="11-额外分析">11. 额外分析</h2>
-<h3 id="111-问题数量不能压太狠">11.1 问题数量不能压太狠</h3>
+<h2 id="额外分析">11. 额外分析</h2>
+<h3 id="问题数量不能压太狠">11.1 问题数量不能压太狠</h3>
 <p>作者还做了 question count ablation：</p>
 <table>
 <thead>
@@ -745,7 +753,7 @@
 <p>说明：</p>
 <p><strong>把多个约束压缩成几个粗问题，会损伤细粒度 reward 的分辨率。</strong></p>
 <p>这和你前面一直在关心的“细粒度信号”高度一致。</p>
-<h3 id="112-人类偏好也更喜欢它">11.2 人类偏好也更喜欢它</h3>
+<h3 id="人类偏好也更喜欢它">11.2 人类偏好也更喜欢它</h3>
 <p>200 个 real-user prompts 上的人类评估：</p>
 <ul>
 <li>Overall：<code>40.5%</code> 更偏好 AlphaGRPO，<code>30.5%</code> 偏好 BAGEL</li>
@@ -761,7 +769,7 @@
 <li>它的 reward 没有明显朝离谱方向 overfit</li>
 <li>和人类偏好的方向大体一致</li>
 </ul>
-<h3 id="113-inference-time-srr-不是零训练也行">11.3 Inference-time SRR 不是“零训练也行”</h3>
+<h3 id="inference-time-srr-不是零训练也行">11.3 Inference-time SRR 不是“零训练也行”</h3>
 <p>作者还比较了：</p>
 <ul>
 <li>BAGEL + inference-time SRR</li>
@@ -774,8 +782,8 @@
 </ul>
 <p>这说明：</p>
 <p><strong>不是只要在推理时让模型反思一下就行，训练阶段真的把 self-reflection 行为强化进去了。</strong></p>
-<h2 id="12-这篇工作的亮点">12. 这篇工作的亮点</h2>
-<h3 id="121-它把-rl-的-credit-assignment-真正跨过了文本到图像边界">12.1 它把 RL 的 credit assignment 真正跨过了“文本到图像”边界</h3>
+<h2 id="这篇工作的亮点">12. 这篇工作的亮点</h2>
+<h3 id="它把-rl-的-credit-assignment-真正跨过了文本到图像边界">12.1 它把 RL 的 credit assignment 真正跨过了“文本到图像”边界</h3>
 <p>很多多模态 RL 工作要么只训文本 reasoning，要么只训图像生成。</p>
 <p>这篇 paper 的一个漂亮点在于，它明确把：</p>
 <ul>
@@ -784,7 +792,7 @@
 </ul>
 <p>放进同一条轨迹里做 credit assignment。</p>
 <p>这在 unified model 上是很自然、但又不那么容易做好的事情。</p>
-<h3 id="122-dvreward-的思想很强">12.2 DVReward 的思想很强</h3>
+<h3 id="dvreward-的思想很强">12.2 DVReward 的思想很强</h3>
 <p>我觉得这篇 paper 最可迁移的资产是：</p>
 <p><strong>把复杂 multimodal request 分解成 atomic verifiable questions，再用 token-level confidence 组合 reward。</strong></p>
 <p>这套思路不只适用于 T2I：</p>
@@ -795,20 +803,20 @@
 <li>甚至你前面聊过的细粒度重要性估计</li>
 </ul>
 <p>都可以借鉴这个“先拆，再验”的信号构造方式。</p>
-<h3 id="123-self-reflective-refinement-这个任务定义很有未来感">12.3 self-reflective refinement 这个任务定义很有未来感</h3>
+<h3 id="self-reflective-refinement-这个任务定义很有未来感">12.3 self-reflective refinement 这个任务定义很有未来感</h3>
 <p>相比直接做 reasoning T2I，我觉得这篇更有意思的是：</p>
 <p><strong>让 unified model 学会先看自己画得哪里不对，再改。</strong></p>
 <p>这其实更接近长期想象中的“自校正生成系统”。</p>
-<h2 id="13-局限性">13. 局限性</h2>
+<h2 id="局限性">13. 局限性</h2>
 <p>论文在 appendix 里也承认了一些限制。</p>
-<h3 id="131-base-model-还不够稳">13.1 Base model 还不够稳</h3>
+<h3 id="base-model-还不够稳">13.1 Base model 还不够稳</h3>
 <p>作者明确说：</p>
 <ul>
 <li>Bagel 在 512 分辨率下偶尔会有噪声或模糊伪影</li>
 <li>self-reflection 生成的 reasoning 也会出现意外模式</li>
 </ul>
 <p>所以 AlphaGRPO 的上限部分还被 base model 束缚。</p>
-<h3 id="132-目前还是-outcome-reward-为主">13.2 目前还是 outcome reward 为主</h3>
+<h3 id="目前还是-outcome-reward-为主">13.2 目前还是 outcome reward 为主</h3>
 <p>现在的 reward 主要看最终结果，没有真正做 process reward。</p>
 <p>作者提到未来可以加：</p>
 <ul>
@@ -817,7 +825,7 @@
 </ul>
 <p>这点我也很认同，因为：</p>
 <p><strong>如果只看最终图像，模型可能学会“胡乱自省但碰巧改对”，而不是学会“正确诊断错误”。</strong></p>
-<h3 id="133-训练代价不低">13.3 训练代价不低</h3>
+<h3 id="训练代价不低">13.3 训练代价不低</h3>
 <p>尽管 reward server 做了大量优化，但整套训练仍然不便宜：</p>
 <ul>
 <li>64 A100</li>
@@ -825,8 +833,8 @@
 <li>需要复杂的异步 serving</li>
 </ul>
 <p>所以它目前更像一个“高端实验室 setting 下的方向验证”，还不是轻量方案。</p>
-<h2 id="14-对我们最有启发的点">14. 对我们最有启发的点</h2>
-<h3 id="141-如果你关心细粒度质量监督这篇很值得反复看">14.1 如果你关心“细粒度质量监督”，这篇很值得反复看</h3>
+<h2 id="对我们最有启发的点">14. 对我们最有启发的点</h2>
+<h3 id="如果你关心细粒度质量监督这篇很值得反复看">14.1 如果你关心“细粒度质量监督”，这篇很值得反复看</h3>
 <p>你前面一直在问：</p>
 <ul>
 <li>不依赖 attention score 的细粒度重要性</li>
@@ -841,7 +849,7 @@
 <li>再聚合成最终 reward</li>
 </ol>
 <p>这比单一 scalar reward 要靠谱得多。</p>
-<h3 id="142-self-reflection-其实可以看成一种显式错误搜索">14.2 Self-reflection 其实可以看成一种“显式错误搜索”</h3>
+<h3 id="self-reflection-其实可以看成一种显式错误搜索">14.2 Self-reflection 其实可以看成一种“显式错误搜索”</h3>
 <p>这和你前面问 critical token 那里有点神似。</p>
 <p>在 critical token 那个问题里，你关心的是：</p>
 <ul>
@@ -853,7 +861,7 @@
 <li>如何显式指出偏差，再做修正</li>
 </ul>
 <p>某种意义上，这篇 paper 是把“找出错误分叉点”这件事，从 token reasoning 扩展到了 multimodal generation 结果本身。</p>
-<h3 id="143-以后可以把-dvreward-搬到更细粒度-vlm-任务">14.3 以后可以把 DVReward 搬到更细粒度 VLM 任务</h3>
+<h3 id="以后可以把-dvreward-搬到更细粒度-vlm-任务">14.3 以后可以把 DVReward 搬到更细粒度 VLM 任务</h3>
 <p>我觉得很自然的扩展包括：</p>
 <ul>
 <li>region-level grounded generation reward</li>
@@ -867,6 +875,6 @@
 <li>多阶段生成 / 多阶段感知中的局部质量回传</li>
 </ul>
 <p>这篇很有参考价值。</p>
-<h2 id="15-一句话总结">15. 一句话总结</h2>
+<h2 id="一句话总结">15. 一句话总结</h2>
 <p><strong>AlphaGRPO 最重要的不只是“把 GRPO 用到 unified multimodal generation 上”，而是它给出了一个很像样的答案：如果你想让统一模型学会自我反思和细粒度修正，奖励信号不能再是粗糙的一维分数，而要先把复杂请求拆开，再逐项验证。</strong></p>
 </div></div></details></div></main></body></html>

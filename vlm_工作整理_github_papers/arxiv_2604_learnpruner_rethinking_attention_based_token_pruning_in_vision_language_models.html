@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Learnpruner Rethinking Attention Based Token Pruning In Vision Language Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="learnpruner-重新思考视觉语言模型中基于注意力的-token-剪枝">LearnPruner: 重新思考视觉语言模型中基于注意力的 Token 剪枝</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>研究方向</h3><p>视觉推理 · 多模态建模 · VLM 训练与评测</p></div><div class="summary-block"><h3>阅读重点</h3><p>方法设计、实验结果、关键图表与局限性。</p></div></section><details class="details-toggle"><summary>展开完整论文笔记</summary><div class="paper-content-inner">
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2604 Learnpruner Rethinking Attention Based Token Pruning In Vision Language Models</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f8fafc;color:#172033;line-height:1.75;margin:0;padding:28px 18px}main{max-width:960px;margin:auto;background:#fff;padding:clamp(22px,5vw,56px);border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 10px #0000000d}a{color:#2563eb}img{max-width:100%;height:auto}h1,h2,h3{line-height:1.35}.back{max-width:960px;margin:0 auto 14px}.back a{text-decoration:none;font-weight:700}<style>.paper-overview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:14px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px;color:#334155}.paper-overview span{padding:4px 10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;font-size:.78rem;font-weight:700}.paper-content h2{margin:30px 0 12px;padding:14px 16px;background:linear-gradient(90deg,#eff6ff,#fff);border-left:4px solid #2563eb;border-bottom:1px solid #dbe5f5;border-radius:0 10px 10px 0}.paper-content h3{margin-top:24px;color:#1e40af}.paper-content p,.paper-content li{color:#334155}.paper-content blockquote{margin:18px 0;padding:14px 18px;background:#f8fafc;border-left:4px solid #94a3b8;color:#475569}.paper-content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem}.paper-content th,.paper-content td{padding:8px 10px;border:1px solid #dbe3ef}.paper-content th{background:#eff6ff;color:#1e3a8a}.paper-content img{display:block;max-width:100%;height:auto;margin:18px auto;padding:8px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 4px 14px #1e3a8a12}.paper-content code{background:#f1f5f9;padding:2px 5px;border-radius:4px}</style><style>.paper-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 26px}.summary-block{padding:14px 16px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:10px}.summary-block h3{margin:0 0 6px;color:#1e40af;font-size:.92rem}.summary-block p{margin:0;color:#475569;font-size:.9rem}.details-toggle{margin-top:24px;border:1px solid #dbe5f1;border-radius:10px;padding:12px 16px;background:#fff}.details-toggle summary{cursor:pointer;color:#1d4ed8;font-weight:700}.details-toggle .paper-content-inner{padding-top:12px}</style></style></head><body><div class="back"><a href="../vlm_工作整理_github.html">← 返回 VLM 论文列表</a></div><main><div class="paper-overview"><span>VLM</span><span>视觉推理</span><span>多模态</span><span>重点内容与图表</span></div><div class="paper-content"><h1 id="learnpruner-重新思考视觉语言模型中基于注意力的-token-剪枝">LearnPruner: 重新思考视觉语言模型中基于注意力的 Token 剪枝</h1><section class="paper-summary"><div class="summary-block"><h3>核心问题</h3><p>围绕视觉语言模型的推理、训练或效率问题展开。</p></div><div class="summary-block"><h3>框架与方法</h3><p>标题 : LearnPruner: Rethinking Attention-based Token Pruning in Vision Language Models ArXiv ID : 2604.23950 链接 : Abs | PDF 作者 : Rinyoichi Takezoe, Yaqian Li, Zihao Bo, Anzhou Hou, Mo Guang, Kaiwen Long 机构 : Li Auto Inc. 会</p></div><div class="summary-block"><h3>核心结论</h3><p>自适应剪枝位置 ：根据输入动态选择最优剪枝层，而非固定 k=12 自适应 token 分配 ：根据图像信息密度动态调整 R1:R2 比例 与量化结合 ：token 剪枝 + 量化可能实现更极致的效率提升 更大规模验证 ：在 70B+ 模型上验证剪枝收益是否更大 在线学习 LPM ：让 LPM 在推理过程中自适应更新，而非固定训练后的权重 视频场景深化 ：当前视频实验较初步，可探索时序维度的自适应剪枝策略</p></div></section><details class="details-toggle"><summary>展开完整论文笔记、公式与图表</summary><div class="paper-content-inner">
 <h2 id="基本信息">基本信息</h2>
 <ul>
 <li><strong>标题</strong>: LearnPruner: Rethinking Attention-based Token Pruning in Vision Language Models</li>
@@ -20,58 +20,33 @@
 <h2 id="方法概述">方法概述</h2>
 <h3 id="注意力机制分析关键发现">注意力机制分析（关键发现）</h3>
 <p>通过在 LLaVA-1.5-7B 上的系统实验，得出三个核心观察：</p>
-<p><strong>发现 1：视觉编码器 [CLS] 注意力的缺陷</strong></p>
-<ul>
-<li>将 token 选择限制在前景区域（$\texttt{[CLS]}<em>{fg}$）始终优于全图选择（$\texttt{[CLS]}</em>{all}$），尤其在激进剪枝比例下</li>
-<li>甚至随机前景选择（$\text{Random}<em>{fg}$）都能达到与 $\texttt{[CLS]}</em>{all}$ 相当的性能</li>
-<li>结论：[CLS] token 未能有效关注前景区域</li>
-</ul>
-<p><strong>发现 2：LLM 中文本注意力 vs 视觉注意力</strong></p>
-<ul>
-<li>视觉注意力受 attention shift 严重影响，不同样本间偏差大</li>
-<li>文本注意力的偏移趋势更平缓，且不同样本和低索引 token 也能获得高关注度</li>
-<li>结合视觉注意力会导致性能大幅下降</li>
-</ul>
-<p><strong>发现 3：LLM 中间层的注意力最可靠</strong></p>
-<ul>
-<li>浅层：不相关区域吸收了文本 token 的大部分注意力</li>
-<li>中间层（8+ 层开始）：不同文本 token 能聚焦到语义相关区域，&gt;95% 原始性能</li>
-<li>深层：注意力可靠性显著下降</li>
-</ul>
-<p><img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /></p>
+<p><strong>发现 1：视觉编码器 [CLS] 注意力的缺陷</strong> - 将 token 选择限制在前景区域（<span class="math inline"><code>[CLS]</code><sub><em>f</em><em>g</em></sub></span>）始终优于全图选择（<span class="math inline"><code>[CLS]</code><sub><em>a</em><em>l</em><em>l</em></sub></span>），尤其在激进剪枝比例下 - 甚至随机前景选择（<span class="math inline">Random<sub><em>f</em><em>g</em></sub></span>）都能达到与 <span class="math inline"><code>[CLS]</code><sub><em>a</em><em>l</em><em>l</em></sub></span> 相当的性能 - 结论：[CLS] token 未能有效关注前景区域</p>
+<p><strong>发现 2：LLM 中文本注意力 vs 视觉注意力</strong> - 视觉注意力受 attention shift 严重影响，不同样本间偏差大 - 文本注意力的偏移趋势更平缓，且不同样本和低索引 token 也能获得高关注度 - 结合视觉注意力会导致性能大幅下降</p>
+<p><strong>发现 3：LLM 中间层的注意力最可靠</strong> - 浅层：不相关区域吸收了文本 token 的大部分注意力 - 中间层（8+ 层开始）：不同文本 token 能聚焦到语义相关区域，&gt;95% 原始性能 - 深层：注意力可靠性显著下降</p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
+</figure>
 <h3 id="learnpruner-框架">LearnPruner 框架</h3>
 <p>基于上述分析，提出<strong>两阶段剪枝框架</strong>：</p>
-<p><img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /></p>
+<figure>
+<img src="../vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/framework2.png" alt="框架概览" /><figcaption aria-hidden="true">框架概览</figcaption>
+</figure>
 <p><strong>阶段一：移除视觉冗余（视觉编码器后）</strong></p>
-<p>使用**可学习剪枝模块（LPM）**替代 [CLS] 注意力：</p>
-<ul>
-<li>轻量 MLP 对每个视觉 token 做二分类（保留/剪枝）</li>
-<li>使用 Straight-Through Estimator（STE）实现端到端训练</li>
-<li>$\mathbf{M}_{\text{soft}} = \text{Softmax}(\text{MLP}(\mathbf{X}_v^{(0)}))$，推理时作为重要性分数</li>
-</ul>
-<p>为防止 LPM 过度聚焦前景而丢失关键背景信息，引入<strong>多样性 token 选择</strong>：</p>
-<ul>
-<li>LPM 选完后，对剩余 token 计算与已选 token 的最大余弦相似度</li>
-<li>迭代添加相似度最小的 token，直到 token 预算用尽</li>
-<li>默认保留 10% 的 token 预算用于多样性选择</li>
-</ul>
+<p>使用<strong>可学习剪枝模块（LPM）</strong>替代 [CLS] 注意力： - 轻量 MLP 对每个视觉 token 做二分类（保留/剪枝） - 使用 Straight-Through Estimator（STE）实现端到端训练 - <span class="math inline"><strong>M</strong><sub>soft</sub> = Softmax(MLP(<strong>X</strong><sub><em>v</em></sub><sup>(0)</sup>))</span>，推理时作为重要性分数</p>
+<p>为防止 LPM 过度聚焦前景而丢失关键背景信息，引入<strong>多样性 token 选择</strong>： - LPM 选完后，对剩余 token 计算与已选 token 的最大余弦相似度 - 迭代添加相似度最小的 token，直到 token 预算用尽 - 默认保留 10% 的 token 预算用于多样性选择</p>
 <p><strong>阶段二：移除文本无关内容（LLM 中间层）</strong></p>
-<p>在 LLM 第 12 层利用<strong>文本注意力</strong>进行二次剪枝：</p>
-<ul>
-<li>$\tilde{\mathbf{A}}^{(k)} = \frac{1}{N_q} \sum_{i=1}^{N_q} \mathbf{A}^{(k)}(\mathbf{X}_{q,i}^{(k)}, \mathbf{X}_v^{(k)})$</li>
-<li>仅保留注意力分数最高的 top-k token</li>
-</ul>
-<p>两个阶段的 token 保留比例 $R_1:R_2 = 3$（消融实验验证最优）。</p>
+<p>在 LLM 第 12 层利用<strong>文本注意力</strong>进行二次剪枝： - <span class="math inline">$\tilde{\mathbf{A}}^{(k)} = \frac{1}{N_q} \sum_{i=1}^{N_q} \mathbf{A}^{(k)}(\mathbf{X}_{q,i}^{(k)}, \mathbf{X}_v^{(k)})$</span> - 仅保留注意力分数最高的 top-k token</p>
+<p>两个阶段的 token 保留比例 <span class="math inline"><em>R</em><sub>1</sub> : <em>R</em><sub>2</sub> = 3</span>（消融实验验证最优）。</p>
 <h3 id="训练细节">训练细节</h3>
 <ul>
 <li><strong>训练数据</strong>：LLaVA-665K 数据集的 10%（数据效率极高，5% 即可达到强性能）</li>
 <li><strong>训练策略</strong>：冻结基础 VLM 权重，仅训练 LPM</li>
-<li><strong>损失函数</strong>：$\mathcal{L} = \mathcal{L}<em>{\text{ntp}} + \lambda \cdot \mathcal{L}</em>{\text{prune}}$，其中 $\mathcal{L}<em>{\text{prune}} = (\frac{1}{N_v} \sum \mathbf{M}</em>{\text{hard}} - \tau)^2$，$\tau=0$ 鼓励最小化 token 使用</li>
+<li><strong>损失函数</strong>：<span class="math inline">ℒ = ℒ<sub>ntp</sub> + <em>λ</em> ⋅ ℒ<sub>prune</sub></span>，其中 <span class="math inline">$\mathcal{L}_{\text{prune}} = (\frac{1}{N_v} \sum \mathbf{M}_{\text{hard}} - \tau)^2$</span>，<span class="math inline"><em>τ</em> = 0</span> 鼓励最小化 token 使用</li>
 <li><strong>注意力掩码训练</strong>：通过修改 Softmax 模拟剪枝过程——被剪枝 token 不参与注意力计算</li>
 </ul>
 <hr />
 <h2 id="主要实验结果">主要实验结果</h2>
-<h3 id="表-1llava-v15-7b-上的剪枝对比">表 1：LLaVA-v1.5-7B 上的剪枝对比</h3>
+<h3 id="表-1llava-v1.5-7b-上的剪枝对比">表 1：LLaVA-v1.5-7B 上的剪枝对比</h3>
 <table>
 <thead>
 <tr class="header">
@@ -436,7 +411,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="表-3qwen25-vl-7b跨架构泛化">表 3：Qwen2.5-VL-7B（跨架构泛化）</h3>
+<h3 id="表-3qwen2.5-vl-7b跨架构泛化">表 3：Qwen2.5-VL-7B（跨架构泛化）</h3>
 <table>
 <thead>
 <tr class="header">
@@ -550,6 +525,15 @@
 </table>
 <h3 id="表-5效率分析">表 5：效率分析</h3>
 <table>
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 11%" />
+<col style="width: 10%" />
+<col style="width: 16%" />
+<col style="width: 15%" />
+<col style="width: 18%" />
+<col style="width: 21%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th>模型</th>
@@ -622,13 +606,7 @@
 <p>LLaVA-NeXT 保留 160 token 时：Prefill 加速 6.0x，KV Cache 减少 8.9x。</p>
 </blockquote>
 <h3 id="消融实验">消融实验</h3>
-<p><strong>重要性度量对比（64 token）</strong>：</p>
-<ul>
-<li>Stage1 [CLS] Attn → 94.6%</li>
-<li>Stage1 LPM → 96.1%（+1.5%）</li>
-<li>Stage1 LPM + Stage2 Text Attn → <strong>96.9%</strong>（+0.8%）</li>
-<li>Stage1 LPM + Stage2 LPM → 96.9%（第二阶段用 LPM 无额外收益，说明注意力信号已足够可靠）</li>
-</ul>
+<p><strong>重要性度量对比（64 token）</strong>： - Stage1 [CLS] Attn → 94.6% - Stage1 LPM → 96.1%（+1.5%） - Stage1 LPM + Stage2 Text Attn → <strong>96.9%</strong>（+0.8%） - Stage1 LPM + Stage2 LPM → 96.9%（第二阶段用 LPM 无额外收益，说明注意力信号已足够可靠）</p>
 <p><strong>LLM 剪枝位置 k</strong>：k=12 最优，浅层注意力不可靠（8 层仅 96.2%），深层注意力衰退</p>
 <p><strong>R1:R2 比例</strong>：3:1 最优——第一阶段保留更多 token 保证视觉完整性，第二阶段只需少量 token 精准选择</p>
 <p><strong>多样性 token 比例 λ</strong>：0.1 最优——平衡前景语义和背景补充</p>
@@ -652,14 +630,14 @@
 <li><strong>复杂场景下可能丢失关键信息</strong>：当场景过于复杂时，第一阶段剪枝可能丢失后续推理所需的视觉信息</li>
 </ol>
 <hr />
-<h2 id="复现--实现要点">复现 / 实现要点</h2>
+<h2 id="复现-实现要点">复现 / 实现要点</h2>
 <ul>
 <li><strong>基础模型</strong>：LLaVA-v1.5-7B、LLaVA-NeXT-7B、Video-LLaVA-7B、Qwen2.5-VL-7B</li>
 <li><strong>训练数据</strong>：LLaVA-665K 的 10%</li>
 <li><strong>训练策略</strong>：冻结基础 VLM，仅训练 LPM（轻量 MLP）</li>
 <li><strong>端到端训练</strong>：通过修改 Softmax 实现注意力掩码，模拟剪枝过程</li>
-<li><strong>损失函数</strong>：$\mathcal{L} = \mathcal{L}<em>{\text{ntp}} + \mathcal{L}</em>{\text{prune}}$，$\tau=0$，$\lambda=1$</li>
-<li><strong>推理设置</strong>：第一阶段保留 $R_1$ token（90% LPM + 10% 多样性），第二阶段在第 12 层保留 $R_2$ token，$R_1:R_2=3$</li>
+<li><strong>损失函数</strong>：<span class="math inline">ℒ = ℒ<sub>ntp</sub> + ℒ<sub>prune</sub></span>，<span class="math inline"><em>τ</em> = 0</span>，<span class="math inline"><em>λ</em> = 1</span></li>
+<li><strong>推理设置</strong>：第一阶段保留 <span class="math inline"><em>R</em><sub>1</sub></span> token（90% LPM + 10% 多样性），第二阶段在第 12 层保留 <span class="math inline"><em>R</em><sub>2</sub></span> token，<span class="math inline"><em>R</em><sub>1</sub> : <em>R</em><sub>2</sub> = 3</span></li>
 <li><strong>评估基准</strong>：GQA、SQA、TextVQA、POPE、MME、VQAv2、MMBench（中/英）、TGIF-QA、MSVD-QA、MSRVTT-QA</li>
 <li><strong>评估设备</strong>：NVIDIA A100-80GB</li>
 </ul>
