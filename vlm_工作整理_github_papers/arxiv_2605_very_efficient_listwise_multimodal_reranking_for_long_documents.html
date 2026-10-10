@@ -15,11 +15,7 @@
 <li>即使有 KV cache，长上下文上的逐步解码仍然很慢</li>
 </ul></li>
 </ol>
-<p>作者的核心观点是：</p>
-<blockquote>
-<p>现有工作很多只在“怎么让 reranking 更准”上发力，但对 long multimodal context 的推理路径做得还不够工程化。真正的高效方案，需要同时减少输入 token 和输出 token。</p>
-</blockquote>
-<p>所以 ZipRerank 不是只改一个点，而是做了一个比较完整的协同设计：</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：方法总览</h2><p>ZipRerank 的结构可以概括成一句话：</p>
 <p><strong>训练上用两阶段迁移出 listwise multimodal reranking 能力，推理上用 query-aware token pruning + single-token scoring 把时延压下去。</strong></p>
 <p>整个框架分成两部分：</p>

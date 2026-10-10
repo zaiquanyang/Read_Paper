@@ -2,16 +2,13 @@
 <p>在标准自回归框架中，视觉 token 作为固定的前驱 token 一次性注入序列开头，而文本 token 在生成过程中不断自我补充。随着文本历史累积，注意力的 Softmax 归一化机制将概率质量重新分配到越来越多的 token 上，导致视觉信号逐渐衰减。</p>
 <p>本文对这一现象进行了严格的数学推导：</p>
 <p><strong>定义视觉注意力质量</strong>（Visual Attention Mass）： <span class="math display">$$\Omega_{\mathcal{V}}(t) = \frac{Z_{\mathcal{V}}}{Z_{\mathcal{V}} + Z_{\mathcal{T}}}$$</span></p>
-<p>其中 <span class="math inline"><em>Z</em><sub>𝒱</sub></span> 是视觉 token 的未归一化注意力总和（有上界 <span class="math inline"><em>β</em> = <em>M</em> ⋅ exp (<em>s</em><sub>max</sub>)</span>），<span class="math inline"><em>Z</em><sub>𝒯</sub></span> 是文本历史 token 的总和（随 <span class="math inline"><em>t</em></span> 增长）。</p>
 <p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：方法与框架（详细）</h2><p>PVM 作为<strong>并行分支</strong>集成到 Transformer Decoder Block 中，与 FFN 子层并行：</p>
 <p>三阶段计算：</p>
 <p><strong>1. 投影（Projection）</strong>：将输入隐藏状态和视觉特征降维到低维潜在空间 <span class="math inline"><em>d</em>′ &lt; <em>d</em></span> <span class="math display"><strong>x</strong><sub><em>l</em><em>a</em><em>t</em></sub> = <strong>x</strong><strong>W</strong><sub><em>d</em><em>o</em><em>w</em><em>n</em></sub><sup><em>t</em><em>x</em><em>t</em></sup>,  <strong>V</strong><sub><em>l</em><em>a</em><em>t</em></sub> = <strong>V</strong><sub><em>i</em><em>m</em><em>g</em></sub><strong>W</strong><sub><em>d</em><em>o</em><em>w</em><em>n</em></sub><sup><em>v</em><em>i</em><em>s</em></sup></span></p>
 <p><strong>2. 潜在检索（Latent Retrieval）</strong>：Cross-Attention，Query 为投影后的隐藏状态，Key/Value 为投影后的视觉特征 <span class="math display"><strong>h</strong><sub><em>a</em><em>t</em><em>t</em><em>n</em></sub> = <em>C</em><em>r</em><em>o</em><em>s</em><em>s</em><em>A</em><em>t</em><em>t</em><em>n</em>(<em>Q</em> = <strong>x</strong><sub><em>l</em><em>a</em><em>t</em></sub>, <em>K</em> = <strong>V</strong><sub><em>l</em><em>a</em><em>t</em></sub>, <em>V</em> = <strong>V</strong><sub><em>l</em><em>a</em><em>t</em></sub>)</span> <span class="math display"><strong>h</strong><sub><em>l</em><em>a</em><em>t</em></sub> = <strong>h</strong><sub><em>a</em><em>t</em><em>t</em><em>n</em></sub> + <em>F</em><em>F</em><em>N</em><sub><em>l</em><em>a</em><em>t</em></sub>(<em>R</em><em>M</em><em>S</em><em>N</em><em>o</em><em>r</em><em>m</em>(<strong>h</strong><sub><em>a</em><em>t</em><em>t</em><em>n</em></sub>))</span></p>
 <p><strong>3. 恢复（Restoration）</strong>：投影回原始高维空间 <span class="math display"><strong>h</strong><sub><em>p</em><em>v</em><em>m</em></sub> = <strong>h</strong><sub><em>l</em><em>a</em><em>t</em></sub><strong>W</strong><sub><em>u</em><em>p</em></sub></span></p>
-<p><span class="math display"><strong>y</strong> = <strong>x</strong> + <strong>h</strong><sub><em>f</em><em>f</em><em>n</em></sub> + (<em>λ</em> ⋅ <strong>h</strong><sub><em>p</em><em>v</em><em>m</em></sub>) ⋅ ℳ<sub><em>t</em><em>x</em><em>t</em></sub></span></p>
-<p><strong>定理（Structural Mitigation of Visual Dilution）</strong>：在固定局部隐藏状态假设下，PVM 的检索表示与文本历史长度 <span class="math inline"><em>t</em></span> 在分区函数上解耦： <span class="math display">$$\frac{\partial \|\mathbf{h}_{\mathrm{pvm}}\|}{\partial t} = 0$$</span></p>
-<p>这是因为 PVM 的分区函数 <span class="math inline"><em>Z</em><sub><em>p</em><em>v</em><em>m</em></sub></span> 仅在固定的视觉集合 <span class="math inline">𝒱</span> 上求和，变量 <span class="math inline"><em>t</em></span> 既不出现在分数计算中也不出现在求和索引中。</p>
+<p>（本节其余细节见论文原始笔记。）</p>
 <figure>
 <img src="./assets/arxiv_2605_persistent_visual_memory_sustaining_perception_for_deep_generation_in_lvlms/PVM.png" alt="PVM 框架" /><figcaption aria-hidden="true">PVM 框架</figcaption>
 </figure>
@@ -20,78 +17,5 @@
 <p><strong>训练流程</strong>： - Stage I（视觉记忆对齐，SFT）：冻结 backbone，仅优化 PVM 模块和门控标量 - Stage II（策略精炼，GRPO）：解冻 LLM backbone 和 PVM（Vision Encoder 保持冻结）</p>
 <p><strong>评估 Benchmark</strong>：MMMU、MMBench-CN/EN、MMStar、MMT、MathVerse、MathVision、AI2D（共 8 个）</p>
 <p><strong>基线方法</strong>： - 内部基线：Qwen3-VL 原始、SFT、LoRA-SFT、SFT+GRPO - Visual Injection：MemVR、ICoT、CoMemo - RL 推理模型：Euclid-8B、PEARL-8B、OneThinker-8B</p>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: left;">模型</th>
-<th style="text-align: center;">General Avg.</th>
-<th style="text-align: center;">Math&amp;Sci Avg.</th>
-<th style="text-align: center;"><strong>Overall Avg.</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Qwen3-VL-8B-Instruct</td>
-<td style="text-align: center;">71.1</td>
-<td style="text-align: center;">59.4</td>
-<td style="text-align: center;">66.7</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">SFT</td>
-<td style="text-align: center;">71.0</td>
-<td style="text-align: center;">61.3</td>
-<td style="text-align: center;">67.4</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">LoRA-SFT</td>
-<td style="text-align: center;">72.5</td>
-<td style="text-align: center;">59.2</td>
-<td style="text-align: center;">67.5</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">SFT + GRPO</td>
-<td style="text-align: center;">72.0</td>
-<td style="text-align: center;">62.0</td>
-<td style="text-align: center;">68.3</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">LoRA-SFT + GRPO</td>
-<td style="text-align: center;">72.3</td>
-<td style="text-align: center;">61.8</td>
-<td style="text-align: center;">68.4</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">CoMemo</td>
-<td style="text-align: center;">73.9</td>
-<td style="text-align: center;">59.3</td>
-<td style="text-align: center;">68.4</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Euclid-8B</td>
-<td style="text-align: center;">73.3</td>
-<td style="text-align: center;">63.2</td>
-<td style="text-align: center;">69.5</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">PVM-8B (SFT)</td>
-<td style="text-align: center;">75.2</td>
-<td style="text-align: center;">63.0</td>
-<td style="text-align: center;"><strong>70.6</strong></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><strong>PVM-8B (SFT + GRPO)</strong></td>
-<td style="text-align: center;"><strong>75.6</strong></td>
-<td style="text-align: center;"><strong>64.6</strong></td>
-<td style="text-align: center;"><strong>71.5</strong></td>
-</tr>
-</tbody>
-</table>
-<p><strong>核心发现</strong>：</p>
-<ol type="1">
-<li><strong>PVM-8B (SFT+GRPO) 达到 71.5% Overall，超越基线 +4.8pp</strong>，在所有方法中最佳</li>
-<li><strong>一致性跨规模提升</strong>：4B 模型上也取得 +4.4pp 提升（64.0→68.4）</li>
-<li><strong>PVM 仅 SFT 就达到 70.6%</strong>，已超越所有 Visual Injection 方法和 RL 推理模型</li>
-<li>SFT 反而损害 MMT（-5.9pp），但 PVM-SFT 将退化抑制到仅 -1.6pp——PVM 有效缓解微调过程中的感知退化</li>
-</ol>
 <p>（本节其余细节见论文原始笔记。）</p>
 <h2 class="section-title">论文信息</h2></article></div></body></html>

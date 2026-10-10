@@ -13,8 +13,6 @@
 <p><strong>计算效率</strong>：生成显著性图的额外开销几乎为零，使其能无缝集成到训练 pipeline 中。</p>
 <p>推理模型先生成思维链 (thinking tokens)，再生成答案。本文假设： - Thinking 过程从图像中提取信息 - 答案基于 thinking 过程的总结</p>
 <p>为了可视化这一流程，使用 attention rollout 追踪视觉信息如何通过 thinking tokens 流向答案：</p>
-<p><span class="math display">$$\tilde{\mathcal{A}}_{va}^{l,h} = \mathcal{A}_{vt}^{l,h} \cdot \mathcal{A}_{ta}^{l,h}$$</span></p>
-<p>其中 <span class="math inline">𝒜<sub><em>v</em><em>t</em></sub></span> 是视觉→thinking 的注意力矩阵，<span class="math inline">𝒜<sub><em>t</em><em>a</em></sub></span> 是 thinking→answer 的注意力矩阵。</p>
 <p>（本节其余细节见论文原始笔记。）</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_saliency_r1_enforcing_interpretable_and_faithful_vision_language_reasoning_via_saliency_map_alignment_reward/framework.png" alt="方法框架" /><figcaption aria-hidden="true">方法框架</figcaption>

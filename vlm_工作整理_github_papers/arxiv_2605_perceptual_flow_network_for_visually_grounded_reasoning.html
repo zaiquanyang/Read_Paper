@@ -37,8 +37,6 @@
 <p>基于此，采用 <strong>Sub-Trajectory Balance (Sub-TB)</strong> 目标进行分层变分优化： <span class="math display">min<sub><em>θ</em></sub>∑<sub><em>i</em>, <em>j</em></sub><em>D</em>(ℱ(<em>z</em><sub><em>i</em></sub>)𝒯<sub><em>F</em></sub>(<em>z</em><sub><em>i</em> : <em>j</em></sub>)∥ℱ(<em>z</em><sub><em>j</em></sub>)𝒯<sub><em>B</em></sub>(<em>z</em><sub><em>j</em> : <em>i</em></sub>))</span></p>
 <p>相比 PPO 等 RL 范式，Sub-TB 提供<strong>密集的中间监督</strong>，促进多样化的感知行为。</p>
 <p><strong>数据收集原则</strong>： - <strong>多样化任务</strong>：覆盖细粒度理解和通用场景 - <strong>多样化 RoI</strong>：跨专家交叉标注，保留空间覆盖足够广泛的样本</p>
-<p><strong>Flow 合成</strong>（使用 Gemini3Flash 和 GPT-4o 作为教师）： 1. 对每个带专家 RoI 的样本，随机扩展每个 RoI 以缓解视觉专家的归纳偏差 2. 教师模型识别关键视觉内容 → 生成 Planning State <span class="math inline"><em>z</em><sub>0</sub></span> 3. 为每个 RoI 生成详细 caption → Perceptual States <span class="math inline"><em>z</em><sub> ≥ 1</sub></span></p>
-<p><strong>验证与难度控制</strong>（关键设计）：</p>
 <p>（本节其余细节见论文原始笔记。）</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2605_perceptual_flow_network_for_visually_grounded_reasoning/fig4.png" alt="PFlowNet 总览" /><figcaption aria-hidden="true">PFlowNet 总览</figcaption>

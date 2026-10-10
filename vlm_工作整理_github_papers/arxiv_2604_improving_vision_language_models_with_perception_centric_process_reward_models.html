@@ -24,12 +24,7 @@
 </ol>
 <p>关键设计：<strong>仅在感知相关数据上使用 Perceval 干预</strong>，数学推理等其他数据仍使用标准 GRPO。这使得可以验证感知增强是否能泛化到其他推理领域。</p>
 <p>Perceval 在推理阶段也可用于迭代纠错，设计了两种策略：</p>
-<ol type="1">
-<li><strong>Truncate–then–Regenerate</strong>：检测到幻觉后，截断错误 span 之前的内容，保留已验证的前缀，让模型从该位置重新生成</li>
-<li><strong>Truncate–Thinking–then–Regenerate</strong>：在截断后插入反思提示（如 “Wait, I need to reconsider…”），引导模型反思后再生</li>
-</ol>
-<p>两种策略均可迭代最多 <span class="math inline"><em>k</em></span> 次，直到 Perceval 不再检测到错误。</p>
-<hr />
+<p>（本节其余细节见论文原始笔记。）</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_improving_vision_language_models_with_perception_centric_process_reward_models/final-main.png" alt="方法概览" /><figcaption aria-hidden="true">方法概览</figcaption>
 </figure>
@@ -157,62 +152,6 @@
 <td><strong>83.25</strong></td>
 <td>48.75</td>
 <td>55.8</td>
-<td><strong>47.6</strong></td>
-<td><strong>64.9</strong></td>
-<td><strong>26.32</strong></td>
-<td><strong>65.6</strong></td>
-<td><strong>86.48</strong></td>
-</tr>
-<tr class="odd">
-<td><em>7B 基线</em></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="even">
-<td>DeepEyes*</td>
-<td>7B</td>
-<td><strong>91.30</strong></td>
-<td>81.58</td>
-<td><strong>87.43</strong></td>
-<td>50.98</td>
-<td>62.7</td>
-<td>46.5</td>
-<td>67.0</td>
-<td>12.50</td>
-<td>69.9</td>
-<td>75.84</td>
-</tr>
-<tr class="odd">
-<td>Vision-R1</td>
-<td>7B</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>49.72</td>
-<td>55.4</td>
-<td>49.6</td>
-<td>64.1</td>
-<td><strong>36.18</strong></td>
-<td>71.3</td>
-<td>83.36</td>
-</tr>
-<tr class="even">
-<td>VL-Rethinker</td>
-<td>7</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 <td></td>
 <td></td>
 <td></td>

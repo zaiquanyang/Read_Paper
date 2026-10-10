@@ -13,10 +13,7 @@
 <p><strong>阶段一：移除视觉冗余（视觉编码器后）</strong></p>
 <p>使用<strong>可学习剪枝模块（LPM）</strong>替代 [CLS] 注意力： - 轻量 MLP 对每个视觉 token 做二分类（保留/剪枝） - 使用 Straight-Through Estimator（STE）实现端到端训练 - <span class="math inline"><strong>M</strong><sub>soft</sub> = Softmax(MLP(<strong>X</strong><sub><em>v</em></sub><sup>(0)</sup>))</span>，推理时作为重要性分数</p>
 <p>为防止 LPM 过度聚焦前景而丢失关键背景信息，引入<strong>多样性 token 选择</strong>： - LPM 选完后，对剩余 token 计算与已选 token 的最大余弦相似度 - 迭代添加相似度最小的 token，直到 token 预算用尽 - 默认保留 10% 的 token 预算用于多样性选择</p>
-<p><strong>阶段二：移除文本无关内容（LLM 中间层）</strong></p>
-<p>在 LLM 第 12 层利用<strong>文本注意力</strong>进行二次剪枝： - <span class="math inline">$\tilde{\mathbf{A}}^{(k)} = \frac{1}{N_q} \sum_{i=1}^{N_q} \mathbf{A}^{(k)}(\mathbf{X}_{q,i}^{(k)}, \mathbf{X}_v^{(k)})$</span> - 仅保留注意力分数最高的 top-k token</p>
-<p>两个阶段的 token 保留比例 <span class="math inline"><em>R</em><sub>1</sub> : <em>R</em><sub>2</sub> = 3</span>（消融实验验证最优）。</p>
-<hr />
+<p>（本节其余细节见论文原始笔记。）</p>
 <figure>
 <img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/vlm/assets/arxiv_2604_learnpruner_rethinking_attention_based_token_pruning_in_vision_language_models/analyze3.png" alt="注意力分析" /><figcaption aria-hidden="true">注意力分析</figcaption>
 </figure>
@@ -155,60 +152,8 @@
 <td>98.5%</td>
 </tr>
 <tr class="even">
-<td><em>保留 64 Tokens（减少 88.9%）</em></td>
+<td>*保留 64 To</td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>FastV</td>
-<td>-</td>
-<td>46.1</td>
-<td>51.1</td>
-<td>47.8</td>
-<td>48.0</td>
-<td>1256</td>
-<td>55.0</td>
-<td>48.0</td>
-<td>42.7</td>
-<td>71.4%</td>
-</tr>
-<tr class="even">
-<td>VisPruner</td>
-<td>-</td>
-<td>55.4</td>
-<td>69.1</td>
-<td>55.8</td>
-<td>80.4</td>
-<td>1689</td>
-<td>72.7</td>
-<td>61.3</td>
-<td>55.1</td>
-<td>94.3%</td>
-</tr>
-<tr class="odd">
-<td>VisionZip</td>
-<td>20.9M</td>
-<td>57.0</td>
-<td>68.8</td>
-<td>56.0</td>
-<td>80.9</td>
-<td>1756</td>
-<td>74.2</td>
-<td>61.5</td>
-<td>-</td>
-<td>95.1%</td>
-</tr>
-<tr class="even">
-<td>TwigVLM</td>
-<td>610M</td>
 <td></td>
 <td></td>
 <td></td>

@@ -7,10 +7,6 @@ think-answer VLM 的推理链很长，前面已经生成出来的大量文字本
 在 distillation 时，student 不需要真正学会老师如何看图，只要抓住少量高影响力的 reasoning cues，就能把 reverse KL 做小。于是训练信号会越来越集中在前段 token，后段推理步骤的蒸馏价值变弱。</p></li>
 </ol>
 <p>作者的关键判断不是“再想办法把 teacher 的视觉 pattern 显式传给 student”，而是：</p>
-<blockquote>
-<p>更有效的做法，是让 student 在缺失一部分关键 reasoning prefix 的情况下，仍然要去逼近 teacher 分布，从而被迫重新利用图像证据。</p>
-</blockquote>
-<p>这也是论文标题 <code>Hide to See</code> 的意思：<strong>先把容易偷懒用的文本线索藏起来，student 才会重新去“看”。</strong></p>
 <p>（本节其余细节见论文原始笔记。）</p>
 </div><h2 class="section-title">方法框架：方法框架</h2><p>作者提出针对上述问题的视觉语言模型训练或推理框架。</p>
 <h2 class="section-title">实验与核心结论：实验与结论</h2><p>实验部分验证了方法在相关视觉语言任务上的有效性。</p>
