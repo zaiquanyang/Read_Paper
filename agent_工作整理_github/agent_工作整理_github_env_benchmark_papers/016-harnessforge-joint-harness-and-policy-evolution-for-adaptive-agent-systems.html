@@ -1,0 +1,138 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>agent 宸ヤ綔鏁寸悊</title>
+  <style>
+    :root { color-scheme: light; --bg: #f6f8fb; --card: #ffffff; --ink: #172033; --muted: #5d6b82; --line: #dfe6ef; --accent: #3457d5; --soft: #eef3ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.72; color: var(--ink); background: radial-gradient(circle at top left, #e8efff, transparent 34rem), var(--bg); }
+    header { padding: 56px 22px 30px; text-align: center; }
+    header h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.7rem); letter-spacing: -0.04em; }
+    header p { max-width: 820px; margin: 0 auto; color: var(--muted); font-size: 1.05rem; }
+    main { width: min(1120px, calc(100% - 32px)); margin: 0 auto 64px; }
+    .paper-card { width: min(960px, 100%); margin: 24px auto; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 24px; padding: clamp(22px, 4vw, 38px); box-shadow: 0 18px 60px rgba(27, 39, 78, .08); }
+    .card-topline { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; background: var(--soft); color: var(--accent); font-size: .82rem; font-weight: 650; }
+    h2 { margin: 0 0 12px; font-size: clamp(1.45rem, 3vw, 2.15rem); line-height: 1.25; }
+    h3 { margin: 0 0 8px; font-size: 1.04rem; color: #23345d; }
+    p { margin: 0 0 10px; }
+    ul { margin: 0 0 10px 1.2em; padding: 0; }
+    li { margin: 4px 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #f1f4f8; border-radius: 6px; padding: 1px 5px; }
+    .paper-links { margin: 8px 0 18px; color: var(--muted); }
+    .paper-section { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+    .paper-section.highlight { background: linear-gradient(135deg, #f6f8ff, #ffffff); border: 1px solid #dce5ff; border-radius: 18px; padding: 16px 18px; }
+    .figure-showcase { margin-top: 22px; border: 1px solid var(--line); border-radius: 20px; padding: 16px; background: #fbfdff; }
+    .figure-title { margin: 0 0 12px; color: var(--accent); font-size: .96rem; font-weight: 800; }
+    .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .figure-link { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-decoration: none; }
+    .figure-link.figure-primary { grid-column: 1 / -1; }
+    .figure-link img { width: 100%; max-height: 680px; object-fit: contain; border-radius: 12px; background: #fff; }
+    .figure-link:not(.figure-primary) img { max-height: 520px; }
+    .figure-link span { color: var(--muted); font-size: .88rem; }
+    @media (max-width: 720px) { .figure-grid { grid-template-columns: 1fr; } .figure-link.figure-primary { grid-column: auto; } }
+    .placeholder-note { color: #667085; font-style: italic; background: #f8fafc; border: 1px dashed var(--line); border-radius: 8px; padding: .55rem .8rem; }
+    .artifact-note { color: #7c5c00; background: #fff8db; border-left: 3px solid #eab308; border-radius: 0 8px 8px 0; padding: .55rem .8rem; }
+    .formula-block { overflow-x: auto; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: .65rem .8rem; margin: .8rem 0; }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+    footer { text-align: center; color: var(--muted); padding: 0 0 48px; }
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>`n  <a href="../agent_工作整理_github_env_benchmark.html" style="display:block;max-width:1120px;margin:18px auto 0;padding:0 16px;color:#3457d5;">← 返回 Agent Environments &amp; Benchmarks</a>
+  <header>
+    <h1>agent 宸ヤ綔鏁寸悊</h1>
+    <p>灏?read-arxiv-paper 鐢熸垚鐨勮鏂囨€荤粨鏁寸悊涓哄彲娴忚鐨勪笓棰樺崱鐗囥€傛洿鏂版椂闂达細2026-10-11銆?/p>
+  </header>
+<!-- WORK_LIST_START -->
+  <nav class="work-list" aria-label="宸叉暣鐞嗗伐浣滃垪琛?>
+    <h2>宸叉暣鐞嗗伐浣滃垪琛?/h2>
+    <p>鐐瑰嚮鏍囬鍙洿鎺ヨ烦杞埌瀵瑰簲璁烘枃鍗＄墖銆?/p>
+    <ol>
+      <li><a href="#arxiv-2606.01779">HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems</a><span class="work-meta">arXiv 2606.01779</span></li>
+    </ol>
+  </nav>
+<!-- WORK_LIST_END -->
+  <main class="paper-list" data-topic="agent">
+<!-- PAPER_CARD_START source="agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md" arxiv="2606.01779" -->
+<article class="paper-card" id="arxiv-2606.01779" data-source="agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md" data-arxiv="2606.01779">
+  <div class="card-topline">
+    <span class="badge">agent</span><span class="badge">arXiv 2606.01779</span>
+  </div>
+  <h2>HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems</h2>
+  <div class="paper-links"><a href="https://arxiv.org/abs/2606.01779" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2606.01779.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../../../agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md">summary md</a></div>
+  <section class="paper-section highlight">
+    <h3>鏍稿績鎬濇兂</h3>
+    <p>杩欑瘒宸ヤ綔鍏虫敞鐨勪笉鏄€滄€庝箞鎶?agent 鐨勬煇涓ā鍧楀崟鐙彉寮衡€濓紝鑰屾槸鈥滄€庝箞鎶?<strong>澶栭儴鎵ц妗嗘灦 harness</strong> 鍜?<strong>鍐呴儴鎺ㄧ悊绛栫暐 policy</strong> 褰撴垚涓€涓€﹀悎绯荤粺涓€璧锋紨鍖栤€濄€備綔鑰呰涓猴紝寰堝 agent 浠诲姟涓婄殑澶辫触骞朵笉鏄崟绾潵鑷ā鍨嬩笉澶熷己锛屾垨鑰?workflow 璁捐涓嶅濂斤紝鑰屾槸涓よ€呬箣闂村瓨鍦?<strong>executable compatibility gap</strong>锛歨arness 鎻愪緵鐨勮鍒掋€佸姩浣溿€佽蹇嗘帴鍙ｏ紝policy 涓嶄竴瀹氳兘绋冲畾鎵ц锛沺olicy 鍐嶅己锛屼篃鍙兘琚笉鍚堥€傜殑 harness 闄愭銆侶arnessForge 鐨勬牳蹇冨氨鏄洿缁曡繖涓€﹀悎闂鍋?<strong>harness-policy co-evolution</strong>銆?/p>
+  </section>
+  <section class="paper-section">
+    <h3>闂涓庡姩鏈?/h3>
+    <p class="placeholder-note">杩欎竴閮ㄥ垎褰撳墠杩樻病鏈夎ˉ鍒版洿缁嗙殑鏁寸悊銆?/p>
+  </section>
+  <section class="paper-section">
+    <h3>鏂规硶鏍稿績</h3>
+    <p>浣滆€呯殑鏁翠綋娴佺▼鏄寜 round 杩唬鐨勩€傛瘡涓€杞兘鍋氫袱浠朵簨锛?/p>
+<ul><li><code>Harness tailoring</code>锛氭牴鎹?rollout failure 璇婃柇鍜屼慨鏀?harness</li><li><code>Policy alignment</code>锛氶拡瀵规柊鐨?harness锛屽啀鎶?policy 璋冨埌閫傚簲璇?harness</li></ul>
+<p>褰㈠紡鍖栧湴锛岀缇ゅ啓鎴愶細</p>
+<div class="formula-block">\[\mathbb{G}^{(r)} =
+\{
+\mathcal{G}_i^{(r)} = (\mathcal{H}_i^{(r)}, \mathcal{R}^{(r)}_{\delta_i})
+\}_{i \in I^{(r)}}\]</div>
+<p>鐒跺悗姣忚疆浠?/p>
+<div class="formula-block">\[(\mathcal{H}^{(r)}, \mathcal{R}^{(r)})
+\rightarrow
+(\mathcal{H}^{(r+1)}, \mathcal{R}^{(r)})
+\rightarrow
+(\mathcal{H}^{(r+1)}, \mathcal{R}^{(r+1)})\]</div>
+<p>涔熷氨鏄厛杩涘寲 harness锛屽啀璁?policy 璺熶笂銆?/p>
+<p>濡傛灉鍙湅楂樺眰锛岃繖绡囧伐浣滅湅璧锋潵鍍忊€渨orkflow search + SFT鈥濓紝浣嗚繖浼氫綆浼板畠銆?/p>
+<p>瀹冪湡姝ｇ殑鏂规硶璐＄尞锛屾垜瑙夊緱鏈変笁灞傦細</p>
+<p>杩欑偣寰堝€煎緱璁帮細</p>
+<ul><li>濡傛灉娌℃湁缁撴瀯鍖?fault attribution锛屽氨寰堝鏄撴妸 system failure 閿欏綊鍥犱负 model failure</li><li>涓€鏃﹀綊鍥犻敊浜嗭紝鍚庣画鎼滅储銆佽捀棣忋€丷L 閮藉彲鑳藉湪閿欒鏂瑰悜涓婄户缁斁澶?/li></ul>
+<p>鎵€浠ヤ粠缁嗙矑搴?agent 瑙掑害锛岃繖绡囧伐浣滄渶澶х殑浠峰€间箣涓€鏄細</p>
+<p>&gt; 瀹冩妸 鈥滃け璐ュ畾浣嶅埌 planning/action/memory 鍝竴灞傗€?鍙樻垚浜?adaptation pipeline 鐨勫叆鍙ｃ€?/p>
+  </section>
+  <section class="paper-section">
+    <h3>瀹為獙涓庣粨璁?/h3>
+    <p>浣滆€呮槑纭 policy alignment 涓嶇粦瀹氭煇涓缁冪洰鏍囷紝鐞嗚涓婂彲浠ョ敤锛?/p>
+<ul><li>SFT</li><li>preference optimization</li><li>RL-style objective</li></ul>
+<p>浣嗕富瀹為獙鐢?SFT锛屽師鍥犳槸锛?/p>
+<ul><li>涓嶅鍔?rollout budget</li><li>鍙互鐩存帴鐢ㄦ垚鍔熻建杩瑰仛 step-level teacher forcing</li></ul>
+<p>瀵瑰簲鎹熷け锛?/p>
+<div class="formula-block">\[\mathcal{L}_{\mathrm{sft}}
+=
+-\sum_{(z_t,y_t)\in\mathcal{D}_{\mathcal{H}_k}}
+\log p_{\mathcal{R}^{(r)}_{\delta_k}\oplus\Delta\delta}(y_t\mid z_t)\]</div>
+<p>杩欓噷鏈€閲嶈鐨?insight 鏄細</p>
+<p>&gt; HarnessForge 鐨勨€滄柟娉曡鏍稿績鈥濅笉鏄煇涓壒瀹?policy optimizer锛岃€屾槸 <strong>harness-conditioned adaptation problem</strong> 鐨勫畾涔夈€?/p>
+<p>涔熷氨鏄畠鎶?policy training 浠庘€滃涓€涓洿寮?agent鈥濇敼鎴愪簡鈥滃涓€涓洿浼氭墽琛屽綋鍓?harness 鐨?agent鈥濄€?/p>
+<p>涓昏瘎娴嬫秹鍙婏細</p>
+<ul><li>ToolHop</li><li>SearchQA锛圚otpotQA + 2Wiki锛?/li><li>TMDB</li><li>API-Bank</li></ul>
+<p>闄勫綍閲岃繕鎻愬埌 evolution data 涓昏瑕嗙洊锛?/p>
+<ul><li>ToolHop</li><li>EnvScaler-RL</li><li>SearchQA</li></ul>
+<p>杩欓噷鏈変釜鍊煎緱娉ㄦ剰鐨勭偣锛氫綔鑰呮妸 <code>EnvScaler-RL</code> 浣滀负 evolution data domain 鐨勪竴閮ㄥ垎锛屼絾涓昏〃閲屼笉鐩存帴灞曠ず EnvScaler-RL 涓荤粨鏋滐紝鑰屾槸鐢ㄥ畠鏈嶅姟浜?system adaptation 杩囩▼銆?/p>
+<p>鏍稿績涓昏〃濡備笅銆?..</p>
+  </section>
+  <section class="paper-section">
+    <h3>浠峰€笺€佸眬闄愪笌鍚彂</h3>
+    <p>杩欑瘒宸ヤ綔鍏虫敞鐨勪笉鏄€滄€庝箞鎶?agent 鐨勬煇涓ā鍧楀崟鐙彉寮衡€濓紝鑰屾槸鈥滄€庝箞鎶?<strong>澶栭儴鎵ц妗嗘灦 harness</strong> 鍜?<strong>鍐呴儴鎺ㄧ悊绛栫暐 policy</strong> 褰撴垚涓€涓€﹀悎绯荤粺涓€璧锋紨鍖栤€濄€備綔鑰呰涓猴紝寰堝 agent 浠诲姟涓婄殑澶辫触骞朵笉鏄崟绾潵鑷ā鍨嬩笉澶熷己锛屾垨鑰?workflow 璁捐涓嶅濂斤紝鑰屾槸涓よ€呬箣闂村瓨鍦?<strong>executable compatibility gap</strong>锛歨arness 鎻愪緵鐨勮鍒掋€佸姩浣溿€佽蹇嗘帴鍙ｏ紝policy 涓嶄竴瀹氳兘绋冲畾鎵ц锛沺olicy 鍐嶅己锛屼篃鍙兘琚笉鍚堥€傜殑 harness 闄愭銆侶arnessForge 鐨勬牳蹇冨氨鏄洿缁曡繖涓€﹀悎闂鍋?<strong>harness-policy co-evolution</strong>銆?/p>
+<ul><li><code>HarnessForge</code> 鐮旂┒鐨勬槸 agent system 鐨勮仈鍚堥€傞厤锛岃€屼笉鏄崟鐙悳 harness 鎴栧崟鐙 policy銆?/li><li>瀹冩妸 agent system 鏄庣‘寤烘ā涓?<code>harness-policy pair</code>銆?/li><li>harness 琚媶鎴?<code>Planning / Action / Memory</code> 涓夊眰锛岃繖鏄畠鐨勬牳蹇冪粏绮掑害缁撴瀯銆?/li><li>鏍稿績闂鏄?<code>executable compatibility gap</code>銆?/li><li>harness evolution 娴佺▼鏄細<code>fault attribution -&gt; archive-guided improvement -&gt; constrained generation -&gt; smoke test -&gt; Pareto filter</code>銆?..</li></ul>
+  </section>
+  
+</article>
+<!-- PAPER_CARD_END -->
+  </main>
+  <footer>Generated by add-summary-to-topic-html skill.</footer>
+</body>
+</html>
+
