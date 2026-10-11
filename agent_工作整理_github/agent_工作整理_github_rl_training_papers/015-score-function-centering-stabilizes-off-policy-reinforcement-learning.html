@@ -90,7 +90,7 @@ window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [
     if (!match) return;
     const panel = heading.closest('.panel');
     panel.id = match[1];
-    if (match[1] === 'sec-centering' || match[1] === 'sec-conclusion') panel.classList.add('highlight');
+    if (match[1] === 'sec-conclusion') panel.classList.add('highlight');
   });
 })();
 </script>
