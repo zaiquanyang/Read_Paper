@@ -240,6 +240,12 @@ window.MathJax = {
     .paper-card { padding: 1.2rem; }
   }
 </style>
+<style>
+  /* Keep each card's decorative layer inside the card. */
+  .paper-tile { position: relative; overflow: hidden; }
+  .paper-tile::before { position: absolute; inset: 0; }
+  .paper-tile > * { position: relative; z-index: 1; }
+</style>
 </head>
 <body>
 <div class="toc-panel">
