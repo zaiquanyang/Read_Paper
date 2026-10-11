@@ -10,7 +10,7 @@ window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
 :root{--bg:#f7f8fb;--card:#fff;--text:#182033;--muted:#657084;--accent:#2d6cdf;--soft:#f2f6fc;--border:#dce4ef;--shadow:0 4px 18px rgba(25,45,75,.07)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.78;padding:28px 16px}.container{max-width:980px;margin:auto}.back{display:inline-block;margin:0 0 18px;color:var(--accent);text-decoration:none}.back:hover{text-decoration:underline}header{text-align:center;margin:8px 0 24px;padding-bottom:20px;border-bottom:2px solid var(--border)}h1{font-size:1.8rem;line-height:1.35;margin:0 0 10px}.meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;color:var(--muted);font-size:.88rem}.meta a{color:var(--accent);text-decoration:none}.paper-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:0 0 10px;font-size:.84rem}.paper-links a{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:#eaf1ff;color:var(--accent);text-decoration:none;font-weight:700}.paper-links a:hover{text-decoration:underline}.paper-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:clamp(20px,4vw,34px)}.summary{background:#f3f7fd;border:1px solid #dbe6f5;padding:15px 18px;border-radius:10px;margin:0 0 22px}.panel{border:1px solid var(--border);background:#fff;border-radius:10px;padding:18px 20px;margin:20px 0}.panel h2{font-size:1.15rem;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid #e8edf4}.panel h3{font-size:1rem;margin:16px 0 7px;color:#26364d}.panel p,.panel li{font-size:.96rem;color:#303846;margin:0 0 9px}.panel ul,.panel ol{padding-left:1.35rem;margin:0 0 5px}.panel li:last-child,.panel p:last-child{margin-bottom:0}.formula{overflow:auto;background:#fafbfd;border:1px solid #e4e9f1;border-radius:8px;padding:11px 14px;margin:13px 0}.figure-block{margin:22px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fbfcfe}.figure-title{font-weight:700;color:#354b6b;font-size:.92rem;margin-bottom:9px}.figure-block img{display:block;width:100%;max-height:570px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}.figure-block a{display:block}.two-figures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.two-figures .figure-block{margin:0}.two-figures img{max-height:430px}.note{color:var(--muted);font-size:.9rem;background:#fafbfd;border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-top:18px}footer{text-align:center;color:var(--muted);font-size:.82rem;margin:24px 0 8px}@media(max-width:720px){body{padding:16px 10px}.paper-card{padding:18px 14px}h1{font-size:1.45rem}.two-figures{grid-template-columns:1fr}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.78;padding:28px 16px}.container{max-width:1120px;margin:auto}.back{display:inline-block;margin:0 0 18px;color:var(--accent);text-decoration:none}.back:hover{text-decoration:underline}header{text-align:center;margin:8px 0 24px;padding-bottom:20px;border-bottom:2px solid var(--border)}h1{font-size:1.8rem;line-height:1.35;margin:0 0 10px}.meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;color:var(--muted);font-size:.88rem}.meta a{color:var(--accent);text-decoration:none}.paper-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:0 0 10px;font-size:.84rem}.paper-links a{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:#eaf1ff;color:var(--accent);text-decoration:none;font-weight:700}.paper-links a:hover{text-decoration:underline}.content-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:32px;align-items:start}.toc{position:sticky;top:20px;padding:14px 0}.toc-title{font-size:.78rem;font-weight:800;letter-spacing:.08em;color:var(--muted);margin:0 0 9px}.toc ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--border)}.toc li{margin:0}.toc a{display:block;padding:5px 10px;color:var(--muted);font-size:.82rem;line-height:1.4;text-decoration:none;border-left:2px solid transparent;margin-left:-1px}.toc a:hover,.toc a:focus{color:var(--accent);border-left-color:var(--accent);background:#f0f5ff}.paper-card{min-width:0}.summary{background:#f3f7fd;border:1px solid #dbe6f5;padding:15px 18px;border-radius:10px;margin:0 0 22px}.panel{border:0;border-top:1px solid var(--border);background:transparent;border-radius:0;padding:27px 0 25px;margin:0;scroll-margin-top:20px}.panel:first-of-type{border-top:0;padding-top:0}.panel h2{font-size:1.15rem;margin:0 0 12px;padding:0;color:#1d2b43}.panel h3{font-size:1rem;margin:18px 0 7px;color:#26364d}.panel p,.panel li{font-size:.96rem;color:#303846;margin:0 0 9px}.panel ul,.panel ol{padding-left:1.35rem;margin:0 0 5px}.panel li:last-child,.panel p:last-child{margin-bottom:0}.panel.highlight{background:#f3f7fd;border:1px solid #dbe6f5;border-radius:10px;padding:20px 22px;margin:22px 0}.panel.highlight h2{color:#244f91}.formula{overflow:auto;background:#fafbfd;border:1px solid #e4e9f1;border-radius:8px;padding:11px 14px;margin:13px 0}.figure-block{margin:22px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fbfcfe}.figure-title{font-weight:700;color:#354b6b;font-size:.92rem;margin-bottom:9px}.figure-block img{display:block;width:100%;max-height:570px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}.figure-block a{display:block}.two-figures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.two-figures .figure-block{margin:0}.two-figures img{max-height:430px}.note{color:var(--muted);font-size:.9rem;background:#fafbfd;border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-top:18px}footer{text-align:center;color:var(--muted);font-size:.82rem;margin:24px 0 8px}@media(max-width:860px){.content-layout{grid-template-columns:1fr;gap:0}.toc{position:static;padding:0;margin:0 0 20px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px}.toc-title{margin-bottom:6px}.toc ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0}.toc a{border-left:0;border-bottom:2px solid transparent;margin-left:0;padding:5px 6px}.toc a:hover,.toc a:focus{border-left:0;border-bottom-color:var(--accent)}}@media(max-width:720px){body{padding:16px 10px}h1{font-size:1.45rem}.panel.highlight{padding:17px 16px}.two-figures{grid-template-columns:1fr}.toc ol{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -21,10 +21,27 @@ window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [
   <div class="paper-links"><a href="https://arxiv.org/abs/2609.20807" target="_blank" rel="noopener">arXiv 2609.20807</a><a href="https://github.com/martin-marek/score-centering" target="_blank" rel="noopener">GitHub</a></div>
   <div class="meta"><span>Martin Marek · Max Ryabinin</span><span>2026-09</span><a href="https://arxiv.org/abs/2609.20807" target="_blank" rel="noopener">摘要页</a><a href="https://arxiv.org/pdf/2609.20807" target="_blank" rel="noopener">PDF</a></div>
 </header>
+<div class="content-layout">
+<aside class="toc" aria-label="文章目录">
+  <div class="toc-title">目录</div>
+  <ol>
+    <li><a href="#sec-background">1. 背景与双 policy</a></li>
+    <li><a href="#sec-policy-gradient">2. Policy gradient</a></li>
+    <li><a href="#sec-zero-mean">3. Score 零均值</a></li>
+    <li><a href="#sec-drift">4. Mismatch 与 drift</a></li>
+    <li><a href="#sec-centering">5. Score Centering</a></li>
+    <li><a href="#sec-loss">6. Scalar loss</a></li>
+    <li><a href="#sec-topk">7. Top-k 与 tail</a></li>
+    <li><a href="#sec-is">8. Importance Sampling</a></li>
+    <li><a href="#sec-experiments">9. 实验结果</a></li>
+    <li><a href="#sec-scale">10. 规模与消融</a></li>
+    <li><a href="#sec-conclusion">11. 结论与边界</a></li>
+  </ol>
+</aside>
 <article class="paper-card">
-  <div class="summary"><strong>一句话概括：</strong>异步 RL 中，rollout 来自行为分布 $q$，trainer 却用当前策略 $p$ 计算 score；当 $q\ne p$ 时，score 在真实采样分布下不再零均值，reward 的平均值会被错误地转成一个持续的参数更新方向。Score Centering（SC）直接减去行为分布下的平均 score，恢复 baseline invariance；如果还需要把行为分布校正到目标分布，再与 importance sampling 组合。</div>
+  <div class="summary" id="summary"><strong>一句话概括：</strong>异步 RL 中，rollout 来自行为分布 $q$，trainer 却用当前策略 $p$ 计算 score；当 $q\ne p$ 时，score 在真实采样分布下不再零均值，reward 的平均值会被错误地转成一个持续的参数更新方向。Score Centering（SC）直接减去行为分布下的平均 score，恢复 baseline invariance；如果还需要把行为分布校正到目标分布，再与 importance sampling 组合。</div>
 
-  <section class="panel"><h2>1. 背景：为什么一个 RL 系统会有两个 policy</h2><p>LLM 强化学习的一轮训练通常拆成两段。<strong>Generator / sampler / inference engine</strong> 根据当时的模型和推理设置生成回答或完整轨迹，并按这次生成实际使用的分布采样 token；<strong>Trainer / training engine</strong> 稍后读取轨迹，用当前参数重新计算 log-prob，再进行反向传播。</p><p>理想的同步实现中，这两个分布相同。但工程系统常把它们拆开以提高 GPU 利用率，因而会出现两类 mismatch：</p><ul><li><strong>数值/实现 mismatch：</strong>即使加载相同权重，训练和推理也可能使用不同 kernel、batch shape、浮点精度、量化方式或 KV cache，最终 logits 只有细微差异。</li><li><strong>异步 staleness：</strong>rollout 生成期间 trainer 继续更新，generator 只周期性同步权重；长 episode 中，同一条轨迹的不同 token 甚至来自不同 checkpoint。</li></ul><p>下面记 generator 的行为分布为 $q$，trainer 当前用于计算梯度的策略为 $p_\theta$。关键问题不是“两个模型差多少”这么简单，而是偏差是否会在训练闭环中持续累积。</p></section>
+  <section class="panel" id="sec-background"><h2>1. 背景：为什么一个 RL 系统会有两个 policy</h2><p>LLM 强化学习的一轮训练通常拆成两段。<strong>Generator / sampler / inference engine</strong> 根据当时的模型和推理设置生成回答或完整轨迹，并按这次生成实际使用的分布采样 token；<strong>Trainer / training engine</strong> 稍后读取轨迹，用当前参数重新计算 log-prob，再进行反向传播。</p><p>理想的同步实现中，这两个分布相同。但工程系统常把它们拆开以提高 GPU 利用率，因而会出现两类 mismatch：</p><ul><li><strong>数值/实现 mismatch：</strong>即使加载相同权重，训练和推理也可能使用不同 kernel、batch shape、浮点精度、量化方式或 KV cache，最终 logits 只有细微差异。</li><li><strong>异步 staleness：</strong>rollout 生成期间 trainer 继续更新，generator 只周期性同步权重；长 episode 中，同一条轨迹的不同 token 甚至来自不同 checkpoint。</li></ul><p>下面记 generator 的行为分布为 $q$，trainer 当前用于计算梯度的策略为 $p_\theta$。关键问题不是“两个模型差多少”这么简单，而是偏差是否会在训练闭环中持续累积。</p></section>
 
   <section class="panel"><h2>2. 从 score function 推导 policy gradient</h2><p>固定一个 prompt 或 prefix $x$，模型从离散分布 $p_\theta(a\mid x)$ 采样 action $a$。对 LLM 来说，action 可以是下一个 token，也可以代表一段完整回答。目标是最大化期望 reward：</p><div class="formula">\[J(\theta)=\mathbb E_{a\sim p_\theta}[R(a)].\]</div><p>reward 可以是不可微的，例如正确答案给 1、错误答案给 0。对期望展开并使用 $\nabla p=p\nabla\log p$：</p><div class="formula">\[\begin{aligned}\nabla_\theta J(\theta)&=\sum_a R(a)\nabla_\theta p_\theta(a)\\&=\sum_a p_\theta(a)R(a)\nabla_\theta\log p_\theta(a)\\&=\mathbb E_{a\sim p_\theta}\left[R(a)\,\underbrace{\nabla_\theta\log p_\theta(a)}_{s_\theta(a)}\right].\end{aligned}\]</div><p>$s_\theta(a)$ 就是 score function：它不是 reward 分数，而是“改变参数后，这个 action 的 log-prob 会朝哪个方向变化”的梯度。$R(a)$ 决定样本应该被鼓励还是抑制，$s_\theta(a)$ 决定参数如何改变该样本的概率。PPO、GRPO 等方法在此基础上加入 token-level 分解、advantage、importance ratio 和 clipping，但核心方向仍包含 $\nabla_\theta\log p_\theta(y_t\mid y_{&lt;t})$。</p></section>
 
@@ -52,6 +69,31 @@ window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [
 
   <div class="note">本页根据本地详细阅读笔记整理，保留了 score 推导、drift 分解、Top-k tail 近似和实验边界；论文原始 PDF、源码和实验图可通过顶部链接及图像链接查看。</div>
 </article>
+</div>
+<script>
+(() => {
+  const sections = [
+    ['1. 背景：', 'sec-background'],
+    ['2. 从 score function', 'sec-policy-gradient'],
+    ['3. On-policy', 'sec-zero-mean'],
+    ['4. Mismatch', 'sec-drift'],
+    ['5. Score Centering', 'sec-centering'],
+    ['6. 从 score 向量', 'sec-loss'],
+    ['7. Top-k', 'sec-topk'],
+    ['8. 与 Importance Sampling', 'sec-is'],
+    ['9. 实验设置', 'sec-experiments'],
+    ['10. 30B', 'sec-scale'],
+    ['11. 结论、边界', 'sec-conclusion']
+  ];
+  document.querySelectorAll('.panel h2').forEach((heading) => {
+    const match = sections.find(([prefix]) => heading.textContent.trim().startsWith(prefix));
+    if (!match) return;
+    const panel = heading.closest('.panel');
+    panel.id = match[1];
+    if (match[1] === 'sec-centering' || match[1] === 'sec-conclusion') panel.classList.add('highlight');
+  });
+})();
+</script>
 <footer>整理自本地 Agent RL 阅读笔记；图像可点击查看原图。</footer>
 </main>
 </body>
