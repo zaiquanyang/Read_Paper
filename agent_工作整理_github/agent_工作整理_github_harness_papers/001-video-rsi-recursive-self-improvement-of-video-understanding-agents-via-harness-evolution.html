@@ -42,15 +42,15 @@ header{padding:30px 0 24px;text-align:center}h1{margin:0 auto 12px;max-width:920
 <section id="framework">
 <h2>整体框架</h2>
 <figure class="figure"><div class="figure-title">图 1 · 从固定观察到可演化 Video Agent</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" alt="Video-RSI 从固定观察、视频 Agent 到 Harness 演化的概览图" loading="lazy"></a><div class="caption">前两种方法主要在单个问题内改变观察；Video-RSI 把可复用的决策程序和工具链作为跨问题演化对象。</div></figure>
-<p>给定当前 harness $H_t$、视频 $V$、问题 $q$ 和冻结模型服务 $mathcal M$，Solver 执行一次完整任务：</p>
+<p>给定当前 harness $H_t$、视频 $V$、问题 $q$ 和冻结模型服务 $\mathcal{M}$，Solver 执行一次完整任务：</p>
 <div class="formula">\[ (\hat y,\tau,c)=\operatorname{Run}(H_t,V,q;\mathcal M). \]</div>
-<p>其中 $hat y$ 是回答，$\tau$ 是由工具调用、观察和决策组成的 trace，$c$ 记录资源消耗。Editor 只根据训练侧结果提出候选 $\widetilde H_t$，再由 gate 决定是否令 $H_{t+1}=\widetilde H_t$；若不通过，则保留 $H_t$。</p>
+<p>其中 $\hat{y}$ 是回答，$\tau$ 是由工具调用、观察和决策组成的 trace，$c$ 记录资源消耗。Editor 只根据训练侧结果提出候选 $\widetilde H_t$，再由 gate 决定是否令 $H_{t+1}=\widetilde H_t$；若不通过，则保留 $H_t$。</p>
 <figure class="figure"><div class="figure-title">图 2 · Video-RSI 的完整演化闭环</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" alt="Video-RSI 方法框架图" loading="lazy"></a><div class="caption">当前 harness 执行 → 查看失败 trace → 主动调查原视频 → 提出修改并生成候选 → 在私有 gate 上比较 → 接受或回滚。</div></figure>
 </section>
 
 <section id="investigation">
 <h2>Active Video Investigation：先补证据，再改代码</h2>
-<p>失败 trace 只是程序已经选择查看的证据，不能等同于视频的全部事实。Editor 维护调查信息集 $ℐ_k$，每一步提出查询并获得新观察：</p>
+<p>失败 trace 只是程序已经选择查看的证据，不能等同于视频的全部事实。Editor 维护调查信息集 $\mathcal{I}_k$，每一步提出查询并获得新观察：</p>
 <div class="formula">\[
 \begin{aligned}
 u_k&=\operatorname{Query}_{\mathrm{Editor}}(\mathcal I_k),\\
