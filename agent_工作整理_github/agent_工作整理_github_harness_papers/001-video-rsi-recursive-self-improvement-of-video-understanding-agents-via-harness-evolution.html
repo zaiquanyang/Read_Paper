@@ -35,8 +35,8 @@ header{padding:30px 0 24px;text-align:center}h1{margin:0 auto 12px;max-width:920
 <main class="paper">
 <section id="idea">
 <h2>核心想法</h2>
-<div class="summary"><p><strong>Video-RSI 的改进对象不是模型权重，而是模型外面的 harness。</strong>同一个冻结语言模型分别充当 Solver 和 Editor：Solver 回答视频问题，Editor 根据失败轨迹和新增的视频证据修改 prompt、工具、观察处理、记忆与执行控制。被 gate 接受的代码会传给下一轮，因此“递归”指 harness 版本递归继承，而不是无监督地反复训练模型。</p></div>
-<ul><li><strong>Active Video Investigation：</strong>修改前重新查看训练视频，主动寻找原 trace 没有记录的证据，区分漏采样、感知错误和证据关联丢失。</li><li><strong>Cost-Aware Harness Evolution：</strong>在固定、与训练视频 disjoint 的私有 gate 上同时比较准确率和 visual frame 成本，只有满足接受规则的候选 harness 才会继承。</li></ul>
+<div class="summary"><p><strong>Video-RSI 的改进对象不是模型权重，而是模型外面的 harness。</strong>同一个冻结语言模型分别充当 Solver 和 Editor：Solver 回答视频问题，Editor 根据失败轨迹和新增的视频证据修改 prompt、工具、观察处理、记忆与执行控制。每次修改都要经过 <strong>gate（决定是否接受新版 harness 的评估关卡）</strong>，通过后代码才会传给下一轮，因此“递归”指 harness 版本递归继承，而不是无监督地反复训练模型。</p></div>
+<ul><li><strong>Active Video Investigation：</strong>修改前重新查看训练视频，主动寻找原 trace 没有记录的证据，区分漏采样、感知错误和证据关联丢失。</li><li><strong>Cost-Aware Harness Evolution：</strong>让旧版和新版 harness 回答同一组固定验证题，比较准确率和用帧数，满足接受规则才保留新版。这组验证题与训练集不共享视频（video-disjoint）；Editor 只能收到汇总指标，看不到验证样例、逐题输出和执行轨迹，因此称为“私有 gate”。</li></ul>
 </section>
 
 <section id="framework">
@@ -64,6 +64,8 @@ o_k&=\operatorname{Investigate}(u_k;H_t,\mathcal D_{\mathrm{tr}},\mathcal M),\\
 
 <section id="gate">
 <h2>Cost-Aware Selection：准确率和帧成本一起决定继承</h2>
+<p><strong>gate = 固定验证集 + 接受规则。</strong>它回答的是“这次代码修改是否值得保留”。论文将数据分成三部分：</p>
+<ul><li><strong>训练集（216 题）：</strong>Editor 可以查看视频、标签和执行轨迹，用来调查失败原因、修改 harness。</li><li><strong>gate 验证集（72 题）：</strong>独立评估器在同一组题上运行旧版和新版，汇总准确率和平均用帧数。Editor 无法查看这些验证样例，只能依据汇总反馈决定后续修改；video-disjoint 表示验证集使用的视频与训练集不重合，而不只是题目文字不同。</li><li><strong>外部测试集：</strong>演化完成、最终 harness 固定后，用其他 benchmark 检验效果。因此 gate 验证集用于选择版本，外部测试集用于报告最终表现。</li></ul>
 <p>令 incumbent 与 candidate 的 gate 准确率分别为 $A_t$ 和 $\widetilde A_t$，平均成功 visual-model calls 帧数分别为 $C_t$ 和 $\widetilde C_t$，并记 $\Delta A_t=\widetilde A_t-A_t$。论文使用：</p>
 <div class="formula">\[
 \begin{aligned}
