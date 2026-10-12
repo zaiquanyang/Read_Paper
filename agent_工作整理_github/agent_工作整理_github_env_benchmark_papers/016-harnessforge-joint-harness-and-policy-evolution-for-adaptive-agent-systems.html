@@ -1,138 +1,45 @@
-﻿<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>agent 宸ヤ綔鏁寸悊</title>
-  <style>
-    :root { color-scheme: light; --bg: #f6f8fb; --card: #ffffff; --ink: #172033; --muted: #5d6b82; --line: #dfe6ef; --accent: #3457d5; --soft: #eef3ff; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.72; color: var(--ink); background: radial-gradient(circle at top left, #e8efff, transparent 34rem), var(--bg); }
-    header { padding: 56px 22px 30px; text-align: center; }
-    header h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.7rem); letter-spacing: -0.04em; }
-    header p { max-width: 820px; margin: 0 auto; color: var(--muted); font-size: 1.05rem; }
-    main { width: min(1120px, calc(100% - 32px)); margin: 0 auto 64px; }
-    .paper-card { width: min(960px, 100%); margin: 24px auto; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 24px; padding: clamp(22px, 4vw, 38px); box-shadow: 0 18px 60px rgba(27, 39, 78, .08); }
-    .card-topline { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; background: var(--soft); color: var(--accent); font-size: .82rem; font-weight: 650; }
-    h2 { margin: 0 0 12px; font-size: clamp(1.45rem, 3vw, 2.15rem); line-height: 1.25; }
-    h3 { margin: 0 0 8px; font-size: 1.04rem; color: #23345d; }
-    p { margin: 0 0 10px; }
-    ul { margin: 0 0 10px 1.2em; padding: 0; }
-    li { margin: 4px 0; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #f1f4f8; border-radius: 6px; padding: 1px 5px; }
-    .paper-links { margin: 8px 0 18px; color: var(--muted); }
-    .paper-section { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
-    .paper-section.highlight { background: linear-gradient(135deg, #f6f8ff, #ffffff); border: 1px solid #dce5ff; border-radius: 18px; padding: 16px 18px; }
-    .figure-showcase { margin-top: 22px; border: 1px solid var(--line); border-radius: 20px; padding: 16px; background: #fbfdff; }
-    .figure-title { margin: 0 0 12px; color: var(--accent); font-size: .96rem; font-weight: 800; }
-    .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .figure-link { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-decoration: none; }
-    .figure-link.figure-primary { grid-column: 1 / -1; }
-    .figure-link img { width: 100%; max-height: 680px; object-fit: contain; border-radius: 12px; background: #fff; }
-    .figure-link:not(.figure-primary) img { max-height: 520px; }
-    .figure-link span { color: var(--muted); font-size: .88rem; }
-    @media (max-width: 720px) { .figure-grid { grid-template-columns: 1fr; } .figure-link.figure-primary { grid-column: auto; } }
-    .placeholder-note { color: #667085; font-style: italic; background: #f8fafc; border: 1px dashed var(--line); border-radius: 8px; padding: .55rem .8rem; }
-    .artifact-note { color: #7c5c00; background: #fff8db; border-left: 3px solid #eab308; border-radius: 0 8px 8px 0; padding: .55rem .8rem; }
-    .formula-block { overflow-x: auto; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: .65rem .8rem; margin: .8rem 0; }
-    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
-    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
-    .work-list p { margin: 0 0 12px; color: var(--muted); }
-    .work-list ol { margin: 0; padding-left: 1.25rem; }
-    .work-list li { margin: 8px 0; padding-left: 4px; }
-    .work-list a { font-weight: 700; }
-    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
-    footer { text-align: center; color: var(--muted); padding: 0 0 48px; }
-  </style>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
-<body>`n  <a href="../agent_工作整理_github_env_benchmark.html" style="display:block;max-width:1120px;margin:18px auto 0;padding:0 16px;color:#3457d5;">← 返回 Agent Environments &amp; Benchmarks</a>
-  <header>
-    <h1>agent 宸ヤ綔鏁寸悊</h1>
-    <p>灏?read-arxiv-paper 鐢熸垚鐨勮鏂囨€荤粨鏁寸悊涓哄彲娴忚鐨勪笓棰樺崱鐗囥€傛洿鏂版椂闂达細2026-10-11銆?/p>
-  </header>
-<!-- WORK_LIST_START -->
-  <nav class="work-list" aria-label="宸叉暣鐞嗗伐浣滃垪琛?>
-    <h2>宸叉暣鐞嗗伐浣滃垪琛?/h2>
-    <p>鐐瑰嚮鏍囬鍙洿鎺ヨ烦杞埌瀵瑰簲璁烘枃鍗＄墖銆?/p>
-    <ol>
-      <li><a href="#arxiv-2606.01779">HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems</a><span class="work-meta">arXiv 2606.01779</span></li>
-    </ol>
-  </nav>
-<!-- WORK_LIST_END -->
-  <main class="paper-list" data-topic="agent">
-<!-- PAPER_CARD_START source="agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md" arxiv="2606.01779" -->
-<article class="paper-card" id="arxiv-2606.01779" data-source="agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md" data-arxiv="2606.01779">
-  <div class="card-topline">
-    <span class="badge">agent</span><span class="badge">arXiv 2606.01779</span>
-  </div>
-  <h2>HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems</h2>
-  <div class="paper-links"><a href="https://arxiv.org/abs/2606.01779" target="_blank" rel="noopener">abs</a> | <a href="https://arxiv.org/pdf/2606.01779.pdf" target="_blank" rel="noopener">pdf</a> | <a href="../../../agent/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems.md">summary md</a></div>
-  <section class="paper-section highlight">
-    <h3>鏍稿績鎬濇兂</h3>
-    <p>杩欑瘒宸ヤ綔鍏虫敞鐨勪笉鏄€滄€庝箞鎶?agent 鐨勬煇涓ā鍧楀崟鐙彉寮衡€濓紝鑰屾槸鈥滄€庝箞鎶?<strong>澶栭儴鎵ц妗嗘灦 harness</strong> 鍜?<strong>鍐呴儴鎺ㄧ悊绛栫暐 policy</strong> 褰撴垚涓€涓€﹀悎绯荤粺涓€璧锋紨鍖栤€濄€備綔鑰呰涓猴紝寰堝 agent 浠诲姟涓婄殑澶辫触骞朵笉鏄崟绾潵鑷ā鍨嬩笉澶熷己锛屾垨鑰?workflow 璁捐涓嶅濂斤紝鑰屾槸涓よ€呬箣闂村瓨鍦?<strong>executable compatibility gap</strong>锛歨arness 鎻愪緵鐨勮鍒掋€佸姩浣溿€佽蹇嗘帴鍙ｏ紝policy 涓嶄竴瀹氳兘绋冲畾鎵ц锛沺olicy 鍐嶅己锛屼篃鍙兘琚笉鍚堥€傜殑 harness 闄愭銆侶arnessForge 鐨勬牳蹇冨氨鏄洿缁曡繖涓€﹀悎闂鍋?<strong>harness-policy co-evolution</strong>銆?/p>
-  </section>
-  <section class="paper-section">
-    <h3>闂涓庡姩鏈?/h3>
-    <p class="placeholder-note">杩欎竴閮ㄥ垎褰撳墠杩樻病鏈夎ˉ鍒版洿缁嗙殑鏁寸悊銆?/p>
-  </section>
-  <section class="paper-section">
-    <h3>鏂规硶鏍稿績</h3>
-    <p>浣滆€呯殑鏁翠綋娴佺▼鏄寜 round 杩唬鐨勩€傛瘡涓€杞兘鍋氫袱浠朵簨锛?/p>
-<ul><li><code>Harness tailoring</code>锛氭牴鎹?rollout failure 璇婃柇鍜屼慨鏀?harness</li><li><code>Policy alignment</code>锛氶拡瀵规柊鐨?harness锛屽啀鎶?policy 璋冨埌閫傚簲璇?harness</li></ul>
-<p>褰㈠紡鍖栧湴锛岀缇ゅ啓鎴愶細</p>
-<div class="formula-block">\[\mathbb{G}^{(r)} =
-\{
-\mathcal{G}_i^{(r)} = (\mathcal{H}_i^{(r)}, \mathcal{R}^{(r)}_{\delta_i})
-\}_{i \in I^{(r)}}\]</div>
-<p>鐒跺悗姣忚疆浠?/p>
-<div class="formula-block">\[(\mathcal{H}^{(r)}, \mathcal{R}^{(r)})
-\rightarrow
-(\mathcal{H}^{(r+1)}, \mathcal{R}^{(r)})
-\rightarrow
-(\mathcal{H}^{(r+1)}, \mathcal{R}^{(r+1)})\]</div>
-<p>涔熷氨鏄厛杩涘寲 harness锛屽啀璁?policy 璺熶笂銆?/p>
-<p>濡傛灉鍙湅楂樺眰锛岃繖绡囧伐浣滅湅璧锋潵鍍忊€渨orkflow search + SFT鈥濓紝浣嗚繖浼氫綆浼板畠銆?/p>
-<p>瀹冪湡姝ｇ殑鏂规硶璐＄尞锛屾垜瑙夊緱鏈変笁灞傦細</p>
-<p>杩欑偣寰堝€煎緱璁帮細</p>
-<ul><li>濡傛灉娌℃湁缁撴瀯鍖?fault attribution锛屽氨寰堝鏄撴妸 system failure 閿欏綊鍥犱负 model failure</li><li>涓€鏃﹀綊鍥犻敊浜嗭紝鍚庣画鎼滅储銆佽捀棣忋€丷L 閮藉彲鑳藉湪閿欒鏂瑰悜涓婄户缁斁澶?/li></ul>
-<p>鎵€浠ヤ粠缁嗙矑搴?agent 瑙掑害锛岃繖绡囧伐浣滄渶澶х殑浠峰€间箣涓€鏄細</p>
-<p>&gt; 瀹冩妸 鈥滃け璐ュ畾浣嶅埌 planning/action/memory 鍝竴灞傗€?鍙樻垚浜?adaptation pipeline 鐨勫叆鍙ｃ€?/p>
-  </section>
-  <section class="paper-section">
-    <h3>瀹為獙涓庣粨璁?/h3>
-    <p>浣滆€呮槑纭 policy alignment 涓嶇粦瀹氭煇涓缁冪洰鏍囷紝鐞嗚涓婂彲浠ョ敤锛?/p>
-<ul><li>SFT</li><li>preference optimization</li><li>RL-style objective</li></ul>
-<p>浣嗕富瀹為獙鐢?SFT锛屽師鍥犳槸锛?/p>
-<ul><li>涓嶅鍔?rollout budget</li><li>鍙互鐩存帴鐢ㄦ垚鍔熻建杩瑰仛 step-level teacher forcing</li></ul>
-<p>瀵瑰簲鎹熷け锛?/p>
-<div class="formula-block">\[\mathcal{L}_{\mathrm{sft}}
-=
--\sum_{(z_t,y_t)\in\mathcal{D}_{\mathcal{H}_k}}
-\log p_{\mathcal{R}^{(r)}_{\delta_k}\oplus\Delta\delta}(y_t\mid z_t)\]</div>
-<p>杩欓噷鏈€閲嶈鐨?insight 鏄細</p>
-<p>&gt; HarnessForge 鐨勨€滄柟娉曡鏍稿績鈥濅笉鏄煇涓壒瀹?policy optimizer锛岃€屾槸 <strong>harness-conditioned adaptation problem</strong> 鐨勫畾涔夈€?/p>
-<p>涔熷氨鏄畠鎶?policy training 浠庘€滃涓€涓洿寮?agent鈥濇敼鎴愪簡鈥滃涓€涓洿浼氭墽琛屽綋鍓?harness 鐨?agent鈥濄€?/p>
-<p>涓昏瘎娴嬫秹鍙婏細</p>
-<ul><li>ToolHop</li><li>SearchQA锛圚otpotQA + 2Wiki锛?/li><li>TMDB</li><li>API-Bank</li></ul>
-<p>闄勫綍閲岃繕鎻愬埌 evolution data 涓昏瑕嗙洊锛?/p>
-<ul><li>ToolHop</li><li>EnvScaler-RL</li><li>SearchQA</li></ul>
-<p>杩欓噷鏈変釜鍊煎緱娉ㄦ剰鐨勭偣锛氫綔鑰呮妸 <code>EnvScaler-RL</code> 浣滀负 evolution data domain 鐨勪竴閮ㄥ垎锛屼絾涓昏〃閲屼笉鐩存帴灞曠ず EnvScaler-RL 涓荤粨鏋滐紝鑰屾槸鐢ㄥ畠鏈嶅姟浜?system adaptation 杩囩▼銆?/p>
-<p>鏍稿績涓昏〃濡備笅銆?..</p>
-  </section>
-  <section class="paper-section">
-    <h3>浠峰€笺€佸眬闄愪笌鍚彂</h3>
-    <p>杩欑瘒宸ヤ綔鍏虫敞鐨勪笉鏄€滄€庝箞鎶?agent 鐨勬煇涓ā鍧楀崟鐙彉寮衡€濓紝鑰屾槸鈥滄€庝箞鎶?<strong>澶栭儴鎵ц妗嗘灦 harness</strong> 鍜?<strong>鍐呴儴鎺ㄧ悊绛栫暐 policy</strong> 褰撴垚涓€涓€﹀悎绯荤粺涓€璧锋紨鍖栤€濄€備綔鑰呰涓猴紝寰堝 agent 浠诲姟涓婄殑澶辫触骞朵笉鏄崟绾潵鑷ā鍨嬩笉澶熷己锛屾垨鑰?workflow 璁捐涓嶅濂斤紝鑰屾槸涓よ€呬箣闂村瓨鍦?<strong>executable compatibility gap</strong>锛歨arness 鎻愪緵鐨勮鍒掋€佸姩浣溿€佽蹇嗘帴鍙ｏ紝policy 涓嶄竴瀹氳兘绋冲畾鎵ц锛沺olicy 鍐嶅己锛屼篃鍙兘琚笉鍚堥€傜殑 harness 闄愭銆侶arnessForge 鐨勬牳蹇冨氨鏄洿缁曡繖涓€﹀悎闂鍋?<strong>harness-policy co-evolution</strong>銆?/p>
-<ul><li><code>HarnessForge</code> 鐮旂┒鐨勬槸 agent system 鐨勮仈鍚堥€傞厤锛岃€屼笉鏄崟鐙悳 harness 鎴栧崟鐙 policy銆?/li><li>瀹冩妸 agent system 鏄庣‘寤烘ā涓?<code>harness-policy pair</code>銆?/li><li>harness 琚媶鎴?<code>Planning / Action / Memory</code> 涓夊眰锛岃繖鏄畠鐨勬牳蹇冪粏绮掑害缁撴瀯銆?/li><li>鏍稿績闂鏄?<code>executable compatibility gap</code>銆?/li><li>harness evolution 娴佺▼鏄細<code>fault attribution -&gt; archive-guided improvement -&gt; constrained generation -&gt; smoke test -&gt; Pareto filter</code>銆?..</li></ul>
-  </section>
-  
-</article>
-<!-- PAPER_CARD_END -->
-  </main>
-  <footer>Generated by add-summary-to-topic-html skill.</footer>
-</body>
-</html>
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems | Agent 工作整理</title>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>
+:root{--bg:#f7f8fb;--card:#fff;--text:#182033;--muted:#657084;--accent:#2d6cdf;--soft:#f2f6fc;--border:#dce4ef;--shadow:0 4px 18px rgba(25,45,75,.07)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.78;padding:28px 16px}.container{max-width:1120px;margin:auto}.back{display:inline-block;margin:0 0 18px;color:var(--accent);text-decoration:none}.back:hover{text-decoration:underline}header{text-align:center;margin:8px 0 24px;padding-bottom:20px;border-bottom:2px solid var(--border)}h1{font-size:1.8rem;line-height:1.35;margin:0 0 10px}.meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;color:var(--muted);font-size:.88rem}.meta a{color:var(--accent);text-decoration:none}.paper-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:0 0 10px;font-size:.84rem}.paper-links a{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:#eaf1ff;color:var(--accent);text-decoration:none;font-weight:700}.paper-links a:hover{text-decoration:underline}.content-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:32px;align-items:start}.toc{position:sticky;top:20px;padding:14px 0}.toc-title{font-size:.78rem;font-weight:800;letter-spacing:.08em;color:var(--muted);margin:0 0 9px}.toc ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--border)}.toc li{margin:0}.toc a{display:block;padding:5px 10px;color:var(--muted);font-size:.82rem;line-height:1.4;text-decoration:none;border-left:2px solid transparent;margin-left:-1px}.toc a:hover,.toc a:focus{color:var(--accent);border-left-color:var(--accent);background:#f0f5ff}.paper-card{min-width:0}.summary{background:#f3f7fd;border:1px solid #dbe6f5;padding:15px 18px;border-radius:10px;margin:0 0 22px}.panel{border:0;border-top:1px solid var(--border);background:transparent;border-radius:0;padding:27px 0 25px;margin:0;scroll-margin-top:20px}.panel:first-of-type{border-top:0;padding-top:0}.panel h2{font-size:1.15rem;margin:0 0 12px;padding:0;color:#1d2b43}.panel h3{font-size:1rem;margin:18px 0 7px;color:#26364d}.panel p,.panel li{font-size:.96rem;color:#303846;margin:0 0 9px}.panel ul,.panel ol{padding-left:1.35rem;margin:0 0 5px}.panel li:last-child,.panel p:last-child{margin-bottom:0}.panel.highlight{background:#f3f7fd;border:1px solid #dbe6f5;border-radius:10px;padding:20px 22px;margin:22px 0}.panel.highlight h2{color:#244f91}.formula{overflow:auto;background:#fafbfd;border:1px solid #e4e9f1;border-radius:8px;padding:11px 14px;margin:13px 0}.figure-block{margin:22px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fbfcfe}.figure-title{font-weight:700;color:#354b6b;font-size:.92rem;margin-bottom:9px}.figure-block img{display:block;width:100%;max-height:570px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}.figure-block a{display:block}.two-figures{display:grid;grid-template-columns:1fr;gap:22px}.two-figures .figure-block{margin:0}.two-figures img{max-height:570px}.note{color:var(--muted);font-size:.9rem;background:#fafbfd;border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-top:18px}footer{text-align:center;color:var(--muted);font-size:.82rem;margin:24px 0 8px}@media(max-width:860px){.content-layout{grid-template-columns:1fr;gap:0}.toc{position:static;padding:0;margin:0 0 20px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px}.toc-title{margin-bottom:6px}.toc ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0}.toc a{border-left:0;border-bottom:2px solid transparent;margin-left:0;padding:5px 6px}.toc a:hover,.toc a:focus{border-left:0;border-bottom-color:var(--accent)}}@media(max-width:720px){body{padding:16px 10px}h1{font-size:1.45rem}.panel.highlight{padding:17px 16px}.two-figures{grid-template-columns:1fr}.toc ol{grid-template-columns:1fr 1fr}}
 
+.table-scroll{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}th{background:#f1f5fa;white-space:nowrap}.figure-block{margin-left:0;margin-right:0}.figure-block img{max-height:none}.paper-links{justify-content:center}
+</style></head><body><main class="container"><a class="back" href="../agent_工作整理_github_env_benchmark.html">← 返回 Agent Environments &amp; Benchmarks</a><header><h1>HarnessForge: Joint Harness and Policy Evolution for Adaptive Agent Systems</h1><div class="paper-links"><a href="https://arxiv.org/abs/2606.01779" target="_blank" rel="noopener">arXiv 2606.01779</a><a href="https://github.com/mingju-c/HarnessForge" target="_blank" rel="noopener">GitHub</a><a href="https://arxiv.org/pdf/2606.01779" target="_blank" rel="noopener">PDF</a></div><div class="meta">Mingju Chen · Can Lv · Guibin Zhang · Heng Chang · Shiji Zhou<span>2026-06</span></div></header><div class="content-layout"><aside class="toc" aria-label="文章目录"><div class="toc-title">目录</div><ol><li><a href="#motivation">1. 问题与动机</a></li><li><a href="#framework">2. 联合演化框架</a></li><li><a href="#alignment">3. Policy alignment</a></li><li><a href="#results">4. 实验与消融</a></li><li><a href="#takeaways">5. 结论与边界</a></li></ol></aside><article class="paper-card" data-arxiv="2606.01779">
+<div class="summary"><strong>核心思想：</strong>把 agent 的外部执行框架 harness 与内部 policy 视为一个配对系统：先根据失败轨迹修改规划、动作和记忆接口，再用成功轨迹训练模型去执行新接口，从而缩小 executable compatibility gap。</div>
+<section class="panel" id="motivation"><h2>1. 问题：框架变好了，模型就能执行好吗？</h2>
+<p>单独搜索 workflow 默认执行模型固定，单独训练 policy 默认交互接口固定。但复杂 harness 可能超出小模型的执行能力，强模型也可能受不合适的动作格式、状态表示和记忆接口限制。HarnessForge 因而将优化单元从单个模块改为<strong>可执行的 harness–policy pair</strong>。</p>
+<div class="formula">\[\mathcal G=(\mathcal H,\mathcal R_\delta),\qquad \mathcal H=(\mathcal P,\mathcal A,\mathcal M).\]</div>
+<p>$\mathcal P,\mathcal A,\mathcal M$ 分别是 planning、action、memory 组件；$\mathcal R_\delta$ 是在基座模型上通过 adapter 适配的执行策略。所谓 compatibility，关注的就是模型能否遵守这些接口并完成任务。</p></section>
+<section class="panel" id="framework"><h2>2. 框架：先改 harness，再让 policy 跟上</h2>
+<div class="formula">\[(\mathcal H^{(r)},\mathcal R^{(r)})\longrightarrow(\mathcal H^{(r+1)},\mathcal R^{(r)})\longrightarrow(\mathcal H^{(r+1)},\mathcal R^{(r+1)}).\]</div>
+<p>每轮维护若干系统候选，执行以下闭环：</p>
+<ol><li><strong>定位失败。</strong>Meta-agent 读取 rollout、执行统计和评测结果，将问题归因到 planning / action / memory，而不是笼统判断“模型推理差”。</li>
+<li><strong>借鉴历史经验并改写。</strong>Archive 保存历史设计、fault report 和评测向量；检索相关且表现好的案例，形成改进建议，再生成受约束的可执行代码 / 配置候选。</li>
+<li><strong>验证与筛选。</strong>Smoke test 检查可执行性并修复；按表现、token 消耗和延迟进行 Pareto 过滤。默认每轮 8 个提案，经两阶段 half-selection 保留 2 个。</li>
+<li><strong>适配执行模型。</strong>继承 parent policy，针对 survivor harness 训练增量 adapter，形成下一轮的系统配对。</li></ol>
+<div class="table-scroll"><table><thead><tr><th>可编辑组件</th><th>具体调整对象</th></tr></thead><tbody>
+<tr><td>Planning</td><td>任务分解、重规划触发、验证步骤、终止条件和控制顺序</td></tr>
+<tr><td>Action</td><td>工具描述、参数 schema、路由、合法性检查和重试策略</td></tr>
+<tr><td>Memory</td><td>状态字段、写入条件、检索规则、摘要格式及暴露给模型的信息</td></tr></tbody></table></div>
+<p>搜索限制在 harness 内部，不修改数据集、evaluator、benchmark runner 或后端模型定义；这使结果仍能在固定任务与评分标准下比较。</p>
+<figure class="figure-block"><figcaption class="figure-title">论文主图：harness tailoring 与 policy alignment 的联合演化闭环</figcaption><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems_tex/mate-workflow_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems_tex/mate-workflow_v2.png" alt="论文主图：harness tailoring 与 policy alignment 的联合演化闭环" loading="lazy"></a></figure>
+</section>
+<section class="panel" id="alignment"><h2>3. Policy alignment：学习执行当前 harness</h2>
+<p>Harness 筛选时已经产生 rollout，训练直接复用其中的<strong>成功轨迹</strong>，拆成逐步决策对 $(z_t,y_t)$。输入包含任务、新 harness 规范、观测历史、当前记忆和可用动作；目标是下一步推理、工具调用、记忆写入或最终回答。</p>
+<div class="formula">\[\mathcal L_{\mathrm{SFT}}=-\sum_{(z_t,y_t)\in\mathcal D_{\mathcal H_k}}\log p_{\mathcal R_{\mathrm{parent}}\oplus\Delta\delta_k}(y_t\mid z_t).\]</div>
+<p>这里的 $z_t$ 表示<strong>决策输入</strong>，不是 logit。执行模型沿 parent lineage 继承，再用 harness-specific LoRA 增量适配。目标是学会当前接口的执行规范，而不只是提升通用推理能力。</p>
+<p>主实验默认 SFT，原因是可以复用评估轨迹、节省额外交互；框架也支持 preference / RL-style 训练。因此，这篇工作的核心是结构与行为的联合适配，而不是某一个特定 optimizer。</p></section>
+<section class="panel" id="results"><h2>4. 实验：联合适配的收益来自哪里？</h2>
+<p>基座为 Qwen3-4B / 8B，meta-agent 为 GPT-5.5；默认演化 3 轮。评测覆盖 ToolHop、HotpotQA、2Wiki、TMDB 和 API-Bank，其中 HotpotQA 与 2Wiki 在主表中归入 SearchQA。</p>
+<div class="table-scroll"><table><thead><tr><th>基座</th><th>指标</th><th>该指标最强基线</th><th>HarnessForge</th><th>提升 / pp</th></tr></thead><tbody>
+<tr><td>Qwen3-4B</td><td>ToolHop Ans.</td><td>49.74 (GRPO)</td><td><strong>52.82</strong></td><td>+3.08</td></tr><tr><td>Qwen3-4B</td><td>SearchQA Overall</td><td>39.67 (GRPO)</td><td><strong>42.00</strong></td><td>+2.33</td></tr><tr><td>Qwen3-4B</td><td>TMDB Succ.</td><td>64.00 (GRPO)</td><td><strong>76.00</strong></td><td>+12.00</td></tr><tr><td>Qwen3-4B</td><td>API-Bank API.</td><td>76.60 (RLOO)</td><td><strong>82.27</strong></td><td>+5.67</td></tr><tr><td>Qwen3-8B</td><td>ToolHop Ans.</td><td>51.28 (GRPO)</td><td><strong>54.87</strong></td><td>+3.59</td></tr><tr><td>Qwen3-8B</td><td>SearchQA Overall</td><td>41.67 (GRPO)</td><td><strong>42.83</strong></td><td>+1.16</td></tr><tr><td>Qwen3-8B</td><td>TMDB Succ.</td><td>74.00 (RLOO)</td><td><strong>80.00</strong></td><td>+6.00</td></tr><tr><td>Qwen3-8B</td><td>API-Bank API.</td><td>73.76 (GRPO)</td><td><strong>78.01</strong></td><td>+4.25</td></tr>
+</tbody></table></div>
+<p>上表摘自主结果，各行按对应指标选择最强基线，pp 表示百分点。论文报告跨主表指标平均提升约 3.56 pp；最大收益为 Qwen3-4B 的 TMDB success，64.00 → 76.00，提升 12.00 pp。并非每个子指标都领先：如 4B 的 2Wiki 和 8B 的 ToolHop Path，仍有基线更高。</p>
+<h3>消融：两边都要改，但 harness 侧贡献更大</h3>
+<p>4B 第 3 轮 ToolHop 为 52.82；去掉 harness evolution 降至 46.67，去掉 policy evolution 降至 50.26。SearchQA 则从 42.00 分别降至 37.00 和 39.00。结构调整带来主要收益，但不让 policy 跟进仍会损失性能。</p>
+<figure class="figure-block"><figcaption class="figure-title">Rollout 预算与任务表现的权衡</figcaption><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems_tex/budget_pareto_4bench_v2.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2606_harnessforge_joint_harness_and_policy_evolution_for_adaptive_agent_systems_tex/budget_pareto_4bench_v2.png" alt="Rollout 预算与任务表现的权衡" loading="lazy"></a></figure>
+<p>Rollout 预算优势来自评估与训练复用同一批轨迹。更换为 RL-style alignment 可继续改善部分指标，但论文的训练目标分析也显示更高交互成本，不能把“默认 SFT 较省 rollout”理解为整体系统没有 meta-agent 成本。</p></section>
+<section class="panel" id="takeaways"><h2>5. 核心结论与边界</h2>
+<p><strong>值得记住的是适配单元：</strong>agent 能力取决于框架提供什么接口，以及当前 policy 能否执行这些接口。故障定位 → 结构修复 → 策略对齐，比只把失败归为模型能力不足更有针对性。</p>
+<ul><li>GPT-5.5 参与诊断、生成和修复，真实成本还包含 meta-editing，而不只是 rollout 数量。</li><li>搜索空间主要是单个 harness 的 planning/action/memory，尚不能据此推出复杂跨应用、多 agent 组织结构上的同等收益。</li><li>默认训练只使用成功轨迹，失败反例和罕见错误的监督仍有进一步利用空间。</li></ul></section>
+</article></div><footer>根据本地 HarnessForge 阅读笔记整理，并核对论文主结果；图像可点击查看原图。</footer></main></body></html>
