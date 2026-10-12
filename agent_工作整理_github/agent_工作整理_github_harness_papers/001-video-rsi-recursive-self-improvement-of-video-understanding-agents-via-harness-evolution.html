@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video-RSI：通过 Harness 演化递归改进视频理解 Agent</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#f5f8fc;--card:#fff;--text:#172033;--muted:#607089;--accent:#2563eb;--soft:#edf4ff;--border:#dce5f1;--shadow:0 14px 38px rgba(26,43,72,.08)}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#eef5ff 0,#f8fbff 260px,var(--bg) 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.75}
+.page{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:28px 0 56px}.back{color:var(--accent);text-decoration:none;font-size:.92rem}.back:hover,.links a:hover{text-decoration:underline}
+header{padding:30px 0 24px;text-align:center}h1{margin:0 auto 12px;max-width:920px;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.25;letter-spacing:-.02em} .subtitle{margin:0 auto;color:var(--muted);max-width:850px}
+.links{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:18px 0}.links a{padding:5px 12px;background:var(--soft);border-radius:999px;color:var(--accent);font-weight:700;text-decoration:none;font-size:.88rem}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start;min-width:0}.toc{position:sticky;top:18px;background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);min-width:0}.toc h2{font-size:1rem;margin:0 0 9px}.toc a{display:block;padding:5px 0;color:#40536f;text-decoration:none;font-size:.88rem}.toc a:hover{color:var(--accent)}
+.paper{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:28px 32px}.paper h2{font-size:1.28rem;margin:1.8rem 0 .55rem;line-height:1.35;border-bottom:1px solid var(--border);padding-bottom:7px}.paper h3{font-size:1.02rem;margin:1.2rem 0 .35rem}.paper p,.paper li{font-size:.96rem;color:#2f3b4f}.paper ul{padding-left:1.2rem}.paper li{margin:.28rem 0}.summary{background:#f1f7ff;border-left:4px solid var(--accent);padding:13px 16px;border-radius:0 12px 12px 0;margin:12px 0 18px}.summary p{margin:.2rem 0}.callout{background:#fff9e8;border:1px solid #f1d891;border-radius:12px;padding:12px 15px;margin:14px 0}.formula{overflow-x:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:12px 0}.figure{margin:18px 0 22px;padding:14px;background:#fbfdff;border:1px solid var(--border);border-radius:15px}.figure-title{font-weight:700;color:#2858a8;margin-bottom:9px}.figure a{display:block}.figure img{display:block;width:100%;max-height:680px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:10px}.caption{font-size:.86rem;color:var(--muted);margin-top:8px}.result-table{width:100%;border-collapse:collapse;font-size:.88rem;margin:10px 0 14px}.result-table th,.result-table td{border:1px solid var(--border);padding:7px 8px;text-align:center}.result-table th{background:var(--soft);font-weight:700}.result-table .best{font-weight:800;color:var(--accent)}.small{font-size:.86rem;color:var(--muted)}
+@media(max-width:780px){.layout{grid-template-columns:1fr;min-width:0}.toc{position:static}.paper{padding:22px 18px;min-width:0}.paper h2{font-size:1.16rem}.result-table{font-size:.78rem;display:block;overflow-x:auto;white-space:nowrap}}
+</style>
+</head>
+<body>
+<div class="page">
+<a class="back" href="../agent_工作整理_github_harness.html">← 返回 Harness 专题</a>
+<header>
+  <h1>Video-RSI：通过 Harness 演化递归改进视频理解 Agent</h1>
+  <p class="subtitle">Recursive Self-Improvement of Video Understanding Agents via Harness Evolution · 通过冻结模型、主动调查和成本感知门控，跨任务改进可执行的 Agent harness。</p>
+  <div class="links"><a href="https://arxiv.org/abs/2609.37950v1" target="_blank" rel="noopener">arXiv 2609.37950</a><a href="https://github.com/bingjunluo/Video-RSI" target="_blank" rel="noopener">GitHub</a><a href="https://arxiv.org/pdf/2609.37950v1" target="_blank" rel="noopener">PDF</a></div>
+</header>
+<div class="layout">
+<nav class="toc" aria-label="文章目录"><h2>目录</h2><a href="#idea">核心想法</a><a href="#framework">整体框架</a><a href="#investigation">Active Video Investigation</a><a href="#gate">Cost-Aware Selection</a><a href="#results">实验结果</a><a href="#takeaway">结论与边界</a></nav>
+<main class="paper">
+<section id="idea">
+<h2>核心想法</h2>
+<div class="summary"><p><strong>Video-RSI 的改进对象不是模型权重，而是模型外面的 harness。</strong>同一个冻结语言模型分别充当 Solver 和 Editor：Solver 回答视频问题，Editor 根据失败轨迹和新增的视频证据修改 prompt、工具、观察处理、记忆与执行控制。被 gate 接受的代码会传给下一轮，因此“递归”指 harness 版本递归继承，而不是无监督地反复训练模型。</p></div>
+<ul><li><strong>Active Video Investigation：</strong>修改前重新查看训练视频，主动寻找原 trace 没有记录的证据，区分漏采样、感知错误和证据关联丢失。</li><li><strong>Cost-Aware Harness Evolution：</strong>在固定、与训练视频 disjoint 的私有 gate 上同时比较准确率和 visual frame 成本，只有满足接受规则的候选 harness 才会继承。</li></ul>
+</section>
+
+<section id="framework">
+<h2>整体框架</h2>
+<figure class="figure"><div class="figure-title">图 1 · 从固定观察到可演化 Video Agent</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" alt="Video-RSI 从固定观察、视频 Agent 到 Harness 演化的概览图" loading="lazy"></a><div class="caption">前两种方法主要在单个问题内改变观察；Video-RSI 把可复用的决策程序和工具链作为跨问题演化对象。</div></figure>
+<p>给定当前 harness $H_t$、视频 $V$、问题 $q$ 和冻结模型服务 $mathcal M$，Solver 执行一次完整任务：</p>
+<div class="formula">\[ (\hat y,\tau,c)=\operatorname{Run}(H_t,V,q;\mathcal M). \]</div>
+<p>其中 $hat y$ 是回答，$\tau$ 是由工具调用、观察和决策组成的 trace，$c$ 记录资源消耗。Editor 只根据训练侧结果提出候选 $\widetilde H_t$，再由 gate 决定是否令 $H_{t+1}=\widetilde H_t$；若不通过，则保留 $H_t$。</p>
+<figure class="figure"><div class="figure-title">图 2 · Video-RSI 的完整演化闭环</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" alt="Video-RSI 方法框架图" loading="lazy"></a><div class="caption">当前 harness 执行 → 查看失败 trace → 主动调查原视频 → 提出修改并生成候选 → 在私有 gate 上比较 → 接受或回滚。</div></figure>
+</section>
+
+<section id="investigation">
+<h2>Active Video Investigation：先补证据，再改代码</h2>
+<p>失败 trace 只是程序已经选择查看的证据，不能等同于视频的全部事实。Editor 维护调查信息集 $ℐ_k$，每一步提出查询并获得新观察：</p>
+<div class="formula">\[
+\begin{aligned}
+u_k&=\operatorname{Query}_{\mathrm{Editor}}(\mathcal I_k),\\
+o_k&=\operatorname{Investigate}(u_k;H_t,\mathcal D_{\mathrm{tr}},\mathcal M),\\
+\mathcal I_{k+1}&=\mathcal I_k\cup\{(u_k,o_k)\}.
+\end{aligned}
+\]</div>
+<p>查询可以改变时间区间、采样密度、模态（视频、字幕、转录或 OCR），但不把 gold answer 直接暴露给感知模型。新增证据的作用是帮助 Editor 形成可迁移的规则，例如保留 timestamp 与实体关系、在全局问题上扩大 overview 采样、或合并同一事件的重叠观察。</p>
+<div class="callout"><strong>关键区分：</strong>调查阶段使用未修改的 incumbent 诊断原因；修改后的候选必须重新运行并在 gate 上验证，不能把训练视频中的答案或目标片段硬编码进未来程序。</div>
+</section>
+
+<section id="gate">
+<h2>Cost-Aware Selection：准确率和帧成本一起决定继承</h2>
+<p>令 incumbent 与 candidate 的 gate 准确率分别为 $A_t$ 和 $\widetilde A_t$，平均成功 visual-model calls 帧数分别为 $C_t$ 和 $\widetilde C_t$，并记 $\Delta A_t=\widetilde A_t-A_t$。论文使用：</p>
+<div class="formula">\[
+\begin{aligned}
+g_t={}&[\Delta A_t>0]\land[\widetilde C_t\le(1+\alpha)C_t]\\
+&\lor[-\epsilon\le\Delta A_t\le0]\land[\widetilde C_t\le(1-\beta)C_t]\land[C_t>0].
+\end{aligned}
+\]</div>
+<ul><li>准确率提升时，帧成本最多增加 $\alpha=0.1$；</li><li>准确率持平或最多下降 $\epsilon=1/72$ 时，至少节省 $\beta=0.2$ 的帧成本；</li><li>gate 是当前版本上的局部接受规则，不是对所有未来任务的严格 Pareto 保证。</li></ul>
+</section>
+
+<section id="results">
+<h2>实验结果</h2>
+<p>演化在 LVBench 的 216 个训练问题上进行，使用 72 个 video-disjoint 问题作私有 gate，共尝试 20 次；其中 Active investigation 接受 5 次，只有轨迹信息的方案接受 3 次。最终 harness 冻结后在外部 benchmark 上评估：</p>
+<table class="result-table"><thead><tr><th>Benchmark</th><th>Accuracy (%)</th><th>Mean frames</th><th>相对 VideoSeek</th></tr></thead><tbody><tr><td>MLVU</td><td class="best">72.9</td><td>61.1</td><td>+4.8 pp，帧数 −27.2%</td></tr><tr><td>LongVideoBench</td><td class="best">71.1</td><td>41.1</td><td>+0.2 pp，帧数 −42.8%</td></tr><tr><td>Video-MME</td><td class="best">80.0</td><td>21.6</td><td>+1.3 pp，帧数 +21.3%</td></tr><tr><td>EgoSchema</td><td class="best">78.2</td><td>42.4</td><td>+5.0 pp，帧数 −41.4%</td></tr></tbody></table>
+<p class="small">演化出的代表性能力包括：$H_{S2}$ Structured perception、$H_{S3}$ Global-64、$H_{S4}$ Relation graph 和 $H_{S5}$ Occurrence tool。结果显示准确率提升和帧数下降通常同时出现，但 Video-MME 是例外，不能概括成所有 benchmark 都更准且更省帧。</p>
+<h3>消融结论</h3>
+<ul><li>相对 trajectory-only，加入主动调查后四个 benchmark 的准确率分别提升约 8.2、3.9、6.3、1.6 个百分点；</li><li>相对 accuracy-only gate，成本感知选择在 Video-MME 上把平均帧数从 43.1 降到 21.6，同时保持更高准确率；</li><li>相对初始 harness，MLVU、LongVideoBench、Video-MME、EgoSchema 的准确率分别提升 10.5、3.4、6.6、6.8 个百分点。</li></ul>
+</section>
+
+<section id="takeaway">
+<h2>结论与边界</h2>
+<div class="summary"><p>Video-RSI 的核心贡献是把视频 Agent 的“看哪里、如何组织证据、何时调用工具”变成可测试、可继承的程序对象。主动调查弥补 trace 的观测盲区，成本感知 gate 则把候选修改约束在可接受的准确率—帧数折中内。</p></div>
+<ul><li>递归继承的是 harness 代码，不是模型权重；</li><li>frame 指标只统计成功 visual-model calls 处理的帧，离线调查成本不计入其中；</li><li>论文报告的是有限 gate 和外部 benchmark 的实证结果，不能把一次 gate 通过解释为对所有任务的全局保证；</li><li>正文没有提供完整 patch diff，因此只能概括行为机制，不能据此虚构具体函数实现。</li></ul>
+</section>
+<p class="small">整理依据：arXiv 2609.37950v1（2026-09-29）。</p>
+</main>
+</div>
+</div>
+</body>
+</html>
