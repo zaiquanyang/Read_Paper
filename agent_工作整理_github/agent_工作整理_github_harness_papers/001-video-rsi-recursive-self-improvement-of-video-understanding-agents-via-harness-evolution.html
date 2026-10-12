@@ -44,7 +44,7 @@ header{padding:30px 0 24px;text-align:center}h1{margin:0 auto 12px;max-width:920
 <figure class="figure"><div class="figure-title">图 1 · 从固定观察到可演化 Video Agent</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-intro-v12.png" alt="Video-RSI 从固定观察、视频 Agent 到 Harness 演化的概览图" loading="lazy"></a><div class="caption">前两种方法主要在单个问题内改变观察；Video-RSI 把可复用的决策程序和工具链作为跨问题演化对象。</div></figure>
 <p>给定当前 harness $H_t$、视频 $V$、问题 $q$ 和冻结模型服务 $\mathcal{M}$，Solver 执行一次完整任务：</p>
 <div class="formula">\[ (\hat y,\tau,c)=\operatorname{Run}(H_t,V,q;\mathcal M). \]</div>
-<p>其中 $\hat{y}$ 是回答，$\tau$ 是由工具调用、观察和决策组成的 trace，$c$ 记录资源消耗。Editor 只根据训练侧结果提出候选 $\widetilde H_t$，再由 gate 决定是否令 $H_{t+1}=\widetilde H_t$；若不通过，则保留 $H_t$。</p>
+<p>其中 $\hat{y}$ 是回答，$\tau$ 是由工具调用、观察和决策组成的 trace，$c$ 记录资源消耗。每轮演化比较两个 harness 版本：<strong>当前版本（incumbent）$H_t$</strong> 是此前已被接受、正在使用的版本；<strong>候选新版（candidate）$\widetilde H_t$</strong> 是 Editor 根据训练侧证据修改出来、尚待验证的版本。gate 通过则令 $H_{t+1}=\widetilde H_t$，由候选新版接替当前版本；不通过则令 $H_{t+1}=H_t$，继续使用当前版本。两者的区别在于 harness 代码，底层模型权重保持冻结。</p>
 <figure class="figure"><div class="figure-title">图 2 · Video-RSI 的完整演化闭环</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_video_rsi_recursive_self_improvement_of_video_understanding_agents_via_harness_evolution_tex/video-rsi-method-framework-v14.png" alt="Video-RSI 方法框架图" loading="lazy"></a><div class="caption">当前 harness 执行 → 查看失败 trace → 主动调查原视频 → 提出修改并生成候选 → 在私有 gate 上比较 → 接受或回滚。</div></figure>
 </section>
 
@@ -59,14 +59,14 @@ o_k&=\operatorname{Investigate}(u_k;H_t,\mathcal D_{\mathrm{tr}},\mathcal M),\\
 \end{aligned}
 \]</div>
 <p>查询可以改变时间区间、采样密度、模态（视频、字幕、转录或 OCR），但不把 gold answer 直接暴露给感知模型。新增证据的作用是帮助 Editor 形成可迁移的规则，例如保留 timestamp 与实体关系、在全局问题上扩大 overview 采样、或合并同一事件的重叠观察。</p>
-<div class="callout"><strong>关键区分：</strong>调查阶段使用未修改的 incumbent 诊断原因；修改后的候选必须重新运行并在 gate 上验证，不能把训练视频中的答案或目标片段硬编码进未来程序。</div>
+<div class="callout"><strong>关键区分：</strong>调查阶段使用尚未修改的当前版本 $H_t$ 诊断原因；修改得到的候选新版 $\widetilde H_t$ 必须重新运行并在 gate 上验证，不能把训练视频中的答案或目标片段硬编码进未来程序。</div>
 </section>
 
 <section id="gate">
 <h2>Cost-Aware Selection：准确率和帧成本一起决定继承</h2>
 <p><strong>gate = 固定验证集 + 接受规则。</strong>它回答的是“这次代码修改是否值得保留”。论文将数据分成三部分：</p>
 <ul><li><strong>训练集（216 题）：</strong>Editor 可以查看视频、标签和执行轨迹，用来调查失败原因、修改 harness。</li><li><strong>gate 验证集（72 题）：</strong>独立评估器在同一组题上运行旧版和新版，汇总准确率和平均用帧数。Editor 无法查看这些验证样例，只能依据汇总反馈决定后续修改；video-disjoint 表示验证集使用的视频与训练集不重合，而不只是题目文字不同。</li><li><strong>外部测试集：</strong>演化完成、最终 harness 固定后，用其他 benchmark 检验效果。因此 gate 验证集用于选择版本，外部测试集用于报告最终表现。</li></ul>
-<p>令 incumbent 与 candidate 的 gate 准确率分别为 $A_t$ 和 $\widetilde A_t$，平均成功 visual-model calls 帧数分别为 $C_t$ 和 $\widetilde C_t$，并记 $\Delta A_t=\widetilde A_t-A_t$。论文使用：</p>
+<p>当前版本 $H_t$（incumbent）在 gate 验证集上的准确率、平均成功视觉调用用帧数分别记为 $A_t$、$C_t$；候选新版 $\widetilde H_t$（candidate）的对应指标记为 $\widetilde A_t$、$\widetilde C_t$。带波浪号的量都对应候选新版，因此 $\Delta A_t=\widetilde A_t-A_t$ 表示“新版准确率减去当前版本准确率”。论文使用以下规则决定是否接受新版：</p>
 <div class="formula">\[
 \begin{aligned}
 g_t={}&[\Delta A_t>0]\land[\widetilde C_t\le(1+\alpha)C_t]\\
