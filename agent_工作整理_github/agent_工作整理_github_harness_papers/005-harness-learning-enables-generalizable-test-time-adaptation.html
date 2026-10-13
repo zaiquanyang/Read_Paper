@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness Learning：学会根据反馈修改求解程序</title>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#f5f8fc;--card:#fff;--text:#172033;--muted:#607089;--accent:#2563eb;--soft:#edf4ff;--border:#dce5f1;--shadow:0 14px 38px rgba(26,43,72,.08)}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#eef5ff 0,#f8fbff 260px,var(--bg) 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.75;overflow-wrap:anywhere}.page{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:28px 0 56px}.back,.links a{color:var(--accent);text-decoration:none}.back{font-size:.92rem}.back:hover,.links a:hover{text-decoration:underline}header{padding:30px 0 22px;text-align:center}h1{margin:0 auto 12px;max-width:930px;font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.25}.subtitle{margin:0 auto;color:var(--muted);max-width:880px}.links{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:18px 0}.links a{padding:5px 12px;background:var(--soft);border-radius:999px;font-weight:700;font-size:.88rem}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start}.toc{min-width:0;position:sticky;top:18px;background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}.toc h2{font-size:1rem;margin:0 0 9px}.toc a{display:block;padding:5px 0;color:#40536f;text-decoration:none;font-size:.88rem}.toc a:hover{color:var(--accent)}.paper{min-width:0;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:28px 32px}.paper h2{font-size:1.3rem;margin:1.8rem 0 .55rem;line-height:1.35;border-bottom:1px solid var(--border);padding-bottom:7px}.paper h3{font-size:1.04rem;margin:1.25rem 0 .35rem}.paper p,.paper li{font-size:.96rem;color:#2f3b4f}.paper ul,.paper ol{padding-left:1.25rem}.paper li{margin:.3rem 0}.summary{background:#f1f7ff;border-left:4px solid var(--accent);padding:13px 16px;border-radius:0 12px 12px 0;margin:12px 0 18px}.summary p{margin:.2rem 0}.callout{background:#fff9e8;border:1px solid #f1d891;border-radius:12px;padding:12px 15px;margin:14px 0}.formula{overflow-x:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:12px 0;scroll-margin-top:24px}
+.figure{margin:18px 0 22px;padding:14px;background:#fbfdff;border:1px solid var(--border);border-radius:15px}.figure-title{font-weight:700;color:#2858a8;margin-bottom:9px}.figure a{display:block}.figure img{display:block;width:100%;max-height:680px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:10px}.caption{font-size:.86rem;color:var(--muted);margin-top:8px}.table-scroll{overflow-x:auto;margin:10px 0 14px}.result-table{width:100%;border-collapse:collapse;font-size:.85rem}.result-table th,.result-table td{border:1px solid var(--border);padding:7px 8px;text-align:center}.result-table th{background:var(--soft);font-weight:700}.result-table .best{font-weight:800;color:var(--accent)}.small{font-size:.86rem;color:var(--muted)}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.toc{position:static}.paper{padding:22px 18px}.result-table{min-width:550px}}
+</style>
+</head>
+<body><div class="page">
+<a class="back" href="../agent_工作整理_github_harness.html">← 返回 Harness 专题</a>
+<header><h1>Harness Learning：学会根据反馈修改求解程序</h1><p class="subtitle">Harness Learning Enables Generalizable Test-Time Adaptation · JHU / CMU<br>Alvin Zhang、Xuecheng Liu、Zixuan Wang 等</p><div class="links"><a href="https://arxiv.org/abs/2609.35738" target="_blank" rel="noopener">arXiv 2609.35738</a><a href="https://github.com/AlvinZH04/Harness-Learning" target="_blank" rel="noopener">GitHub</a><a href="https://alvinzh04.github.io/Harness-Learning-Website/" target="_blank" rel="noopener">项目主页</a><a href="https://arxiv.org/pdf/2609.35738" target="_blank" rel="noopener">PDF</a></div></header>
+<div class="layout"><nav class="toc" aria-label="文章目录"><h2>目录</h2><a href="#idea">核心思想与适配单位</a><a href="#adaptation">反馈—编辑—选择</a><a href="#learning">训练 Proposer</a><a href="#changes">程序具体改了什么</a><a href="#results">泛化与多轮结果</a><a href="#budget">成本与适用边界</a><a href="#takeaway">定位与核心结论</a></nav>
+<main class="paper">
+<section id="idea">
+<h2>核心思想：学会改流程，把新任务的反馈变成程序改进</h2>
+<div class="summary"><p><strong>训练一个 proposer，读取任务描述、当前 harness 与执行报告，提出能实际提高得分的代码修改。</strong>测试时两个模型的权重都冻结，利用新任务的开发反馈多轮改写外部程序，再将选好的程序用于未参与适配的题目。</p></div>
+<p>Harness 是组织模型调用、工具使用和信息传递的可执行程序。本文让 <strong>proposer 负责修改程序，solver 负责按程序解题</strong>；训练只更新 proposer。它学习的不只是答案或一句更好的 prompt，还包括何时增加解释器、如何保留证据、怎样安排检索和验证。</p>
+<p>这里的 <strong>task 是一个 Reasoning Gym 题目家族，或一个多跳 QA benchmark</strong>。一份程序需要对同类的多道题有用。它与 JIT/Turbo 的每题专属程序不同：先用一批带评分反馈的开发题调好流程，再服务该任务中的新题。测试时不更新模型参数，但仍使用新域的答案标签和评分信号。</p>
+</section>
+<section id="adaptation">
+<h2>适配框架：执行当前程序，诊断失败，评估候选，再进入下一轮</h2>
+<figure class="figure"><div class="figure-title">图 1 · 可执行程序上的反馈与编辑循环</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/fig_pipeline.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/fig_pipeline.png" alt="Proposer 根据程序与执行报告生成候选，冻结 Solver 执行评分，训练用 GRPO 更新，连续适配继承选中程序" loading="lazy"></a><div class="caption">橙色虚线是训练阶段的参数更新；测试时只保留生成、执行、选择与报告循环。绿色回路将选中的程序与新反馈传给下一轮，图示中的多步训练也使用这一回路。</div></figure>
+<h3>先区分三份题集</h3>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>题集</th><th>用途</th><th>QA 的一轮配置</th></tr></thead><tbody><tr><td>$Q^{\mathrm{fb}}$：反馈题</td><td>运行父程序，生成诊断报告供 proposer 阅读</td><td>6 题，报告含答案与支持文档信息</td></tr><tr><td>$Q^{\mathrm{score}}$：评分题</td><td>运行候选，形成训练奖励或选择分数</td><td>64 题，与本轮反馈题不重叠</td></tr><tr><td>$Q^{\mathrm{eval}}$：留出题</td><td>测量适配后的泛化，不用于选择程序</td><td>约 300 题，与适配题分离</td></tr></tbody></table></div>
+<p>报告题让 proposer 看见失败原因，另取评分题要求修改也能帮助其他题。留出题再检验它是否泛化。QA 的开发题可跨轮复用；Reasoning Gym 测试适配则用同一份开发题产生反馈和选择，最终留出题仍独立。论文中的评分函数是：</p>
+<div class="formula" id="eq-score">\[J(h;Q)=\frac{1}{|Q|}\sum_{q\in Q}\operatorname{score}(h,q).\tag{1}\]</div>
+<p>$h$ 表示 harness，$Q$ 为题集，$\operatorname{score}$ 是外部 grader 对每道题的分数；QA 使用答案 Exact Match（EM）。评分题虽然不直接作为题目文本进入 proposer 输入，仍通过奖励或候选选择影响适配。</p>
+<h3>一轮修改的输入与输出</h3>
+<div class="formula" id="eq-revision">\[\begin{aligned}x_t&=(\text{任务描述},h_{t-1},\text{执行报告}),\\y_i&\sim\pi_\theta(\cdot\mid x_t),\quad i=1,\ldots,G,\\h'_i&=\operatorname{Apply}(h_{t-1},y_i),\\h_t&=\operatorname{Select}(h_{t-1},\{h'_i\}_{i=1}^{G};Q_t^{\mathrm{score}}).\end{aligned}\tag{2}\]</div>
+<p>$x_t$ 是第 $t$ 轮的修改上下文，$\pi_\theta$ 是 proposer，$y_i$ 是第 $i$ 个修改响应，$h'_i$ 是应用后的候选，$G$ 为候选数。选定 $h_t$ 后，重新运行反馈题并准备下一轮报告。接口检查、解析或执行失败会影响候选有效性。</p>
+<ul><li><strong>Reasoning Gym：</strong>每轮 $G=1$，最多五轮；只有开发分严格提高才采用，否则保留父程序。输出采用 SEARCH/REPLACE 等结构化修改，并保持求解入口。</li><li><strong>多跳 QA：</strong>每轮 $G=8$，共十轮、四次独立 runs；选择最高分的有效候选，<strong>即使低于父程序也继续前进</strong>，全部失败才保留父程序。输出是诊断加不超过 200 行、定义 <code>run</code> 的 Python 程序。</li></ul>
+<p>因此 QA 的迭代不保证逐轮提升。Proposer 读取外部准备的报告再提交修改，也没有自主查看文件、运行调试工具的完整调查回路。</p>
+</section>
+<section id="learning">
+<h2>训练核心：让可运行、解题更好的修改获得更高概率</h2>
+<p>同一上下文采样多个修改，用冻结 solver 执行各候选，再按组内相对得分做 GRPO。总体希望最终程序在留出题表现更好，实际训练却对<strong>当前一次修改</strong>给即时奖励：</p>
+<div class="formula" id="eq-reward">\[\begin{aligned}r_i&=J(h'_i;Q^{\mathrm{score}})+v_i,\\\widehat A_i&=\frac{r_i-\operatorname{mean}_j(r_j)}{\operatorname{std}_j(r_j)+\delta}.\end{aligned}\tag{3}\]</div>
+<p>$v_i$ 是合法性附加奖励，$\widehat A_i$ 是组内标准化优势，$\delta$ 防止分母为零。一个修改响应的 token 共用该候选的优势；执行结果提供奖励，不需要穿过 solver、检索或代码环境反向传播。组内正优势只表示比其他候选好，<strong>不保证超过父程序</strong>。</p>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>配置</th><th>Reasoning Gym</th><th>多跳 QA</th></tr></thead><tbody><tr><td>Proposer / Solver</td><td>Qwen3.5-4B / 冻结 Qwen3.5-4B</td><td>Qwen3-4B thinking / 冻结 Qwen3-8B non-thinking</td></tr><tr><td>训练来源</td><td>35B 教师示范 SFT，再做 outcome RL</td><td>只在 HotpotQA 直接 RL，无 SFT</td></tr><tr><td>单步训练</td><td>640 个上下文，含 200 个更强父程序状态</td><td>320 个上下文，父程序均为 seed</td></tr><tr><td>奖励</td><td>评分 + 解析、应用、执行完成度奖励，附加项最高 0.30</td><td>有效候选 EM + 0.1，非法候选 0</td></tr><tr><td>正则</td><td>无 KL / entropy bonus</td><td>KL 系数 $10^{-3}$，无 entropy bonus</td></tr></tbody></table></div>
+<p><strong>Single-step / Multistep 的区别主要是训练见到的父程序分布。</strong>多步训练将前面选出的程序及新报告作为后续输入，仍按式（3）给当前修改奖励；没有把第十轮收益完整归因到第一轮。单步训练的 proposer 也可以在测试时连续修改，论文并未证明必须做多步训练才能多轮适配。</p>
+</section>
+<section id="changes">
+<h2>具体学到了什么：修复检索与作答之间的信息瓶颈</h2>
+<figure class="figure"><div class="figure-title">图 2 · 两跳 Seed 与三种实际程序修改</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/qa_flowcharts.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/qa_flowcharts.png" alt="初始两跳检索摘要程序与证据路径改写、第三跳检索、草稿验证分支的对比" loading="lazy"></a><div class="caption">蓝色为 BM25 检索，米色为 solver 调用，红框/红线为修改。四列分别是初始程序与三种候选设计，后面三列不是必须依次执行的阶段。</div></figure>
+<p>初始 QA 程序先检索、摘要，用摘要构造第二跳 query，最终也只读摘要作答。如果原文找到了答案，摘要却删掉关键实体或限定条件，后面再强的回答模型也无法恢复丢失信息。</p>
+<ul><li><strong>证据路径改写：</strong>摘要仍负责规划下一跳检索，但最终回答读取原始段落。它把“方便继续搜”和“保留答题细节”分成两种上下文用途。</li><li><strong>增加第三跳：</strong>解除固定两跳的限制，补找缺失关系；但额外调用也可能只增加成本和噪声。</li><li><strong>草稿触发验证：</strong>先写草稿，若草稿未在证据中出现，就用草稿再检索。这是生成程序内的条件分支；字面命中不等于事实支持，未命中也不等于错误。</li></ul>
+<p>Reasoning Gym 多数修改转向 Python interpreter loop。添加正确的 BFS、回溯或筛法仍可能因题目解析、工具协议、结果抽取失败而无益；额外工具组合奖励没有一致优于基础 RL。论文展示了上述 QA 程序实例，没有逐项隔离其因果贡献。</p>
+</section>
+<section id="results">
+<h2>主要结果：编辑可靠性可迁移，多轮适配有效但并非处处占优</h2>
+<h3>Reasoning Gym：未见题型上的平均候选更可靠</h3>
+<p><strong>Seed</strong> 是初始程序；<strong>Base</strong> 是未经本文训练的 proposer 生成的修改，两者不是同一基线。以下为 21 个未见家族、所有候选的平均留出分数；每家族 75 道留出题：</p>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>未训练 Base</th><th>SFT</th><th>Single-step RL</th><th>35B Teacher</th><th>固定 Python Tool Loop</th></tr></thead><tbody><tr><td>0.32</td><td>0.49</td><td class="best">0.62</td><td>0.56</td><td>0.69</td></tr></tbody></table></div>
+<p>RL 提高平均修改质量，超过教师均值，但<strong>仍低于固定五轮 Python 工具循环</strong>。主图还排除五个困难 OOD 家族；保留全部 26 家族时，Base / SFT / RL / Teacher 均值为 0.282 / 0.415 / 0.528 / 0.501，正向趋势仍在，绝对表现降低。</p>
+<p>候选有效性分析中，五个 OOD 家族上的失败编辑或零分程序合计由 Base 38% 降至 RL 8%。这支持训练减少坏候选；该分析只含五个家族，不能与上面的 21 家族主结果混用。Teacher 的 oracle@8 高于 RL，说明更稳定的平均质量不等于最高质量设计也更强。</p>
+<h3>多跳 QA：从 HotpotQA 迁移到两个新 benchmark</h3>
+<figure class="figure"><div class="figure-title">图 3 · 十轮修改与独立采样的对比</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/fig_qa_main.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_harness_learning_enables_generalizable_test_time_adaptation_tex/fig_qa_main.png" alt="HotpotQA、MuSiQue 和 2Wiki 上训练 proposer 的多轮适配曲线及独立候选对比" loading="lazy"></a><div class="caption">左侧是四条 runs 的均值及最好 run；右侧比较独立修改和十轮修改。圆点、菱形等 oracle 指标依据留出分数事后选择，不能作为实际部署的选择规则。</div></figure>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>QA 数据集</th><th>Seed EM</th><th>单步 RL 独立修改均值</th><th>十轮适配均值</th></tr></thead><tbody><tr><td>HotpotQA（训练域）</td><td>0.3900</td><td>0.4105</td><td>约 0.61</td></tr><tr><td>MuSiQue（新域）</td><td>0.1438</td><td>0.1467</td><td>约 0.27</td></tr><tr><td>2WikiMultihopQA（新域）</td><td>0.2500</td><td>0.3090</td><td>约 0.55</td></tr></tbody></table></div>
+<p class="small">独立修改数字来自原表；十轮数字为图 3 红色实线末端的近似读数。迁移时仍使用目标 benchmark 的开发反馈和标签，最终留出集约 300 题，检索是受控语料上的 BM25，并非开放 Web search。</p>
+<p>新域中，训练 proposer 的多轮平均最终结果甚至超过 80 个独立修改的 oracle 最好值，支持继承程序、利用更新反馈积累有效结构。但两种方案的父本、报告和筛选协议不同，不能单独归因于“新反馈”或推出严格算力效率优势。</p>
+<p><strong>Multistep RL 不一致优于 Single-step RL。</strong>Reasoning Gym 的五轮适配扩展实验中，格式变化题上两者均值分别为 0.649 与 0.725（每格式 24 个 seen/unseen 家族）；QA 也随数据集而异。后续状态训练有时有益，并不是通用保证。</p>
+</section>
+<section id="budget">
+<h2>成本与边界：适合任务级摊销，需要可评分的开发反馈</h2>
+<p>QA 一条适配 run 有十轮，每轮八个候选，每个候选回答 64 道评分题。假设全部有效且完成执行，名义评分工作量为：</p>
+<div class="formula" id="eq-budget">\[\begin{aligned}N_{\text{候选—题目}}&=10\times8\times64=5120\quad\text{（一条 run）},\\N_{\text{四条 runs}}&=4\times5120=20480.\end{aligned}\tag{4}\]</div>
+<p>这是题目执行次数，不是 LLM 调用次数；每次解题还可调用 solver 和检索各最多 12 次，此外还有反馈题运行与修改生成。无测试时反传也不代表便宜。论文没有完整的美元成本或端到端耗时对比；适配成本的合理用途是由后续同域 query 摊销。</p>
+<ul><li><strong>监督来源：</strong>开发答案和 grader 可用于适配，最终留出题不能参与选择。协议独立不等于无标签；开发集跨轮复用仍可能选择过拟合。</li><li><strong>长期归因：</strong>即时奖励没有解决“先退一步、后面获益”的多轮信用分配。合法性奖励还可能在答题全错时为正，应与正确率分开看。</li><li><strong>评测范围：</strong>部分家族被排除或按此前结果选取，oracle 使用留出得分；不应概括为任意新域都能获益。</li><li><strong>实现状态：</strong>笔记在 2026-10-12 核验仓库提交 <code>5d095ef</code>，README 为 “Code coming soon!”，未发现公开训练/推理实现。本页沿用该核验记录，不声称已运行作者代码。</li></ul>
+</section>
+<section id="takeaway">
+<h2>在 Harness 系列中的定位与核心结论</h2>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>工作</th><th>主要更新对象与时机</th></tr></thead><tbody><tr><td>JIT-Agent</td><td>按当前实例构造模块化程序，可借助 Harness Bank</td></tr><tr><td>Turbo Harness</td><td>执行前一次编辑，在强全局程序上打实例补丁</td></tr><tr><td>Harness Learning</td><td>先学习修改规则；新任务上根据多题反馈反复改写同一程序</td></tr><tr><td>CoTrace</td><td>Harness 搜索与执行模型训练交替，构造匹配的数据配方</td></tr></tbody></table></div>
+<div class="callout"><strong>核心结论：</strong>程序修改能力可以通过执行奖励训练，并迁移到未见题型与 QA benchmark；单步训练的编辑器也能连续适配。实验更有力地支持“减少坏修改、持续修复流程”，尚未证明总体超过强固定 harness，或多步训练必然更好。</div>
+<p>对 search harness 最具体的启发，是分别设计“下一步检索上下文”“最终回答上下文”“是否继续搜”的可修改接口，定位信息在哪个环节丢失。若目标是同一 query 执行到一半改代码并续跑，还需要额外的证据、预算和状态迁移协议；本文反馈来自已执行的一批题，未提供这种热更新实现。</p>
+</section>
+<p class="small">整理依据：用户提供的全文复核笔记、arXiv 2609.35738 与既有 TeX 原图。图可点击查看原始分辨率；未运行模型训练或评测。</p>
+</main></div></div></body></html>
