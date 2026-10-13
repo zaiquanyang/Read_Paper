@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turbo Harness：执行前为每个任务定制 Harness 补丁</title>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#f5f8fc;--card:#fff;--text:#172033;--muted:#607089;--accent:#2563eb;--soft:#edf4ff;--border:#dce5f1;--shadow:0 14px 38px rgba(26,43,72,.08)}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#eef5ff 0,#f8fbff 260px,var(--bg) 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.75;overflow-wrap:anywhere}.page{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:28px 0 56px}.back,.links a{color:var(--accent);text-decoration:none}.back{font-size:.92rem}.back:hover,.links a:hover{text-decoration:underline}header{padding:30px 0 22px;text-align:center}h1{margin:0 auto 12px;max-width:930px;font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.25}.subtitle{margin:0 auto;color:var(--muted);max-width:880px}.links{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:18px 0}.links a{padding:5px 12px;background:var(--soft);border-radius:999px;font-weight:700;font-size:.88rem}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start}.toc{min-width:0;position:sticky;top:18px;background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}.toc h2{font-size:1rem;margin:0 0 9px}.toc a{display:block;padding:5px 0;color:#40536f;text-decoration:none;font-size:.88rem}.toc a:hover{color:var(--accent)}.paper{min-width:0;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:28px 32px}.paper h2{font-size:1.3rem;margin:1.8rem 0 .55rem;line-height:1.35;border-bottom:1px solid var(--border);padding-bottom:7px}.paper h3{font-size:1.04rem;margin:1.25rem 0 .35rem}.paper p,.paper li{font-size:.96rem;color:#2f3b4f}.paper ul,.paper ol{padding-left:1.25rem}.paper li{margin:.3rem 0}.summary{background:#f1f7ff;border-left:4px solid var(--accent);padding:13px 16px;border-radius:0 12px 12px 0;margin:12px 0 18px}.summary p{margin:.2rem 0}.callout{background:#fff9e8;border:1px solid #f1d891;border-radius:12px;padding:12px 15px;margin:14px 0}.formula{overflow-x:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:12px 0;scroll-margin-top:24px}
+.figure{margin:18px 0 22px;padding:14px;background:#fbfdff;border:1px solid var(--border);border-radius:15px}.figure-title{font-weight:700;color:#2858a8;margin-bottom:9px}.figure a{display:block}.figure img{display:block;width:100%;max-height:680px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:10px}.caption{font-size:.86rem;color:var(--muted);margin-top:8px}.table-scroll{overflow-x:auto;margin:10px 0 14px}.result-table{width:100%;border-collapse:collapse;font-size:.85rem}.result-table th,.result-table td{border:1px solid var(--border);padding:7px 8px;text-align:center}.result-table th{background:var(--soft);font-weight:700}.result-table .best{font-weight:800;color:var(--accent)}.small{font-size:.86rem;color:var(--muted)}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.toc{position:static}.paper{padding:22px 18px}.result-table{min-width:550px}}
+</style>
+</head>
+<body><div class="page">
+<a class="back" href="../agent_工作整理_github_harness.html">← 返回 Harness 专题</a>
+<header><h1>Turbo Harness：执行前为每个任务定制 Harness 补丁</h1><p class="subtitle">Instance-Adaptive Harness Optimization · Tunyu Zhang、Hao Wang、Kai Xu、Dimitris N. Metaxas · Rutgers / Red Hat AI Innovation / MIT-IBM Watson AI Lab</p><div class="links"><a href="https://arxiv.org/abs/2609.40330" target="_blank" rel="noopener">arXiv 2609.40330</a><a href="https://github.com/Tyrion58/turbo-harness" target="_blank" rel="noopener">GitHub</a><a href="https://arxiv.org/pdf/2609.40330" target="_blank" rel="noopener">PDF</a><a href="https://github.com/Tyrion58/turbo-harness/blob/main/docs/REPRODUCE.md" target="_blank" rel="noopener">复现指南</a></div></header>
+<div class="layout"><nav class="toc" aria-label="文章目录"><h2>目录</h2><a href="#idea">核心想法</a><a href="#framework">三阶段框架</a><a href="#training">Editor 怎样训练</a><a href="#patches">实例补丁改什么</a><a href="#results">主要结果与成本</a><a href="#ablation">Playbook 与 RL 消融</a><a href="#takeaway">结论与复现边界</a></nav>
+<main class="paper">
+<section id="idea">
+<h2>核心想法：强全局程序之上，再做一次实例适配</h2>
+<div class="summary"><p><strong>Turbo Harness 训练一个小型 editor，在任务执行之前，为当前实例修改全局 harness。</strong>Editor 读取任务、已优化的全局程序和历史编辑经验，输出补丁；补丁应用后，冻结的执行模型才开始解题。每题仅调用一次 editor，无需先收集本题失败轨迹再重跑。</p></div>
+<p>Harness 是模型外的程序，负责上下文、状态、工具调用、控制循环和验证。全局优化寻找平均表现好的共同程序，但“先查 git 历史”“立即提交”“多做测试”等规则并不适合每道题。同时，全局搜索淘汰的候选可能包含只对某类题有效的策略。Turbo 把这些成功与失败记录压缩为 <strong>playbook（带适用条件的编辑经验册）</strong>，学习什么时候应采用哪些改动。</p>
+<p>与 JIT-Agent 生成完整四模块 harness 相比，Turbo 从同一个强全局程序出发，只改必要部分。训练时更新 editor，executor（真正调用工具解题的模型）保持冻结；测试时二者都冻结，变化发生在程序上。</p>
+</section>
+<section id="framework">
+<h2>三阶段框架：全局搜索 → 编辑经验 → 实例补丁</h2>
+<figure class="figure"><div class="figure-title">图 1 · 回收全局搜索档案，训练按题编辑的 Harness Editor</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/turbo_method_crop.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/turbo_method_crop.png" alt="Turbo Harness 从全局搜索档案生成 playbook，editor 读取任务并修改全局 harness 的框架" loading="lazy"></a><div class="caption">左侧是离线的全局搜索；右侧 editor 根据实例 $x$、共同程序 $H^\star$ 与 playbook 生成补丁 $p_x$。测试题不再各自重跑左侧搜索。</div></figure>
+<h3>Stage A · 获得共同程序与搜索档案</h3>
+<p>Meta-Harness 外循环提出程序，内循环执行 agent 并评估，产生全局程序 $H^\star$ 与搜索档案 $\mathcal A$。档案保存候选源码、得分、工具输出、执行轨迹和失败。这个阶段追求训练任务平均表现：</p>
+<div class="formula" id="eq-global">\[H^\star\in\arg\max_{H\in\mathcal H}\mathbb E_{x\sim\mathcal T}\big[r(\operatorname{Agent}(M,H,x))\big].\tag{1}\]</div>
+<p>$M$ 是冻结执行模型，$\mathcal H$ 是程序设计空间，$\mathcal T$ 是训练任务分布，$r$ 是执行结果的奖励。共同程序有效，并不意味着它对每个实例都最优。</p>
+<h3>Stage B · 将搜索副产品变成条件化经验</h3>
+<ol><li><strong>Extraction：</strong>对每个训练实例整理不同程序的结果与轨迹，区分“有成功失败对比”“全部成功”“全部失败”；选择差异明显的版本，计算源码 diff。该步骤不调用模型。</li><li><strong>Reflection：</strong>强模型结合实例特征、代码差异与行为差异，提炼策略、适用条件、理由和置信度，过滤低置信度与已知坏模式。</li><li><strong>Curation：</strong>合并等价策略，累计 helpful / harmful 证据，净负面经验转成 anti-pattern（应避免的修改），删除过于模糊或只针对某题的条目。</li></ol>
+<p>经验区分 scaffold_modification（改控制流）与 text_injection（改提供给模型的信息）。训练和测试时<strong>整个固定 playbook 都进入上下文</strong>，不是另行训练检索器，也不是每完成一道测试题就更新经验库。不同版本的成败对比提供经验依据，但不等于完成了严格因果识别。</p>
+<h3>Stage C · 每题一次编辑，再执行</h3>
+<div class="formula" id="eq-patch">\[\begin{aligned}p_x&\sim\pi_\theta(\cdot\mid x,H^\star,\mathcal P),\\H_x&=H^\star\oplus p_x,\\\text{结果}&=\operatorname{Agent}(M,H_x,x).\end{aligned}\tag{2}\]</div>
+<p>$\pi_\theta$ 是 Qwen3.5-9B editor，$\mathcal P$ 是经验册，$\oplus$ 表示应用代码修改，$H_x$ 是实例专用程序。每道题都从同一个 $H^\star$ 开始，<strong>不会继承上一道测试题的补丁</strong>。显式输出 <code>NO_PATCH_NEEDED</code> 时运行原程序；无法解析、应用或通过验证的补丁，在训练中得到零分且不执行环境。</p>
+</section>
+<section id="training">
+<h2>训练对象是 Editor：奖励来自 Executor 的真实执行</h2>
+<p>训练为同一实例采样 $G$ 个补丁，分别应用、检查并调用冻结 executor，得到任务奖励。GRPO 根据同题候选的相对表现优化补丁 token 的概率。因此梯度更新的是“怎样改程序”，不是 executor 的“怎样修 issue”；训练仍需要大量环境 rollout。</p>
+<h3>奖励既考虑成功，也有任务相关 shaping</h3>
+<p>SWE 两项任务的奖励使用成功与执行步数，$s$ 为实际步骤，$L=40$ 为上限：</p>
+<div class="formula" id="eq-reward">\[r=\begin{cases}1-\dfrac{s}{2L},&\text{任务成功},\\0,&\text{任务失败}.\end{cases}\tag{3}\]</div>
+<p>ScienceWorld 使用环境得分除以 100；ALFWorld、DBBench、TB2.1 使用二元结果；WebShop 使用稠密得分，并对超过同题全局程序的非弃权补丁加 0.1。除 SWE 外五项任务的明确弃权减 0.05，并截断到非负。<strong>测试报告的指标不包含这些 shaping 项</strong>。</p>
+<p>默认使用全参数 FSDP 训练，学习率 $10^{-6}$、KL 系数 $10^{-3}$，不同任务的 group size 为 8 或 16。可信 runner 在生成程序之外评分，禁止修改受保护的评分接口，避免 editor 通过改评分逻辑取得虚假奖励。</p>
+<p class="small">WebShop 的表注和奖励正文对特殊设置的措辞存在歧义，复现时应核对具体配置；不能把式（3）或标准二元奖励统一套到所有任务。</p>
+</section>
+<section id="patches">
+<h2>实例补丁究竟改了什么？</h2>
+<ul><li><strong>定位策略：</strong>Jinja2 回归问题加入查看 git history 的流程，另一个 datetime 库问题没有加入相同步骤，说明不是给每题追加统一提示。</li><li><strong>阶段预算：</strong>Django 示例增加理解与修复阶段的步骤，取消立即提交；SymPy 示例只增加修复预算，仍保留一步提交。</li><li><strong>运行代码：</strong>Gunicorn 示例将验证门槛由 step 8 提前到 6，并扩展源码修改检测器，使其识别 <code>echo ... &gt;&gt; ...py</code>。</li></ul>
+<p>这些例子支持补丁空间同时包含提示与控制流代码。TB2.1 的强制工具调用案例来自训练任务上的外循环搜索，不能把它当作被保留的测试实例补丁；论文说明该 benchmark 的测试补丁没有保存。</p>
+<div class="callout"><strong>动态性的边界：</strong>实例适配发生在执行前。生成后的程序可以运行条件分支，但论文没有实现正常 episode 中持续重新调用 editor、替换 harness 并迁移状态；“每题不同”不等于“运行中持续改代码”。</div>
+</section>
+<section id="results">
+<h2>主要结果：同一全局底座上的实例编辑带来增益</h2>
+<p>最容易解释的对照是 <strong>Meta-Harness → Turbo</strong>：执行模型与全局底座相同，新增实例适配。其他方法可能失败后重跑、使用不同 runtime 或另做训练，不能据整张排名表单独归因 editor 算法优劣。</p>
+<h3>四个交互任务：冻结 Qwen3.5-9B Executor</h3>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>方法</th><th>ALFWorld</th><th>ScienceWorld</th><th>DBBench</th><th>WebShop</th><th>平均</th></tr></thead><tbody><tr><td>Default</td><td>40.7</td><td>25.7</td><td>57.5</td><td>34.5</td><td>39.6</td></tr><tr><td>Meta-Harness</td><td>60.7</td><td>35.1</td><td>65.0</td><td>40.0</td><td>50.2</td></tr><tr><td>Turbo Harness</td><td class="best">70.7</td><td class="best">42.4</td><td class="best">69.2</td><td class="best">42.0</td><td class="best">56.1</td></tr></tbody></table></div>
+<p class="small">ALFWorld 为成功率 %、ScienceWorld 为 /100 得分、DBBench 为正确率 %、WebShop 为 Success@1 %；平均是异质指标的算术汇总。完整表中 Harness-R1 的 WebShop 为 42.2，高于 Turbo 的 42.0，因此不能说 Turbo 每项都第一。</p>
+<h3>SWE：性能、步骤与执行费用一起看</h3>
+<div class="table-scroll"><table class="result-table"><thead><tr><th>Executor / 测试集</th><th>方法</th><th>Pass %</th><th>Steps</th><th>USD/issue</th></tr></thead><tbody><tr><td rowspan="2">Haiku 4.5 · MR 50 题</td><td>Meta</td><td>50.7</td><td>18.5</td><td>0.151</td></tr><tr><td>Turbo</td><td class="best">64.0</td><td>17.3</td><td>0.136</td></tr><tr><td rowspan="2">Haiku 4.5 · Verified 150 题</td><td>Meta</td><td>56.7</td><td>18.8</td><td>0.153</td></tr><tr><td>Turbo</td><td class="best">59.3</td><td>20.4</td><td>0.179</td></tr><tr><td rowspan="2">Gemini 3.7 Flash · MR 50 题</td><td>Meta</td><td>70.7</td><td>23.1</td><td>0.310</td></tr><tr><td>Turbo</td><td class="best">88.0</td><td>8.7</td><td>0.046</td></tr><tr><td rowspan="2">Gemini 3.7 Flash · Verified 150 题</td><td>Meta</td><td>38.4</td><td>32.5</td><td>0.470</td></tr><tr><td>Turbo</td><td class="best">54.4</td><td>25.9</td><td>0.331</td></tr></tbody></table></div>
+<p>Gemini 的 MR 提升 17.3 个百分点，步数显著下降；Haiku 的 Verified 提升较小，执行费用反而增加。表中为三次执行均值，SWE 使用 40 步、每题 3 USD 上限，未提交补丁按失败计。</p>
+<p><strong>表中成本只计 executor，排除全局搜索、editor 训练及每题一次 editor 调用。</strong>0.310 / 0.046 ≈ 6.7 倍是特定设置的执行费用比，不是端到端计算节省倍数。Verified 只使用 150 道测试题，也不是完整 500 题官方榜单结果；MR 是已见仓库上的新 issue，不是未见仓库泛化。</p>
+<h3>Terminal-Bench 2.1：55.5% 的测试通过率</h3>
+<p>使用 Claude Sonnet 4.5，在 44 道测试题上运行五次：Meta-Harness 为 50.5±1.7%，Turbo 为 <strong>55.5±1.4%</strong>（SEM），平均 turns 76.3→71.2，执行费用 1.56→1.38 USD/task。最强人工基线 Terminus-Kira 为 52.3±1.1%；但 OpenHands 费用仅 0.85 USD，因此 Turbo 并非所有维度都最优。</p>
+</section>
+<section id="ablation">
+<h2>消融：小 Editor 需要训练才能利用经验</h2>
+<figure class="figure"><div class="figure-title">图 2 · Playbook 与 RL 的互补性</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/ablation_combined.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/ablation_combined.png" alt="Turbo Harness 的 playbook 与 RL 消融及不同 editor 对比" loading="lazy"></a><div class="caption">Haiku + SWE-smith-MR：只给未训练 9B 模型经验册没有改善；训练与经验共同使用才取得 64.0。右图比较不同 editor，不能由单任务结果推出小模型普遍胜过大模型。</div></figure>
+<p>全局 Meta 底座为 50.7%；未训练 9B editor 无 playbook 为 51.3%，加 playbook 为 50.0%；训练但无 playbook 为 49.3%，<strong>训练且有 playbook 为 64.0%</strong>。这支持“编辑训练与经验库互补”，不支持“任意模型拿到经验库就会提升”。冻结 Sonnet + playbook 为 55.3%，Opus 为 61.3%，展示了将某项编辑能力训练进小模型的可能性。</p>
+<figure class="figure"><div class="figure-title">图 3 · 固定实例 Harness 下的执行稳定性</div><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/swe_reliability.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/agent/assets/arxiv_2609_turbo_harness_instance_adaptive_harness_optimization_tex/swe_reliability.png" alt="SWE-smith-MR 上三次执行成功次数的分布" loading="lazy"></a><div class="caption">MR 中三次执行全成功的 issue，Haiku 从 20 增到 28/50，Gemini 从 26 增到 42/50；重复执行使用同一个已生成 harness。</div></figure>
+<p>误差条和重复运行衡量 executor 的执行随机性，<strong>没有覆盖重新训练 editor、重新生成补丁或重新划分数据的方差</strong>；四个交互任务仅报告一次测试运行。</p>
+</section>
+<section id="takeaway">
+<h2>结论与复现边界</h2>
+<div class="callout"><strong>核心贡献：</strong>把全局搜索中被丢弃的编辑经验重新利用起来，训练 editor 判断“当前题该对强共同程序做什么局部修改”。适配范围可以从提示文本延伸到验证时机、阶段预算和控制代码。</div>
+<ul><li>相比每题重新搜索，测试只增加一次 editor 调用；离线搜索和训练成本仍真实存在。</li><li>开源内容包含 SkyRL、GRPO 配置、训练脚本、split、全局程序与 playbook，是有实际训练实现的工作；核验版本为 <code>44610b8</code>。</li><li>公开复现指南主要覆盖 SWE-smith、Verified、ALFWorld、TB2.1 四项，论文有七项。笔记未确认可直接下载的已训练 editor checkpoint，配置要求提供 <code>ADVISOR_CKPT</code>。</li><li>未展示开放 Web search 主实验，WebShop 的受控商品环境不能代替开放网页检索；正常执行中再次编辑和状态迁移也仍是扩展方向。</li></ul>
+<p>本专题中，Video-RSI 离线演化可复用程序，JIT-Agent 按题生成完整程序，CoTrace 管理执行模型与 harness 交替更新的数据；Turbo 的定位是<strong>在强全局 harness 上，执行前一次性生成实例补丁</strong>。</p>
+</section>
+<p class="small">整理依据：用户提供的详细笔记、arXiv 2609.40330 主文及原始图像；公开实现范围参考笔记中的仓库核验。原图均可点击查看完整分辨率。</p>
+</main></div></div></body></html>
