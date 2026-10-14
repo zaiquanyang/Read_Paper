@@ -12,9 +12,15 @@
 <body>
 <div class="page">
 <a class="back" href="../agent_工作整理_github.html">← 返回 Agent 总索引</a>
-<header><h1>Harness Evolution</h1><p>把 Agent 的 prompt、工具、观察处理、记忆和执行控制视为可测试、可继承的程序对象，关注 test-time / offline harness 演化。</p></header>
-<section class="topic-card"><h2>本专题</h2><p>当前收录 CoTrace、Turbo Harness、Video-RSI、Harness Learning 与 JIT-Agent，覆盖协同演化的数据配方、实例补丁、反馈驱动的任务级适配、可复用程序演化和按题程序生成。</p><div class="keywords"><span class="keyword">模型—Harness 协同演化</span><span class="keyword">按实例生成与编辑</span><span class="keyword">反馈驱动适配</span></div></section>
+<header><h1>Harness Evolution</h1><p>把 Agent 的 prompt、工具、观察处理、记忆和执行控制视为可测试、可继承的程序对象，关注 test-time / offline harness 演化、模型—程序协同训练与失败恢复。</p></header>
+<section class="topic-card"><h2>本专题</h2><p>当前收录 7 篇：WHALE、ReTerm、CoTrace、Turbo Harness、Video-RSI、Harness Learning 与 JIT-Agent，覆盖权重—程序交替优化、失败恢复训练、协同演化的数据配方、实例补丁和反馈驱动适配。ReTerm 训练执行模型的恢复能力，harness 负责状态保存与分叉。</p><div class="keywords"><span class="keyword">模型—Harness 协同演化</span><span class="keyword">按实例生成与编辑</span><span class="keyword">反馈驱动适配</span></div></section>
 <section class="paper-grid" aria-label="Harness 论文列表">
+<!-- PAPER_CARD_START source="../Paper_Wiki/harness/arxiv_2609_whale_a_simple_recipe_for_joint_harness_weight_optimization.md" arxiv="2609.00196" -->
+<article class="paper-card"><a class="paper-tile" href="agent_工作整理_github_harness_papers/006-whale-a-simple-recipe-for-joint-harness-weight-optimization.html"><span class="paper-tag">arXiv 2609.00196</span><div class="paper-keywords"><span class="paper-keyword">Online RSFT</span><span class="paper-keyword">可执行程序搜索</span><span class="paper-keyword">阶段切换调度</span></div><h2>WHALE: A Simple Recipe for Joint Harness-Weight Optimization</h2><p>先在当前 harness 下筛选成功轨迹训练目标模型，再冻结新模型搜索运行程序，反复交替以维持两者匹配。</p><span class="paper-open">查看论文总结 →</span></a></article>
+<!-- PAPER_CARD_END -->
+<!-- PAPER_CARD_START source="../Paper_Wiki/Agent/arxiv_2610_reterm_recovery_training_for_self_improving_terminal_agents.md" arxiv="2610.18484" -->
+<article class="paper-card"><a class="paper-tile" href="agent_工作整理_github_harness_papers/007-reterm-recovery-training-for-self-improving-terminal-agents.html"><span class="paper-tag">arXiv 2610.18484</span><div class="paper-keywords"><span class="paper-keyword">失败状态分叉</span><span class="paper-keyword">恢复后缀监督</span><span class="paper-keyword">ReTerm-GRPO</span></div><h2>ReTerm: Recovery Training for Self-Improving Terminal Agents</h2><p>保存 agent 自然失败后的环境与历史，从同一失败状态独立采样恢复分支，联合训练首次执行与恢复能力。</p><span class="paper-open">查看论文总结 →</span></a></article>
+<!-- PAPER_CARD_END -->
 <!-- PAPER_CARD_START source="../Paper_Wiki/Agent/arxiv_2610_cotrace_data_recipes_for_training_terminal_agents_with_harness_model_co_evolution.md" arxiv="2610.10426" -->
 <article class="paper-card"><a class="paper-tile" href="agent_工作整理_github_harness_papers/003-cotrace-data-recipes-for-training-terminal-agents-with-harness-model-co-evolution.html"><span class="paper-tag">arXiv 2610.10426 · 2026-10-07</span><div class="paper-keywords"><span class="paper-keyword">Runtime 指纹匹配</span><span class="paper-keyword">组件级 Promotion</span><span class="paper-keyword">Frontier 任务刷新</span></div><h2>CoTrace: Data Recipes for Training Terminal Agents with Harness-Model Co-Evolution</h2><p>失败轨迹驱动 harness 搜索，匹配成功轨迹用于模型训练；交替评估组件并刷新任务前沿。</p><span class="paper-open">查看论文总结 →</span></a></article>
 <!-- PAPER_CARD_END -->
