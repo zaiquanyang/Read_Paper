@@ -1,0 +1,74 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Task-CoEvolve: Efficient Harness Optimization via Adaptive Validation Task Selection | Agent 工作整理</title>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#f7f8fb;--card:#fff;--text:#182033;--muted:#657084;--accent:#2d6cdf;--soft:#f2f6fc;--border:#dce4ef;--shadow:0 4px 18px rgba(25,45,75,.07)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.78;padding:28px 16px}.container{max-width:1120px;margin:auto}.back{display:inline-block;margin:0 0 18px;color:var(--accent);text-decoration:none}.back:hover{text-decoration:underline}header{text-align:center;margin:8px 0 24px;padding-bottom:20px;border-bottom:2px solid var(--border)}h1{font-size:1.8rem;line-height:1.35;margin:0 0 10px}.meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;color:var(--muted);font-size:.88rem}.meta a{color:var(--accent);text-decoration:none}.paper-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:0 0 10px;font-size:.84rem}.paper-links a{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:#eaf1ff;color:var(--accent);text-decoration:none;font-weight:700}.paper-links a:hover{text-decoration:underline}.content-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:32px;align-items:start}.toc{position:sticky;top:20px;padding:14px 0}.toc-title{font-size:.78rem;font-weight:800;letter-spacing:.08em;color:var(--muted);margin:0 0 9px}.toc ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--border)}.toc li{margin:0}.toc a{display:block;padding:5px 10px;color:var(--muted);font-size:.82rem;line-height:1.4;text-decoration:none;border-left:2px solid transparent;margin-left:-1px}.toc a:hover,.toc a:focus{color:var(--accent);border-left-color:var(--accent);background:#f0f5ff}.paper-card{min-width:0}.summary{background:#f3f7fd;border:1px solid #dbe6f5;padding:15px 18px;border-radius:10px;margin:0 0 22px}.panel{border:0;border-top:1px solid var(--border);background:transparent;border-radius:0;padding:27px 0 25px;margin:0;scroll-margin-top:20px}.panel:first-of-type{border-top:0;padding-top:0}.panel h2{font-size:1.15rem;margin:0 0 12px;padding:0;color:#1d2b43}.panel h3{font-size:1rem;margin:18px 0 7px;color:#26364d}.panel p,.panel li{font-size:.96rem;color:#303846;margin:0 0 9px}.panel ul,.panel ol{padding-left:1.35rem;margin:0 0 5px}.panel li:last-child,.panel p:last-child{margin-bottom:0}.panel.highlight{background:#f3f7fd;border:1px solid #dbe6f5;border-radius:10px;padding:20px 22px;margin:22px 0}.panel.highlight h2{color:#244f91}.formula{overflow:auto;background:#fafbfd;border:1px solid #e4e9f1;border-radius:8px;padding:11px 14px;margin:13px 0}.figure-block{margin:22px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fbfcfe}.figure-title{font-weight:700;color:#354b6b;font-size:.92rem;margin-bottom:9px}.figure-block img{display:block;width:100%;max-height:570px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}.figure-block a{display:block}.two-figures{display:grid;grid-template-columns:1fr;gap:22px}.two-figures .figure-block{margin:0}.two-figures img{max-height:570px}.note{color:var(--muted);font-size:.9rem;background:#fafbfd;border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-top:18px}footer{text-align:center;color:var(--muted);font-size:.82rem;margin:24px 0 8px}@media(max-width:860px){.content-layout{grid-template-columns:1fr;gap:0}.toc{position:static;padding:0;margin:0 0 20px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px}.toc-title{margin-bottom:6px}.toc ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0}.toc a{border-left:0;border-bottom:2px solid transparent;margin-left:0;padding:5px 6px}.toc a:hover,.toc a:focus{border-left:0;border-bottom-color:var(--accent)}}@media(max-width:720px){body{padding:16px 10px}h1{font-size:1.45rem}.panel.highlight{padding:17px 16px}.two-figures{grid-template-columns:1fr}.toc ol{grid-template-columns:1fr 1fr}}
+
+.table-scroll{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}th{background:#f1f5fa;white-space:nowrap}.figure-block{margin-left:0;margin-right:0}.figure-block img{max-height:none}.paper-links{justify-content:center}
+
+h1{overflow-wrap:anywhere}td:first-child{min-width:145px}</style></head><body><main class="container"><a class="back" href="../agent_工作整理_github_harness.html">← 返回 Harness 专题</a>
+<header><h1>Task-CoEvolve: Efficient Harness Optimization via Adaptive Validation Task Selection</h1><div class="paper-links"><a href="https://arxiv.org/abs/2608.20169" target="_blank" rel="noopener">arXiv 2608.20169</a><a href="https://github.com/Agent4Science-UTokyo/Task-CoEvolve" target="_blank" rel="noopener">GitHub</a><a href="https://arxiv.org/pdf/2608.20169" target="_blank" rel="noopener">PDF</a></div><div class="meta">Atsuyuki Miyai · Kiyoharu Aizawa · Toshihiko Yamasaki<span>首次提交 2026-08-20 · 根据本地 ICLR 2027 投稿版笔记整理</span></div></header>
+<div class="content-layout"><aside class="toc" aria-label="文章目录"><div class="toc-title">目录</div><ol><li><a href="#motivation">1. 核心思想与问题</a></li><li><a href="#framework">2. 自适应选题闭环</a></li><li><a href="#estimation">3. 选题与成绩校正</a></li><li><a href="#results">4. 实验效果与真实成本</a></li><li><a href="#ablation">5. 消融与估计误差</a></li><li><a href="#limits">6. 代码改变与研究边界</a></li></ol></aside>
+<!-- PAPER_CARD_START source="../Paper_Wiki/harness/task_coevolve_efficient_harness_optimization_via_adaptive_validation_task_selection.md" arxiv="2608.20169" -->
+<article class="paper-card" data-arxiv="2608.20169">
+<div class="summary"><strong>核心思想：</strong>搜索 Harness 时，每个候选只跑一部分验证题；优先选择历史候选表现分歧较大的题，再按入选概率估计全题库成绩，让不同子集上的候选可以比较。模型权重保持冻结，变化的是 Harness 代码与选题分布。</div>
+<section class="panel" id="motivation"><h2>1. 问题：Harness 搜索贵在反复评测</h2>
+<p>搜索 $K$ 份候选、每份运行 $N$ 道题、每题尝试 $r$ 次，需要约 $KNr$ 次任务执行。终端题会占用沙箱几十分钟，评测往往比生成代码补丁更贵。</p>
+<p>固定小子集容易让代码适应少数题；随机换题又使不同轮次的原始分数难以直接比较。Task-CoEvolve 因此同时解决<strong>“选哪些题”</strong>和<strong>“如何从部分评测估计完整成绩”</strong>。</p>
+<figure class="figure-block"><figcaption class="figure-title">论文原图 1：每轮全量评测与自适应子集评测</figcaption><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/harness/assets/task_coevolve_efficient_harness_optimization_via_adaptive_validation_task_selection_pdf/figure_01_user_screenshot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/harness/assets/task_coevolve_efficient_harness_optimization_via_adaptive_validation_task_selection_pdf/figure_01_user_screenshot.png" alt="论文原图 1：每轮全量评测与自适应子集评测" loading="lazy"></a></figure>
+</section>
+<section class="panel" id="framework"><h2>2. 自适应选题与 Harness 共同演化</h2>
+<ol><li><strong>初始化：</strong>两份初始 Harness 跑完整验证集，建立每题历史成功率与观察次数。</li>
+<li><strong>选择子集：</strong>根据历史结果做方差加权抽样，偏向候选有成功也有失败的题，并给未成功题和观察不足题保留探索机会。</li>
+<li><strong>评测与估计：</strong>新候选只执行抽中的题，使用题目入选概率估计其全验证集成绩。</li>
+<li><strong>更新与选优：</strong>把新结果写入历史，供下一轮选题和代码编辑参考；最终保留估计分最高的候选。</li></ol>
+<p>验证题库固定，未抽中题目的统计不变。图中的“越来越难”表示随能力边界变化而转向更有区分力的题，算法没有预设难度递增课程；一直失败的题也未必最有用。</p>
+<figure class="figure-block"><figcaption class="figure-title">论文原图 2：抽样、评测、全量成绩估计与历史更新</figcaption><a href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/harness/assets/task_coevolve_efficient_harness_optimization_via_adaptive_validation_task_selection_pdf/figure_02_user_screenshot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/harness/assets/task_coevolve_efficient_harness_optimization_via_adaptive_validation_task_selection_pdf/figure_02_user_screenshot.png" alt="论文原图 2：抽样、评测、全量成绩估计与历史更新" loading="lazy"></a></figure>
+</section>
+<section class="panel" id="estimation"><h2>3. 关键机制：方差选题，逆概率校正</h2>
+<h3>选题权重</h3>
+<div class="formula">\[w_t=\max\{\bar p_t(1-\bar p_t),\ell_t\}+\frac{\lambda}{\sqrt{n_t}}.\]</div>
+<p>$\bar p_t$ 是历史成功率，$n_t$ 是观察次数；从未成功的题取 $\ell_t=0.125$，其余为 0，$\lambda=0.025$。成功率接近 0.5 的题优先，但历史包含模型随机性与环境噪声，方差不能视为纯粹的结构差异。</p>
+<p>令 $\pi_t=\Pr(t\in S_k)$ 为本轮<strong>最终入选概率</strong>，通过 4,000 次抽样模拟估计。这些模拟无需调用 Agent 解题；$\pi_t$ 与单次归一化抽样权重不同。</p>
+<h3>文本分类：Hájek 比率估计</h3>
+<div class="formula">\[\widehat S(h)=\frac{\sum_{t\in S_k}x_t(h)/\pi_t}{\sum_{t\in S_k}1/\pi_t}.\]</div>
+<p>较少入选的题获得更大权重，再除以总权重；三个分类数据集分别估计后取宏平均。比率形式一般不是有限样本严格无偏估计。</p>
+<h3>终端任务：历史 anchor 加残差</h3>
+<div class="formula">\[\widehat S(h)=\frac1N\sum_{t\in T}\bar p_t+\frac1N\sum_{t\in S_k}\frac{x_t(h)-\bar p_t}{\pi_t}.\]</div>
+<p>先以历史全题库均分为起点，再估计当前候选的变化量。anchor 可减轻低概率题的逆权重放大；实际仍受近似入选概率、小样本与选优误差影响。两个 benchmark 使用不同估计器，不能直接互换。</p></section>
+<section class="panel" id="results"><h2>4. 实验效果与真实成本</h2>
+<h3>文本分类：20% 预算保留搜索质量</h3>
+<p>执行模型为 GPT-OSS-120B，编辑模型为 Claude Opus 4.6；20 轮、每轮 3 候选，共 60 候选，重复 3 次。LawBench、Symptom2Disease、USPTO-50k 使用独立 test；下表为 test 准确率的宏平均（均值±标准差）。</p>
+<div class="table-scroll"><table><thead><tr><th>搜索方法</th><th>每候选预算</th><th>候选评测量</th><th>Test Avg / %</th></tr></thead><tbody>
+<tr><td>Full search</td><td>100%</td><td>7,800</td><td>48.6±0.8</td></tr>
+<tr><td>固定子集</td><td>20%</td><td>1,560</td><td>47.2±0.6</td></tr>
+<tr><td>随机重采样</td><td>20%</td><td>1,560</td><td>48.2±0.5</td></tr>
+<tr><td><strong>Task-CoEvolve</strong></td><td><strong>20%</strong></td><td><strong>1,560</strong></td><td><strong>49.3±0.8</strong></td></tr>
+<tr><td>Task-CoEvolve</td><td>7%</td><td>480</td><td>47.6±0.9</td></tr></tbody></table></div>
+<p>20% 档较 Full 均分高 0.7 个百分点，各数据集并非全部领先；3 次搜索的标准差也不能替代显著性检验。</p>
+<h3>Terminal-Bench 2.1：少约 80% 评测，低 1.1 个百分点</h3>
+<p>89 道题、10 个候选，每题 1 rollout；搜索和最终报告使用同一组题。20% 档每候选评测 18 题。</p>
+<div class="table-scroll"><table><thead><tr><th>方法</th><th>候选 Trials</th><th>GPT-5.6 Luna / %</th><th>Qwen3.6-35B-A3B / %</th></tr></thead><tbody>
+<tr><td>Terminus 2 起点</td><td>—</td><td>52.8</td><td>34.8</td></tr>
+<tr><td>Full search</td><td>890</td><td>62.9</td><td>42.7</td></tr>
+<tr><td>固定子集 20%</td><td>180</td><td>55.1</td><td>39.3</td></tr>
+<tr><td>随机重采样 20%</td><td>180</td><td>59.6</td><td>37.1</td></tr>
+<tr><td><strong>Task-CoEvolve 20%</strong></td><td><strong>180</strong></td><td><strong>61.8</strong></td><td><strong>41.6</strong></td></tr></tbody></table></div>
+<p><strong>成本要分开看：</strong>Luna 的输入 token 约降 80%，报告费用从 117 美元 降至 30 美元（约 74%），耗时从 22.2 降至 11.5 小时（约 48%）；Qwen 耗时从 38.0 降至 20.5 小时。同为 180 次执行，Task-CoEvolve 比随机重采样更贵，因为更常抽到长轨迹题。</p>
+<p class="note">表中 890 / 180 仅计算新候选的搜索评测；预算还应计入两份初始程序的全量评测。候选生成、并发和长尾题也会影响实际耗时。</p></section>
+<section class="panel" id="ablation"><h2>5. 消融：换题、校正、方差选择分别有贡献</h2>
+<div class="table-scroll"><table><thead><tr><th>20% 分类预算，逐项加入</th><th>Test Avg / %</th></tr></thead><tbody>
+<tr><td>固定小子集</td><td>47.2±0.6</td></tr><tr><td>改为均匀重采样</td><td>48.2±0.5</td></tr><tr><td>再加完整集估计与按估计选优</td><td>48.8±1.4</td></tr><tr><td>再加方差加权选题</td><td>49.3±0.8</td></tr></tbody></table></div>
+<p>最大单步收益来自避免反复使用同一子集。均匀重采样加成绩校正，是评估后续改进时需要保留的强基线。</p>
+<ul><li><strong>排序仍有误差：</strong>一次全量重评诊断中，7% / 20% 预算的估计分与完整分 Spearman 仅 0.13 / 0.62；选中候选的真实名次为 10/60 和 12/60，未恢复真正最优者。</li>
+<li><strong>估计器依赖任务：</strong>分类 20% 时把 Hájek 换为 difference，成绩从 49.3±0.8 降至 46.0±2.6。终端则有 Hájek 将真实 52.8% 估为 82.8% 的案例，低概率题会放大噪声。</li>
+<li><strong>强起点的负结果：</strong>DeepSeek-V4-Flash 配 Terminus 2 已达 70.8%；该设置下 10 次全量搜索最好仍为 70.8%。</li></ul></section>
+<section class="panel" id="limits"><h2>6. 搜到了什么，以及结论的边界</h2>
+<p>分类 Harness 组合 word-bigram 与 character n-gram 的 TF-IDF 索引，用 reciprocal rank fusion 合并检索结果，并控制上下文中的标签多样性。终端 Harness 则轮询命令回显、画面稳定及 shell prompt，在命令结束后提前返回，减少固定等待浪费。</p>
+<ul><li><strong>方法定位：</strong>meta-agent 根据上下文和日志编辑代码；执行模型、编辑模型均未进行参数更新。本文的方差统计单位是验证题。</li>
+<li><strong>泛化证据：</strong>分类有独立 test，终端没有 held-out test；终端成绩支持在该 89 题库上的搜索效率，未知任务收益仍需验证。</li>
+<li><strong>统计限制：</strong>全部历史可能滞后于能力变化；每候选样本数固定；选最大估计分仍有 winner’s curse，且 Monte Carlo 入选概率存在误差。</li>
+<li><strong>复现细节：</strong>7% 分类档原表列每池 2/3/3 题，与方法中的逐池向上取整不一致；应澄清抽样实现和取整规则，并保存抽样前历史、权重、概率、种子及选优规则。</li></ul>
+<p class="note">本页结果依据用户提供的匿名 ICLR 2027 阅读材料；arXiv 元数据用于核对标题、作者和首次提交日期。不同版本的表述可能不同。</p></section>
+</article>
+<!-- PAPER_CARD_END --></div><footer>根据本地 Task-CoEvolve 阅读笔记整理；两张论文原图沿用笔记中的截图，可点击放大。</footer></main></body></html>
