@@ -66,7 +66,7 @@
 <body>
   <header>
     <p class="home-link"><a href="index.html">← 返回全部 Topic</a></p><h1>Jev 工作整理</h1>
-    <p>决策模型、概率校准与推理学习。更新时间：2026-10-18。</p>
+    <p>决策模型、概率校准与推理学习。更新时间：2026-10-20。</p>
   </header>
 <!-- WORK_LIST_START -->
   <nav class="work-list" aria-label="已整理工作列表">
@@ -74,6 +74,7 @@
     <p>点击标题可直接跳转到对应论文卡片。</p>
     <ol>
       <li><a href="#arxiv-2609.38850">OpenJev-RLCD: A Working RLCD Implementation</a><span class="work-meta">arXiv 2609.38850</span></li>
+      <li><a href="#arxiv-2610.21244">System1-Arena: Which Decisions Can Be Left to System 1?</a><span class="work-meta">arXiv 2610.21244</span></li>
     </ol>
   </nav>
 <!-- WORK_LIST_END -->
@@ -134,7 +135,64 @@
   </div></div>
 </article>
 <!-- PAPER_CARD_END -->
+<!-- PAPER_CARD_START source="../Paper_Wiki/Jev/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1.md" arxiv="2610.21244" -->
+<article class="paper-card" id="arxiv-2610.21244" data-source="../Paper_Wiki/Jev/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1.md" data-arxiv="2610.21244">
+  <div class="card-topline"><span class="badge">Jev</span><span class="badge">决策评测</span><span class="badge">概率质量</span><span class="badge">闭环控制</span></div>
+  <h2>System1-Arena: Which Decisions Can Be Left to System 1?</h2>
+  <p class="paper-meta">arXiv:2610.21244 ｜ 统一结构化决策接口的跨模型 Benchmark</p>
+  <div class="paper-links"><a href="https://arxiv.org/abs/2610.21244" target="_blank" rel="noopener">arXiv</a> · <a href="https://arxiv.org/pdf/2610.21244.pdf" target="_blank" rel="noopener">PDF 原文</a> · <a href="https://github.com/TianyuCodings/S1-Arena" target="_blank" rel="noopener">代码</a> · <a href="https://huggingface.co/datasets/C-Tianyu/S1-Arena" target="_blank" rel="noopener">数据集</a> · <a href="https://tianyucodings.github.io/S1-Arena" target="_blank" rel="noopener">项目页</a></div>
+
+  <section class="paper-section highlight section-panel" aria-labelledby="s1-idea"><h3 id="s1-idea">核心思想</h3>
+    <p>用同一套结构化决策请求，比较原生 System-1 模型与生成式 LLM 的<strong>准确率、概率质量、延迟、成本和闭环表现</strong>。本文提供评测基准，核心发现是：Jev 在高频局部决策中具有成本与概率质量优势，但单步得分不足以判断长程任务的成败。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-problem"><h3 id="s1-problem">问题与动机</h3>
+    <p>只看静态准确率，会忽略错误置信度、实时延迟与状态偏移后的恢复能力。System1-Arena 覆盖 <strong>92,125 个结构化问题、105 个静态任务、138 个闭环环境和 30 个模型</strong>；其中非 Agent 静态部分为 87 个任务，闭环环境中 128 个报告二元成功率、10 个报告连续奖励。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-method"><h3 id="s1-method">方法核心：统一接口，分层看结果</h3>
+    <ul><li><strong>决策请求：</strong>输入状态与问题集，支持 Boolean、Choice、Score，输出候选集上的归一化概率。System 1 不生成中间推理文本，直接读出分布。</li>
+    <li><strong>概率获取：</strong>原生决策模型直接输出概率；开源 LLM 读取答案位置的候选 token 概率；闭源 LLM 生成结构化数值再归一化。三者接口一致，概率信号的生成机制仍有差异。</li>
+    <li><strong>Agent 评测：</strong>单步测试对齐记录轨迹的参考动作；闭环测试让模型连续选动作、改变后续状态。固定 Harness 先构造候选集，再执行最高概率动作；正确动作若不在候选中，决策头无法补救。</li>
+    <li><strong>实时模式：</strong>环境在推理期间继续推进，让延迟影响动作落地时的观测新鲜度。</li></ul>
+    <div class="formula-block">\[\mathrm{Brier}(p,t)=\sum_o\bigl(p(o)-t(o)\bigr)^2\quad\text{（越低越好）}.\]</div>
+    <p class="metric-note">Brier 衡量整体概率预测质量；更低的平均 Brier 仍需结合具体阈值下的风险—覆盖率检验。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-results"><h3 id="s1-results">实验与结论</h3>
+    <p><strong>非 Agent 静态结果：</strong>Jev 的准确率接近快速 LLM，同时具有更低的 Brier、延迟与托管调用成本。</p>
+    <div class="table-scroll" role="region" aria-label="非 Agent 静态实验结果" tabindex="0"><table><thead><tr><th>模型</th><th>Acc ↑ / %</th><th>Brier ↓</th><th>p50 延迟</th><th>成本 / 1,000 请求</th></tr></thead><tbody>
+      <tr class="result-best"><td>Jev 1.13</td><td>72.6</td><td>0.349</td><td>321 ms</td><td>$0.052</td></tr>
+      <tr><td>GPT-6 Luna</td><td>71.2</td><td>0.461</td><td>1,276 ms</td><td>$0.143</td></tr>
+      <tr><td>Claude Opus 5.5</td><td>81.1</td><td>0.232</td><td>2,293 ms</td><td>$10.380</td></tr>
+      <tr><td>Decision-2.0-Vega-27B</td><td>73.0</td><td>0.343</td><td>228 ms</td><td>316 H100 GPU-s</td></tr>
+    </tbody></table></div>
+    <p class="metric-note">成本与延迟为论文报告条件下的测量值；本地 GPU 秒数与托管 API 美元分别统计，不据此直接做跨计费方式的成本排序。</p>
+    <p><strong>单步与闭环的落差：</strong>相同单步准确率，并不意味着相同任务成功率。</p>
+    <div class="table-scroll" role="region" aria-label="单步与闭环结果对比" tabindex="0"><table><thead><tr><th>模型</th><th>单步准确率 ↑ / %</th><th>闭环成功率 ↑ / %</th></tr></thead><tbody>
+      <tr><td>Jev 1.13</td><td>67.8</td><td>17.4</td></tr>
+      <tr><td>Decision-2.0-Vega-27B</td><td>67.8</td><td>26.5</td></tr>
+      <tr><td>Gemma-4-31B</td><td>71.3</td><td>32.9</td></tr>
+    </tbody></table></div>
+    <ul><li><strong>思考预算消融：</strong>Qwen3.8-27B 从 0 增至 2,048 个思考 token，准确率由 70.2% 升至 75.6%，Brier 却由 0.391 升至 0.430；额外推理可以提分，却未必让概率更可靠。</li>
+    <li><strong>同源底座比较：</strong>5 对 System-1 模型中，4 对改善非 Agent Brier，全部 5 对的 Agent 单步匹配率下降，闭环成功率则有升有降。静态后训练收益不能直接外推到控制能力。</li></ul>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-takeaways"><h3 id="s1-takeaways">价值、局限与启发</h3>
+    <ul><li><strong>适用方向：</strong>高频、局部、候选明确的过滤、排序与路由值得优先尝试 System 1；长程控制需要额外验证状态恢复、候选覆盖与最终成功率。</li>
+    <li><strong>评测边界：</strong>固定 Harness 的动作离散化与兜底会影响闭环结果；公开数据可能存在污染，随机生成与环境仅单次抽样，缺少重复运行方差。</li>
+    <li><strong>工程启发：</strong>将静态 Accuracy / Brier、离线单步和在线闭环分开验收，并核算每次成功任务的总成本。论文的每千次请求单价不能直接替代该成本。</li></ul>
+    <p>与 <a href="#arxiv-2609.38850">OpenJev-RLCD</a> 联读：RLCD 改进推理后的概率读出；本基准提供跨任务检验这些收益及其闭环边界的视角。</p>
+  </section>
+
+  <div class="figure-showcase"><div class="figure-title">关键图示 · 原图可点击放大</div><div class="figure-grid">
+    <a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/front_agentic_plot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/front_agentic_plot.png" alt="System1-Arena 原图：Agent 单步与闭环表现比较" loading="lazy"><span>Agent 表现概览：比较离线单步决策与在线闭环结果。</span></a>
+    <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/think_budget.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/think_budget.png" alt="System1-Arena 原图：思考 token 预算与准确率、Brier 的关系" loading="lazy"><span>思考预算消融：准确率提高时，概率质量未必同步改善。</span></a>
+    <a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/cost_accuracy.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/cost_accuracy.png" alt="System1-Arena 原图：成本与准确率的比较" loading="lazy"><span>成本—准确率比较：结合论文的计费口径解读模型取舍。</span></a>
+  </div></div>
+</article>
+<!-- PAPER_CARD_END -->
   </main>
-  <footer>根据本地 OpenJev-RLCD 阅读笔记整理 · 论文版本与实验数字沿用源笔记。</footer>
+  <footer>根据本地 Jev 论文阅读笔记整理 · 论文版本与实验数字沿用各篇源笔记。</footer>
 </body>
 </html>
