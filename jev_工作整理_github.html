@@ -60,6 +60,12 @@
     .method-steps { padding-left: 1.3em; }
     .method-steps li { margin-bottom: 10px; }
     @media (max-width: 600px) { header { padding-top: 30px; } .paper-card { padding: 20px 16px; } }
+
+    /* System1-Arena: keep square plots compact and give the two-panel plot its own row. */
+    article[data-arxiv="2610.21244"] .figure-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    article[data-arxiv="2610.21244"] .figure-link { align-items: center; padding: 16px; gap: 14px; }
+    article[data-arxiv="2610.21244"] .figure-link img { display: block; width: auto; max-width: 100%; height: auto; max-height: none; border-radius: 0; }
+    article[data-arxiv="2610.21244"] .figure-link span { align-self: stretch; padding-top: 10px; border-top: 1px solid var(--line); }
   </style>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
