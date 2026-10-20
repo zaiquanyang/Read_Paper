@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System1-Arena: Which Decisions Can Be Left to System 1? | Jev 工作整理</title>
+  <style>
+    :root { color-scheme: light; --bg: #f6f8fb; --card: #ffffff; --ink: #172033; --muted: #5d6b82; --line: #dfe6ef; --accent: #3457d5; --soft: #eef3ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.72; color: var(--ink); background: radial-gradient(circle at top left, #e8efff, transparent 34rem), var(--bg); }
+    header { padding: 56px 22px 30px; text-align: center; }
+    header h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.7rem); letter-spacing: -0.04em; }
+    header p { max-width: 820px; margin: 0 auto; color: var(--muted); font-size: 1.05rem; }
+    main { width: min(1120px, calc(100% - 32px)); margin: 0 auto 64px; }
+    .paper-card { width: min(960px, 100%); margin: 24px auto; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 24px; padding: clamp(22px, 4vw, 38px); box-shadow: 0 18px 60px rgba(27, 39, 78, .08); }
+    .card-topline { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; background: var(--soft); color: var(--accent); font-size: .82rem; font-weight: 650; }
+    h2 { margin: 0 0 12px; font-size: clamp(1.45rem, 3vw, 2.15rem); line-height: 1.25; }
+    h3 { margin: 0 0 8px; font-size: 1.04rem; color: #23345d; }
+    p { margin: 0 0 10px; }
+    ul { margin: 0 0 10px 1.2em; padding: 0; }
+    li { margin: 4px 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #f1f4f8; border-radius: 6px; padding: 1px 5px; }
+    .paper-links { margin: 8px 0 18px; color: var(--muted); }
+    .paper-section { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+    .paper-section.highlight { background: linear-gradient(135deg, #f6f8ff, #ffffff); border: 1px solid #dce5ff; border-radius: 18px; padding: 16px 18px; }
+    .figure-showcase { margin-top: 22px; border: 1px solid var(--line); border-radius: 20px; padding: 16px; background: #fbfdff; }
+    .figure-title { margin: 0 0 12px; color: var(--accent); font-size: .96rem; font-weight: 800; }
+    .figure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .figure-link { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-decoration: none; }
+    .figure-link.figure-primary { grid-column: 1 / -1; }
+    .figure-link img { width: 100%; max-height: 680px; object-fit: contain; border-radius: 12px; background: #fff; }
+    .figure-link:not(.figure-primary) img { max-height: 520px; }
+    .figure-link span { color: var(--muted); font-size: .88rem; }
+    @media (max-width: 720px) { .figure-grid { grid-template-columns: 1fr; } .figure-link.figure-primary { grid-column: auto; } }
+    .placeholder-note { color: #667085; font-style: italic; background: #f8fafc; border: 1px dashed var(--line); border-radius: 8px; padding: .55rem .8rem; }
+    .artifact-note { color: #7c5c00; background: #fff8db; border-left: 3px solid #eab308; border-radius: 0 8px 8px 0; padding: .55rem .8rem; }
+    .formula-block { overflow-x: auto; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: .65rem .8rem; margin: .8rem 0; }
+    .work-list { width: min(1120px, calc(100% - 32px)); margin: 0 auto 26px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 46px rgba(27, 39, 78, .07); }
+    .work-list h2 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+    .work-list p { margin: 0 0 12px; color: var(--muted); }
+    .work-list ol { margin: 0; padding-left: 1.25rem; }
+    .work-list li { margin: 8px 0; padding-left: 4px; }
+    .work-list a { font-weight: 700; }
+    .work-meta { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; }
+    footer { text-align: center; color: var(--muted); padding: 0 0 48px; }
+
+    .container { max-width: 960px; margin: 0 auto 64px; }
+    .work-list { max-width: 960px; }
+    .paper-meta, .metric-note { color: var(--muted); font-size: .9rem; }
+    .home-link { margin-bottom: 14px; }
+    .table-scroll { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: .88rem; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { background: var(--soft); color: #23345d; }
+    tr:last-child td { border-bottom: 0; }
+    .result-best { background: #effaf6; font-weight: 650; }
+    .method-steps { padding-left: 1.3em; }
+    .method-steps li { margin-bottom: 10px; }
+    @media (max-width: 600px) { header { padding-top: 30px; } .paper-card { padding: 20px 16px; } }
+
+    /* System1-Arena: keep square plots compact and give the two-panel plot its own row. */
+    article[data-arxiv="2610.21244"] .figure-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    article[data-arxiv="2610.21244"] .figure-link { align-items: center; padding: 16px; gap: 14px; }
+    article[data-arxiv="2610.21244"] .figure-link img { display: block; width: auto; max-width: 100%; height: auto; max-height: none; border-radius: 0; }
+    article[data-arxiv="2610.21244"] .figure-link span { align-self: stretch; padding-top: 10px; border-top: 1px solid var(--line); }
+
+    article[data-arxiv="2610.21244"] .s1-figure { min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+    article[data-arxiv="2610.21244"] .s1-figure .figure-link { padding: 0; border: 0; }
+    article[data-arxiv="2610.21244"] .s1-figure figcaption { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: .92rem; }
+    article[data-arxiv="2610.21244"] .s1-figure h4 { margin: 0 0 10px; color: #23345d; font-size: 1rem; }
+    article[data-arxiv="2610.21244"] .s1-figure li { margin: 8px 0; }
+
+    .detail-header h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+    .paper-navigation { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 24px auto; padding: 0 12px; }
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <header class="detail-header"><p class="home-link"><a href="../jev_工作整理_github.html">← 返回 Jev 专题</a></p><h1>System1-Arena</h1><p>论文精读 · arXiv 2610.21244</p></header>
+  <nav class="work-list" aria-label="文章目录"><h2>文章目录</h2><ol><li><a href="#s1-idea">核心思想</a></li><li><a href="#s1-problem">问题与动机</a></li><li><a href="#s1-method">方法核心：统一接口，分层看结果</a></li><li><a href="#s1-results">实验与结论</a></li><li><a href="#s1-takeaways">价值、局限与启发</a></li></ol></nav>
+  <main class="container">
+<!-- PAPER_CARD_START source="../Paper_Wiki/Jev/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1.md" arxiv="2610.21244" -->
+<article class="paper-card" id="arxiv-2610.21244" data-source="../Paper_Wiki/Jev/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1.md" data-arxiv="2610.21244">
+  <div class="card-topline"><span class="badge">Jev</span><span class="badge">决策评测</span><span class="badge">概率质量</span><span class="badge">闭环控制</span></div>
+  <h2>System1-Arena: Which Decisions Can Be Left to System 1?</h2>
+  <p class="paper-meta">arXiv:2610.21244 ｜ 统一结构化决策接口的跨模型 Benchmark</p>
+  <div class="paper-links"><a href="https://arxiv.org/abs/2610.21244" target="_blank" rel="noopener">arXiv</a> · <a href="https://arxiv.org/pdf/2610.21244.pdf" target="_blank" rel="noopener">PDF 原文</a> · <a href="https://github.com/TianyuCodings/S1-Arena" target="_blank" rel="noopener">代码</a> · <a href="https://huggingface.co/datasets/C-Tianyu/S1-Arena" target="_blank" rel="noopener">数据集</a> · <a href="https://tianyucodings.github.io/S1-Arena" target="_blank" rel="noopener">项目页</a></div>
+
+  <section class="paper-section highlight section-panel" aria-labelledby="s1-idea"><h3 id="s1-idea">核心思想</h3>
+    <p>用同一套结构化决策请求，比较原生 System-1 模型与生成式 LLM 的<strong>准确率、概率质量、延迟、成本和闭环表现</strong>。本文提供评测基准，核心发现是：Jev 在高频局部决策中具有成本与概率质量优势，但单步得分不足以判断长程任务的成败。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-problem"><h3 id="s1-problem">问题与动机</h3>
+    <p>只看静态准确率，会忽略错误置信度、实时延迟与状态偏移后的恢复能力。System1-Arena 覆盖 <strong>92,125 个结构化问题、105 个静态任务、138 个闭环环境和 30 个模型</strong>；其中非 Agent 静态部分为 87 个任务，闭环环境中 128 个报告二元成功率、10 个报告连续奖励。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-method"><h3 id="s1-method">方法核心：统一接口，分层看结果</h3>
+    <ul><li><strong>决策请求：</strong>输入状态与问题集，支持 Boolean、Choice、Score，输出候选集上的归一化概率。System 1 不生成中间推理文本，直接读出分布。</li>
+    <li><strong>概率获取：</strong>原生决策模型直接输出概率；开源 LLM 读取答案位置的候选 token 概率；闭源 LLM 生成结构化数值再归一化。三者接口一致，概率信号的生成机制仍有差异。</li>
+    <li><strong>Agent 评测：</strong>单步测试对齐记录轨迹的参考动作；闭环测试让模型连续选动作、改变后续状态。固定 Harness 先构造候选集，再执行最高概率动作；正确动作若不在候选中，决策头无法补救。</li>
+    <li><strong>实时模式：</strong>环境在推理期间继续推进，让延迟影响动作落地时的观测新鲜度。</li></ul>
+    <div class="formula-block">\[\mathrm{Brier}(p,t)=\sum_o\bigl(p(o)-t(o)\bigr)^2\quad\text{（越低越好）}.\]</div>
+    <p class="metric-note">Brier 衡量整体概率预测质量；更低的平均 Brier 仍需结合具体阈值下的风险—覆盖率检验。</p>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-results"><h3 id="s1-results">实验与结论</h3>
+    <p><strong>非 Agent 静态结果：</strong>Jev 的准确率接近快速 LLM，同时具有更低的 Brier、延迟与托管调用成本。</p>
+    <div class="table-scroll" role="region" aria-label="非 Agent 静态实验结果" tabindex="0"><table><thead><tr><th>模型</th><th>Acc ↑ / %</th><th>Brier ↓</th><th>p50 延迟</th><th>成本 / 1,000 请求</th></tr></thead><tbody>
+      <tr class="result-best"><td>Jev 1.13</td><td>72.6</td><td>0.349</td><td>321 ms</td><td>$0.052</td></tr>
+      <tr><td>GPT-6 Luna</td><td>71.2</td><td>0.461</td><td>1,276 ms</td><td>$0.143</td></tr>
+      <tr><td>Claude Opus 5.5</td><td>81.1</td><td>0.232</td><td>2,293 ms</td><td>$10.380</td></tr>
+      <tr><td>Decision-2.0-Vega-27B</td><td>73.0</td><td>0.343</td><td>228 ms</td><td>316 H100 GPU-s</td></tr>
+    </tbody></table></div>
+    <p class="metric-note">成本与延迟为论文报告条件下的测量值；本地 GPU 秒数与托管 API 美元分别统计，不据此直接做跨计费方式的成本排序。</p>
+    <p><strong>单步与闭环的落差：</strong>相同单步准确率，并不意味着相同任务成功率。</p>
+    <div class="table-scroll" role="region" aria-label="单步与闭环结果对比" tabindex="0"><table><thead><tr><th>模型</th><th>单步准确率 ↑ / %</th><th>闭环成功率 ↑ / %</th></tr></thead><tbody>
+      <tr><td>Jev 1.13</td><td>67.8</td><td>17.4</td></tr>
+      <tr><td>Decision-2.0-Vega-27B</td><td>67.8</td><td>26.5</td></tr>
+      <tr><td>Gemma-4-31B</td><td>71.3</td><td>32.9</td></tr>
+    </tbody></table></div>
+    <ul><li><strong>思考预算消融：</strong>Qwen3.8-27B 从 0 增至 2,048 个思考 token，准确率由 70.2% 升至 75.6%，Brier 却由 0.391 升至 0.430；额外推理可以提分，却未必让概率更可靠。</li>
+    <li><strong>同源底座比较：</strong>5 对 System-1 模型中，4 对改善非 Agent Brier，全部 5 对的 Agent 单步匹配率下降，闭环成功率则有升有降。静态后训练收益不能直接外推到控制能力。</li></ul>
+  </section>
+
+  <section class="paper-section section-panel" aria-labelledby="s1-takeaways"><h3 id="s1-takeaways">价值、局限与启发</h3>
+    <ul><li><strong>适用方向：</strong>高频、局部、候选明确的过滤、排序与路由值得优先尝试 System 1；长程控制需要额外验证状态恢复、候选覆盖与最终成功率。</li>
+    <li><strong>评测边界：</strong>固定 Harness 的动作离散化与兜底会影响闭环结果；公开数据可能存在污染，随机生成与环境仅单次抽样，缺少重复运行方差。</li>
+    <li><strong>工程启发：</strong>将静态 Accuracy / Brier、离线单步和在线闭环分开验收，并核算每次成功任务的总成本。论文的每千次请求单价不能直接替代该成本。</li></ul>
+    <p>与 <a href="001-openjev-rlcd-a-working-rlcd-implementation.html#arxiv-2609.38850">OpenJev-RLCD</a> 联读：RLCD 改进推理后的概率读出；本基准提供跨任务检验这些收益及其闭环边界的视角。</p>
+  </section>
+
+  <div class="figure-showcase"><div class="figure-title">关键图示 · 原图可点击放大</div><div class="figure-grid">
+    <figure class="s1-figure"><a class="figure-link figure-primary" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/front_agentic_plot.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/front_agentic_plot.png" alt="System1-Arena 原图：Agent 单步与闭环表现比较" loading="lazy"></a><figcaption><h4>图解一：单步同分，为什么闭环结果不同？</h4><ul><li><strong>怎么看图：</strong>横轴为离线单步准确率，纵轴为在线闭环任务成功率，越靠右上越好；每个点代表一个模型。若单步分数足以预测闭环成败，横坐标相近的点应有相近的高度。</li><li><strong>观察到的现象：</strong>Jev 与 Decision-2.0-Vega-27B 的单步准确率都是 67.8%，闭环成功率却分别为 17.4% 和 26.5%，相差 9.1 个百分点。Gemma-4-31B 为 71.3% / 32.9%。右侧点群在横轴上较集中，纵向仍明显分散。</li><li><strong>如何解释：</strong>单步评测是在参考轨迹的给定状态上选动作；闭环中，模型的动作会改变后续状态。关键步骤上的错误、偏离轨迹后的恢复以及 Harness 的候选与兜底，都可能影响最终成败。这些是解释差异的可能机制，散点图本身没有逐项证明其因果贡献。</li><li><strong>实际启发：</strong>这张图支持“单步准确率不足以替代闭环验收”，而非“单步能力毫无价值”。选型时要同时测最终成功率与错误后恢复，不能从两个总体百分比直接换算单步错误累积概率。</li></ul></figcaption></figure>
+    <figure class="s1-figure"><a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/think_budget.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/think_budget.png" alt="System1-Arena 原图：思考 token 预算与准确率、Brier 的关系" loading="lazy"></a><figcaption><h4>图解二：为什么准确率提高了，Brier 反而变差？</h4><ul><li><strong>怎么看图：</strong>左面板是准确率，越高越好；右面板是 Brier，越低越好。横轴是每题实际平均生成的思考 token 数，曲线来自 128–2,048 token 的预算上限，所以横轴不必到 2,048。绿色虚线和星号表示不生成思考文本的 Jev 参照。</li><li><strong>观察到的现象：</strong>短预算可能先伤害准确率：DiffusionGemma 在 128-token 上限时由 69.7% 降至 56.3%。更大预算总体改善正确率，但不是所有模型的 Brier 都改善；Qwen3.8-27B 从关闭思考到 2,048-token 上限时，准确率 70.2%→75.6%，Brier 0.391→0.430，首选项平均置信度 81.4%→97.4%。</li><li><strong>如何解释：</strong>Accuracy 只看最高分选项是否正确，Brier 还看概率分配。即使答错的次数减少，剩余错误若被赋予更极端的置信度，仍可能受到更大 Brier 惩罚。因此“更常答对”和“概率更可靠”可以分离；这一结果与过度自信增加一致，不能仅凭曲线推断模型内部的心理过程。</li><li><strong>实际启发：</strong>增加思考预算或按置信度触发思考后，应重新检查校准和风险—覆盖曲线。图中的零 token 起点是关闭思考；它与启用 thinking prompt、但保留空推理的 budget=0 设置不同。各模型的变化也不一致，不能概括为“思考一定损害概率质量”。</li></ul></figcaption></figure>
+    <figure class="s1-figure"><a class="figure-link" href="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/cost_accuracy.png" target="_blank" rel="noopener"><img src="https://pub-6df1d50179b24ebcb783184cdb6efc8c.r2.dev/Read_Paper/jev/assets/arxiv_2610_system1_arena_which_decisions_can_be_left_to_system_1_tex/cost_accuracy.png" alt="System1-Arena 原图：成本与准确率的比较" loading="lazy"></a><figcaption><h4>图解三：更贵是否一定更准？</h4><ul><li><strong>怎么看图：</strong>横轴为每 1,000 次托管 API 请求的美元成本，采用对数刻度；从 0.01 到 0.1、1、10，每一格都是约 10 倍。纵轴为非 Agent 准确率，越高越好，因而左上方表示更低成本与更高准确率。该图不展示本地模型的 GPU 秒数。</li><li><strong>观察到的现象：</strong>Jev 为 $0.052 / 1k 请求、72.6% 准确率；GPT-6 Luna 为 $0.143、71.2%。Jev 在这两个指标上同时更优：准确率高 1.4 个百分点，成本约为其 36%。Opus 5.5 达 81.1%，但成本为 $10.380，约为 Jev 的 200 倍。</li><li><strong>如何解释：</strong>低价区域存在有竞争力的决策模型，更高准确率的推理模型则需要更多费用，呈现不同的成本—能力取舍。图支持“更贵不总是更准”，并不说明增加同一模型的预算一定无效，也不证明某种架构导致了价格差异。</li><li><strong>实际启发：</strong>应按具体任务所需准确率和预算选型；该图没有展示 Brier、延迟与闭环成功率。每千次静态请求的成本也不是每次成功任务的成本，失败重试、步数增加和升级强模型都可能改变总账。</li></ul></figcaption></figure>
+  </div></div>
+</article>
+<!-- PAPER_CARD_END -->
+    <nav class="paper-navigation" aria-label="论文导航"><a href="../jev_工作整理_github.html">← 返回 Jev 专题</a><a href="../index.html">全部 Topic →</a></nav>
+  </main>
+  <footer>根据本地 Jev 论文阅读笔记整理 · 实验数字沿用源笔记。</footer>
+</body></html>
